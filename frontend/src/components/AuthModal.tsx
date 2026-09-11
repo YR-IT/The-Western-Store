@@ -342,7 +342,7 @@ export const AuthModal: React.FC = () => {
                   required
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@thewesternstore.com"
+                  placeholder="Email"
                   className="w-full px-3.5 py-2 text-xs border border-[#E3DCCE] rounded-lg focus:outline-none focus:border-[#721B29] bg-[#FAF8F3]"
                 />
               </div>
