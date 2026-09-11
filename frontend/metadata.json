@@ -1,0 +1,6 @@
+{
+  "name": "The Western Store - Kurukshetra",
+  "description": "Modern Indian ethnic and western women's clothing e-commerce store based in Kurukshetra, Haryana, featuring seamless WhatsApp checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

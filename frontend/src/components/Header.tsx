@@ -1,0 +1,857 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useStore } from '../context/StoreContext';
+import { ProductCategory, BudgetTier } from '../types';
+import { STORE_INFO } from '../data/mockData';
+import {
+  Search,
+  Heart,
+  ShoppingBag,
+  User,
+  Menu,
+  X,
+  Sparkles,
+  ChevronRight,
+  ChevronDown,
+  ShieldCheck,
+  Instagram,
+  Phone,
+  Home,
+  Package,
+  Tag,
+  MessageCircle,
+  LogOut,
+  UserCheck,
+} from 'lucide-react';
+
+export const Header: React.FC = () => {
+  const {
+    view,
+    setView,
+    selectedCategory,
+    navigateToCategory,
+    navigateToBudget,
+    selectedBudgetTier,
+    cartCount,
+    setIsCartDrawerOpen,
+    wishlist,
+    setIsSearchOpen,
+    setAdminActiveTab,
+    currentUser,
+    openAuthModal,
+    logout,
+  } = useStore();
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | 'boutique' | 'budget' | null>(null);
+
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const dropdownNavRef = useRef<HTMLElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+      if (dropdownNavRef.current && !dropdownNavRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCategoryClick = (cat: ProductCategory) => {
+    navigateToCategory(cat);
+    setMobileMenuOpen(false);
+    setActiveDropdown(null);
+  };
+
+  const handleBudgetClick = (tier: BudgetTier) => {
+    navigateToBudget(tier);
+    setMobileMenuOpen(false);
+    setActiveDropdown(null);
+  };
+
+  const handleLogoClick = () => {
+    setView('home');
+    setMobileMenuOpen(false);
+    setActiveDropdown(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <header className="sticky top-0 z-40 bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#EAE4D9] transition-all w-full">
+      {/* Tier 1: Main Top Bar (Store Info, Logo, Utility Actions) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+          {/* Left: Mobile menu triggers OR Desktop Store Info Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Mobile / Tablet Menu Trigger */}
+            <button
+              id="mobile-menu-btn"
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 text-[#242120] hover:text-[#721B29] transition-colors focus:outline-none rounded-lg hover:bg-[#F3EFE6]"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            {/* Desktop Store Info Badge */}
+            <div className="hidden lg:flex items-center gap-2 text-xs text-[#736B63] bg-[#FAF8F3] px-3 py-1.5 rounded-full border border-[#EAE4D9]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="font-medium">Theme Park, Kurukshetra • Express Delivery</span>
+            </div>
+          </div>
+
+          {/* Center: Brand Title */}
+          <div
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group py-1"
+            onClick={handleLogoClick}
+          >
+            <div className="text-center sm:text-left">
+              <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                <span className="font-serif text-lg xs:text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#721B29]">
+                  The Western Store
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#B8860B] shrink-0 hidden sm:inline-block" />
+              </div>
+              <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-[#736B63] font-medium hidden xs:block">
+                Kurukshetra • Ethnic & Western Boutique
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Actions (Search, Wishlist, Account, Cart) */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Desktop Search Button */}
+            <button
+              id="header-search-btn"
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#E3DCCE] bg-[#FAF8F3] text-[#736B63] text-xs hover:border-[#721B29] hover:text-[#721B29] transition-all"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Search outfits...</span>
+            </button>
+
+            {/* Mobile / Tablet Search Button on Right */}
+            <button
+              id="mobile-search-btn"
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="lg:hidden p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6]"
+              aria-label="Search items"
+            >
+              <Search className="w-4 h-4 xs:w-5 xs:h-5" />
+            </button>
+
+            {/* Wishlist */}
+            <button
+              id="header-wishlist-btn"
+              type="button"
+              onClick={() => setView('wishlist')}
+              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6]"
+              aria-label="Wishlist"
+            >
+              <Heart className={`w-4 h-4 xs:w-5 xs:h-5 ${wishlist.length > 0 ? 'text-[#721B29] fill-[#721B29]/15' : ''}`} />
+              {wishlist.length > 0 && (
+                <span className="absolute top-0.5 right-0.5 xs:top-1.5 xs:right-1.5 w-3.5 h-3.5 xs:w-4 xs:h-4 bg-[#721B29] text-white text-[9px] xs:text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
+            {/* Account Menu Dropdown */}
+            <div ref={accountMenuRef} className="relative">
+              <button
+                id="header-account-btn"
+                type="button"
+                onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                className="p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6] flex items-center gap-1.5"
+                aria-label="Account and store manager"
+              >
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-6 h-6 rounded-full border border-[#721B29] object-cover shrink-0"
+                  />
+                ) : (
+                  <User className="w-4 h-4 xs:w-5 xs:h-5" />
+                )}
+                {currentUser && (
+                  <span className="text-xs font-bold text-[#721B29] hidden xl:inline max-w-[80px] truncate">
+                    {currentUser.name.split(' ')[0]}
+                  </span>
+                )}
+              </button>
+
+              {accountMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* Account Identity Header */}
+                  <div className="px-4 py-2.5 border-b border-[#EAE4D9] bg-[#FAF8F3]">
+                    {currentUser ? (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            {currentUser.authProvider === 'google' ? 'Google Account' : 'Admin'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-[#242120] truncate">{currentUser.name}</p>
+                        <p className="text-[11px] text-[#736B63] truncate">{currentUser.email}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs font-serif font-bold text-[#721B29]">The Western Store</p>
+                        <p className="text-[11px] text-[#736B63]">Sign in to sync cart & track orders</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openAuthModal('customer', 'Sign in with Google to associate your cart and order history.');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="mt-2 w-full py-1.5 px-3 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#52131D] flex items-center justify-center gap-2 shadow-xs"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                          <span>Sign in with Google</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Navigation Actions */}
+                  <button
+                    id="header-order-history-btn"
+                    type="button"
+                    onClick={() => {
+                      setView('order-history');
+                      setAccountMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-[#721B29]" />
+                      <span>My Order History</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                  </button>
+
+                  <button
+                    id="header-track-order-btn"
+                    type="button"
+                    onClick={() => {
+                      setView('track-order');
+                      setAccountMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-[#721B29]" />
+                      <span>Track Order Status</span>
+                    </span>
+                    <span className="text-[10px] text-[#721B29] font-bold uppercase bg-[#721B29]/10 px-1.5 py-0.5 rounded-xs">
+                      Live
+                    </span>
+                  </button>
+
+
+                  <a
+                    href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>WhatsApp Support</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                  </a>
+
+                  <div className="my-1 border-t border-[#EAE4D9]" />
+
+                  {/* Admin Portal Link */}
+                  <button
+                    id="admin-portal-link"
+                    type="button"
+                    onClick={() => {
+                      if (currentUser?.isAdmin) {
+                        setView('admin');
+                        setAdminActiveTab('dashboard');
+                      } else {
+                        openAuthModal('admin', 'Boutique Admin Authentication Required');
+                      }
+                      setAccountMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                    <span>Store Admin Panel</span>
+                  </button>
+
+                  {/* Sign Out Button if logged in */}
+                  {currentUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        setAccountMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-red-700 font-semibold hover:bg-red-50 flex items-center gap-2 border-t border-[#EAE4D9] mt-1"
+                    >
+                      <LogOut className="w-4 h-4 text-red-600" />
+                      <span>Sign Out</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cart Icon */}
+            <button
+              id="header-cart-btn"
+              type="button"
+              onClick={() => setIsCartDrawerOpen(true)}
+              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#721B29] hover:text-[#52131D] transition-colors rounded-full hover:bg-[#721B29]/10 flex items-center gap-1"
+              aria-label={`Cart with ${cartCount} items`}
+            >
+              <ShoppingBag className="w-4 h-4 xs:w-5 xs:h-5" />
+              {cartCount > 0 && (
+                <span className="w-4 h-4 xs:w-5 xs:h-5 bg-[#721B29] text-white text-[9px] xs:text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tier 2: Dedicated Desktop Navigation Bar (PC / Laptop View) */}
+      <div className="hidden lg:block border-t border-[#EAE4D9]/80 bg-[#FAF8F3]/80">
+        <div className="max-w-7xl mx-auto px-4">
+          <nav ref={dropdownNavRef} className="flex items-center justify-center space-x-6 xl:space-x-10 py-2.5">
+            {/* Home Link */}
+            <button
+              id="nav-home"
+              type="button"
+              onClick={handleLogoClick}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md ${
+                view === 'home' && activeDropdown === null
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+              }`}
+            >
+              Home
+            </button>
+
+            {/* Link 1: Ethnic Wear */}
+            <button
+              id="nav-ethnic-wear"
+              type="button"
+              onClick={() => handleCategoryClick('Ethnic Wear')}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
+                view === 'plp' && selectedCategory === 'Ethnic Wear'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+              }`}
+            >
+              Ethnic Wear
+            </button>
+
+            {/* Link 2: Western Wear */}
+            <button
+              id="nav-western-wear"
+              type="button"
+              onClick={() => handleCategoryClick('Western Wear')}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
+                view === 'plp' && selectedCategory === 'Western Wear'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+              }`}
+            >
+              Western Wear
+            </button>
+
+            {/* Link 3: All Collections */}
+            <button
+              id="nav-all-collections"
+              type="button"
+              onClick={() => handleCategoryClick('All')}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
+                view === 'plp' && selectedCategory === 'All'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+              }`}
+            >
+              All Collections
+            </button>
+
+            {/* Dropdown 3: Budget Edits (Curated Price Ranges) */}
+            <div
+              className="relative"
+              onMouseEnter={() => setActiveDropdown('budget')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
+              <button
+                id="nav-dropdown-budget"
+                type="button"
+                onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1.5 ${
+                  activeDropdown === 'budget' || selectedBudgetTier !== 'all'
+                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+                }`}
+              >
+                <Tag className="w-3.5 h-3.5 text-[#B8860B]" />
+                <span>Budget Edits</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'budget' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
+              </button>
+
+              {/* Budget Dropdown Menu */}
+              {activeDropdown === 'budget' && (
+                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Curated Price Ranges</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_999')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
+                      <p className="text-[10px] text-[#736B63]">Daily cottons, crop tops & tees</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1499')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
+                      <p className="text-[10px] text-[#736B63]">Party co-ords, midis & wide denims</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1999')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
+                      <p className="text-[10px] text-[#736B63]">Silk drapes, anarkalis & suit sets</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_2499')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
+                      <p className="text-[10px] text-[#736B63]">Heavy festive co-ords & festive sets</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('premium')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#242120]">Luxury & Bridal (₹2,500+)</p>
+                      <p className="text-[10px] text-[#736B63]">Heavy Banarasi lehengas & drapes</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
+                    <button
+                      type="button"
+                      onClick={() => handleBudgetClick('all')}
+                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
+                    >
+                      <Tag className="w-3.5 h-3.5 text-[#721B29]" />
+                      <span>View All Budget Collections</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dropdown 4: Boutique & Services */}
+            <div
+              className="relative"
+              onMouseEnter={() => setActiveDropdown('boutique')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
+              <button
+                id="nav-dropdown-boutique"
+                type="button"
+                onClick={() => setActiveDropdown(activeDropdown === 'boutique' ? null : 'boutique')}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1.5 ${
+                  activeDropdown === 'boutique' || ['track-order', 'admin'].includes(view)
+                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+                }`}
+              >
+                <span>Boutique & Services</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'boutique' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
+              </button>
+
+              {/* Boutique Dropdown Menu */}
+              {activeDropdown === 'boutique' && (
+                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Customer Services & Store</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('track-order');
+                      setActiveDropdown(null);
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-[#242120] group-hover:text-[#721B29] flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-[#721B29]" />
+                        <span>Live Order Tracking</span>
+                      </p>
+                      <p className="text-[10px] text-[#736B63]">Check status with order ID or phone</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <a
+                    href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store!%20I%20need%20styling%20assistance.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-[#242120] group-hover:text-emerald-800 flex items-center gap-1.5">
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>WhatsApp Boutique Support</span>
+                      </p>
+                      <p className="text-[10px] text-[#736B63]">Video proof & size consultation</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('testimonials-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      setActiveDropdown(null);
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-[#242120] group-hover:text-[#721B29] flex items-center gap-1.5">
+                        <Heart className="w-3.5 h-3.5 text-[#721B29]" />
+                        <span>Patron Reviews & Stories</span>
+                      </p>
+                      <p className="text-[10px] text-[#736B63]">Real customer feedback from Haryana</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (currentUser?.isAdmin) {
+                          setView('admin');
+                          setAdminActiveTab('dashboard');
+                        } else {
+                          openAuthModal('admin', 'Boutique Admin Authentication Required');
+                        }
+                        setActiveDropdown(null);
+                      }}
+                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#721B29]" />
+                      <span>Boutique Manager (Admin)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </nav>
+        </div>
+      </div>
+
+      {/* Mobile / Tablet Drawer Navigation rendered via React Portal to document.body */}
+      {mobileMenuOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] lg:hidden flex">
+            {/* Dark Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Drawer Container */}
+            <div className="relative w-[88%] max-w-sm bg-[#FDFBF7] h-full shadow-2xl z-10 flex flex-col overflow-y-auto animate-in slide-in-from-left duration-250">
+              {/* Drawer Header - EXACTLY MATCHES NAVBAR TITLE AND BRANDING */}
+              <div className="p-4 border-b border-[#EAE4D9] flex items-center justify-between bg-[#F8F5EE]">
+                <div className="flex items-center gap-2.5 cursor-pointer" onClick={handleLogoClick}>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-serif text-lg font-bold tracking-tight text-[#721B29]">
+                        The Western Store
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#B8860B] shrink-0" />
+                    </div>
+                    <p className="text-[9px] tracking-[0.16em] uppercase text-[#736B63] font-medium">
+                      Kurukshetra • Ethnic & Western Boutique
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 text-[#4A453E] hover:text-[#721B29] rounded-full hover:bg-white"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Account / Login Prompt Banner inside Drawer */}
+              <div className="p-3 bg-[#721B29]/10 border-b border-[#721B29]/15 flex items-center justify-between">
+                {currentUser ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-7 h-7 rounded-full border border-[#721B29] object-cover shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#242120] truncate">{currentUser.name}</p>
+                      <p className="text-[10px] text-[#721B29] font-medium truncate">{currentUser.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs text-[#242120] font-medium">Sign in to sync cart across devices</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openAuthModal('customer', 'Sign in with Google');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="px-2.5 py-1 bg-[#721B29] text-white text-xs font-bold rounded-xs shadow-xs"
+                    >
+                      Google Sign-In
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Quick Actions */}
+              <div className="p-3 border-b border-[#EAE4D9] bg-[#FAF8F3] space-y-2 text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleLogoClick}
+                    className="flex items-center justify-center gap-2 p-2 rounded-lg bg-white border border-[#EAE4D9] text-[#242120] font-medium"
+                  >
+                    <Home className="w-4 h-4 text-[#721B29]" />
+                    <span>Home</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('wishlist');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center justify-center gap-2 p-2 rounded-lg bg-white border border-[#EAE4D9] text-[#242120] font-medium"
+                  >
+                    <Heart className="w-4 h-4 text-[#721B29]" />
+                    <span>Wishlist ({wishlist.length})</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView('track-order');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#721B29]/10 border border-[#721B29]/20 text-[#721B29] font-medium text-xs"
+                >
+                  <span className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#721B29]" />
+                    <span>Track Order Status</span>
+                  </span>
+                  <span className="text-[10px] font-bold uppercase bg-[#721B29] text-white px-2 py-0.5 rounded-xs">
+                    Lookup
+                  </span>
+                </button>
+              </div>
+
+              {/* Mobile Categories & Budget Ranges Navigation */}
+              <div className="py-2 flex-1">
+                {/* Budget Ranges Section */}
+                <div className="px-4 py-1.5 text-xs font-bold text-[#B8860B] uppercase tracking-wider bg-[#B8860B]/10 border-y border-[#B8860B]/20 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Budget Edits (Price Ranges)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 p-2 bg-[#FAF8F3] border-b border-[#EAE4D9]">
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_999')}
+                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
+                  >
+                    <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
+                    <p className="text-[9px] text-[#736B63]">Cottons & Tees</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1499')}
+                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
+                  >
+                    <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
+                    <p className="text-[9px] text-[#736B63]">Party Co-ords</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1999')}
+                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
+                  >
+                    <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
+                    <p className="text-[9px] text-[#736B63]">Silk & Suit Sets</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_2499')}
+                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
+                  >
+                    <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
+                    <p className="text-[9px] text-[#736B63]">Festive Sets</p>
+                  </button>
+                </div>
+
+                {/* Categories Group */}
+                <div className="px-4 py-1.5 text-xs font-bold text-[#721B29] uppercase tracking-wider bg-[#F3EFE6]/60 border-y border-[#EAE4D9]">
+                  Explore Categories
+                </div>
+                {['Ethnic Wear', 'Western Wear'].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryClick(cat)}
+                    className="w-full text-left px-6 py-3 text-xs font-bold text-[#242120] hover:bg-[#F3EFE6] hover:text-[#721B29] flex items-center justify-between border-b border-[#F4EFE6]/60 transition-colors"
+                  >
+                    <span>{cat}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D]" />
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => handleCategoryClick('All')}
+                  className="w-full text-left px-6 py-3 text-xs font-bold text-[#721B29] hover:bg-[#F3EFE6] flex items-center justify-between border-b border-[#F4EFE6]/60 transition-colors"
+                >
+                  <span>All Collections</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#721B29]" />
+                </button>
+
+                <div className="mt-4 px-3 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('order-history');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-[#721B29]" />
+                      <span>My Order History</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('track-order');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-[#721B29]" />
+                      <span>Track Order Status</span>
+                    </span>
+                    <span className="text-[10px] text-[#721B29] font-bold uppercase bg-[#721B29]/10 px-2 py-0.5 rounded-full">
+                      Live
+                    </span>
+                  </button>
+                </div>
+
+                <div className="mt-4 px-4 py-3 bg-[#FAF8F3] mx-3 rounded-xl border border-[#EAE4D9]">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#721B29] mb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-[#B8860B]" />
+                    <span>Kurukshetra Walk-in Store</span>
+                  </div>
+                  <p className="text-[11px] text-[#736B63] leading-relaxed">
+                    Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank, Kurukshetra - 136118
+                  </p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <a
+                      href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-emerald-800 font-semibold flex items-center gap-1 hover:underline"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+                    <span className="text-[#C5A059]">•</span>
+                    <a
+                      href={STORE_INFO.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#721B29] font-semibold flex items-center gap-1 hover:underline"
+                    >
+                      <Instagram className="w-3.5 h-3.5" />
+                      <span>Instagram</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Admin Link */}
+              <div className="p-4 border-t border-[#EAE4D9] bg-[#F8F5EE]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (currentUser?.isAdmin) {
+                      setView('admin');
+                    } else {
+                      openAuthModal('admin', 'Boutique Admin Authentication Required');
+                    }
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-4 bg-[#721B29] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Store Management (Admin)</span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </header>
+  );
+};

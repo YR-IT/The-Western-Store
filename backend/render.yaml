@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: western-store-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
+      - key: ADMIN_SECRET
+        value: westernstore_admin_2026
+      - key: FRONTEND_URL
+        sync: false
