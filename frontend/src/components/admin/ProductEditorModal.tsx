@@ -40,44 +40,7 @@ const LUXURY_COLOR_PALETTE = [
   { name: 'Wine Plum', hex: '#581845' },
 ];
 
-const CURATED_IMAGE_PRESETS = [
-  {
-    label: 'Banarasi Saree',
-    url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Zari Organza Saree',
-    url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Royal Velvet Lehenga',
-    url: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Bridal Crimson Lehenga',
-    url: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Anarkali Suit',
-    url: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Silk Cord Set',
-    url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Embroidered Kurti',
-    url: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Western Cocktail Gown',
-    url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    label: 'Denim & Chic Blouse',
-    url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-  },
-];
+
 
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
@@ -146,7 +109,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       setSaleDiscount(product.saleDiscount || '-20%');
       setInStockCount(product.inStockCount !== undefined ? product.inStockCount : 15);
       setIsSoldOut(!!product.isSoldOut);
-      setImages(product.images && product.images.length > 0 ? product.images : [CURATED_IMAGE_PRESETS[0].url]);
+      setImages(product.images || []);
       setDescription(product.description || '');
       setFabric(product.fabricCare?.fabric || 'Pure Silk & Zari');
       setWashCare(product.fabricCare?.washCare || 'Dry Clean Only');
@@ -169,7 +132,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       setSaleDiscount('-25%');
       setInStockCount(15);
       setIsSoldOut(false);
-      setImages([CURATED_IMAGE_PRESETS[0].url]);
+      setImages([]);
       setDescription('Exquisite handcrafted garment crafted with premium stitching and fine detailing, available exclusively at The Western Store Kurukshetra.');
       setFabric('Pure Georgette & Heavy Zari Work');
       setWashCare('Dry Clean Only');
@@ -299,7 +262,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       isNew,
       budgetTier,
       description: description.trim(),
-      images: images.length > 0 ? images : [CURATED_IMAGE_PRESETS[0].url],
+      images: images,
       sizes: sizes.length > 0 ? sizes : ['Free Size'],
       colors: colors.length > 0 ? colors : [{ name: 'Deep Maroon', hex: '#721B29' }],
       fabricCare: {
@@ -619,9 +582,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                           src={img}
                           alt={`Product ${idx + 1}`}
                           className="w-full h-full object-cover object-top"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = CURATED_IMAGE_PRESETS[0].url;
-                          }}
                         />
                       </div>
 
@@ -644,20 +604,26 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                             <Star className="w-3.5 h-3.5 fill-[#721B29]" />
                           </button>
                         )}
-                        {images.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(idx)}
-                            className="p-1.5 bg-rose-600 text-white hover:bg-rose-700 rounded-full text-xs shadow-md cursor-pointer"
-                            title="Delete Image"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="p-1.5 bg-rose-600 text-white hover:bg-rose-700 rounded-full text-xs shadow-md cursor-pointer"
+                          title="Delete Image"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {images.length === 0 && (
+                  <div className="p-8 border-2 border-dashed border-[#D9CEBF] bg-[#FAF8F3] rounded-xl text-center text-[#8C8276] space-y-1">
+                    <ImageIcon className="w-8 h-8 mx-auto text-[#736B63]" />
+                    <p className="text-xs font-bold text-[#242120]">No product photos uploaded yet</p>
+                    <p className="text-[11px]">Upload a photo from your PC or phone via ImageKit, or paste an image URL link below.</p>
+                  </div>
+                )}
 
                 {/* Upload Image via ImageKit or Add by URL */}
                 <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#EAE4D9] space-y-4">
@@ -699,35 +665,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         <span>Add URL</span>
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                {/* Quick Presets */}
-                <div>
-                  <p className="text-[11px] font-semibold text-[#736B63] mb-2">
-                    One-Click Luxury Ethnic & Western Photo Presets:
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {CURATED_IMAGE_PRESETS.map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => handleAddImage(preset.url)}
-                        className="p-1.5 bg-white border border-[#EAE4D9] hover:border-[#721B29] rounded-lg text-left flex items-center gap-2 transition-all cursor-pointer group"
-                      >
-                        <img
-                          src={preset.url}
-                          alt={preset.label}
-                          className="w-8 h-8 rounded-md object-cover"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-medium text-[#242120] truncate group-hover:text-[#721B29]">
-                            {preset.label}
-                          </p>
-                          <span className="text-[9px] text-[#8C8276]">+ Add to gallery</span>
-                        </div>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>

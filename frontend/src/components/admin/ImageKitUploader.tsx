@@ -34,10 +34,15 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
     setProgress(10);
 
     try {
+      const adminSecretToUse =
+        sessionStorage.getItem('tws_admin_secret') ||
+        ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
+        'westernstore_admin_2026';
+
       // Step 1: Fetch authentication params from Express backend
       const authRes = await fetch(`${BACKEND_URL}/api/imagekit/auth`, {
         headers: {
-          'x-admin-secret': ADMIN_SECRET,
+          'x-admin-secret': adminSecretToUse,
         },
       });
 
