@@ -1,4 +1,4 @@
-import { Category, Product, HeroSlide, Testimonial, InstagramPost, Order, HomeSectionConfig, CollectionFilterConfig } from '../types';
+import { Category, Product, HeroSlide, Testimonial, InstagramPost, Order, HomeSectionConfig, CollectionFilterConfig, BudgetTileConfig, TrustFeatureConfig } from '../types';
 
 export const STORE_INFO = {
   name: 'The Western Store',
@@ -647,135 +647,7 @@ export const INITIAL_INSTAGRAM_POSTS: InstagramPost[] = [
   },
 ];
 
-export const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'order-1001',
-    orderNumber: 'TWS-2026-1001',
-    createdAt: '2026-09-08T10:30:00.000Z',
-    customerName: 'Mehak Singla',
-    phone: '9812345678',
-    email: 'mehak.singla@gmail.com',
-    address: 'H.No 412, Urban Estate, Sector 7',
-    pincode: '136118',
-    city: 'Kurukshetra',
-    state: 'Haryana',
-    notes: 'Please double check length for 5ft 4in',
-    items: [
-      {
-        productId: 'prod-1',
-        title: 'Pre-Stitched Royal Ruby Georgette Saree',
-        image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80',
-        size: 'Free Size (26-36)',
-        color: 'Royal Maroon',
-        quantity: 1,
-        price: 1899,
-      }
-    ],
-    subtotal: 1899,
-    shippingFee: 0,
-    total: 1899,
-    status: 'Shipped',
-    courierName: 'Delhivery Express',
-    trackingNumber: 'DEL1361189921',
-    trackingLink: 'https://delhivery.com/track/package/DEL1361189921',
-    shippedDate: '2026-09-08',
-  },
-  {
-    id: 'order-1002',
-    orderNumber: 'TWS-2026-1002',
-    createdAt: '2026-09-09T08:15:00.000Z',
-    customerName: 'Tanya Narang',
-    phone: '9416023451',
-    address: 'Near Geeta Dham, Pipli Road',
-    pincode: '136118',
-    city: 'Kurukshetra',
-    state: 'Haryana',
-    notes: 'Urgent for sister reception this Friday',
-    items: [
-      {
-        productId: 'prod-4',
-        title: 'Oasis Printed Ethnic Cord Set with Belt',
-        image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
-        size: 'M (38)',
-        color: 'Terracotta Rust',
-        quantity: 1,
-        price: 1299,
-      },
-      {
-        productId: 'prod-5',
-        title: 'Jaipuri Hand-Blocked Anarkali Kurti',
-        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80',
-        size: 'M (38)',
-        color: 'Indigo Blue',
-        quantity: 1,
-        price: 849,
-      }
-    ],
-    subtotal: 2148,
-    shippingFee: 0,
-    total: 2148,
-    status: 'Confirmed',
-    courierName: 'Blue Dart Surface',
-    trackingNumber: '',
-    trackingLink: '',
-    shippedDate: '',
-  },
-  {
-    id: 'order-1003',
-    orderNumber: 'TWS-2026-1003',
-    createdAt: '2026-09-09T11:45:00.000Z',
-    customerName: 'Kritika Chawla',
-    phone: '9991200344',
-    address: 'Flat 302, Royal Palms, Model Town',
-    pincode: '136118',
-    city: 'Kurukshetra',
-    state: 'Haryana',
-    items: [
-      {
-        productId: 'prod-3',
-        title: 'Vintage Ivory Farshi Salwar Suit Set',
-        image: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=400&q=80',
-        size: 'L (40)',
-        color: 'Soft Ivory',
-        quantity: 1,
-        price: 1399,
-      }
-    ],
-    subtotal: 1399,
-    shippingFee: 0,
-    total: 1399,
-    status: 'Pending WhatsApp',
-  },
-  {
-    id: 'order-1004',
-    orderNumber: 'TWS-2026-1004',
-    createdAt: '2026-09-07T14:20:00.000Z',
-    customerName: 'Shreya Mittal',
-    phone: '9896011223',
-    address: 'Near Old Bus Stand, Shahabad Markanda',
-    pincode: '136135',
-    city: 'Kurukshetra',
-    state: 'Haryana',
-    items: [
-      {
-        productId: 'prod-2',
-        title: 'Gulmohar Banarasi Floral Brocade Lehenga Set',
-        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80',
-        size: 'Semi-Stitched (Up to 42 Bust)',
-        color: 'Champagne Gold',
-        quantity: 1,
-        price: 2699,
-      }
-    ],
-    subtotal: 2699,
-    shippingFee: 0,
-    total: 2699,
-    status: 'Delivered',
-    courierName: 'Delhivery Express',
-    trackingNumber: 'DEL992817265',
-    trackingLink: 'https://delhivery.com/track/package/DEL992817265',
-  },
-];
+export const INITIAL_ORDERS: Order[] = [];
 
 export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
   {
@@ -932,4 +804,64 @@ export const INITIAL_COLLECTION_FILTERS: CollectionFilterConfig = {
     { id: 'sort-4', label: 'Newest Arrivals First', value: 'newest', enabled: true },
   ],
 };
+
+export const INITIAL_BUDGET_TILES: BudgetTileConfig[] = [
+  {
+    tier: 'under_999',
+    title: 'Pocket Friendly Chic',
+    priceLabel: 'Under ₹999',
+    subtitle: 'Daily cotton kurtis, Korean crop tops & chic summer co-ords',
+    itemsPreview: '15+ styles available',
+    image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
+    badge: 'College & Daily Edit',
+  },
+  {
+    tier: 'under_1499',
+    title: 'Mid-Tier Elegance',
+    priceLabel: 'Under ₹1,499',
+    subtitle: 'Flowy anarkali suits, tiered dresses & vintage wide-leg jeans',
+    itemsPreview: '28+ styles available',
+    image: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80',
+    badge: 'Most Popular',
+  },
+  {
+    tier: 'under_1999',
+    title: 'Festive & Premium',
+    priceLabel: 'Under ₹1,999',
+    subtitle: 'Pre-stitched georgette sarees, fusion capes & embroidered sets',
+    itemsPreview: '22+ styles available',
+    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+    badge: 'Wedding Guest Favorite',
+  },
+  {
+    tier: 'under_2499',
+    title: 'Royal Celebration',
+    priceLabel: 'Under ₹2,499',
+    subtitle: 'Heavy embroidered organza suits, bridal co-ords & festive drapes',
+    itemsPreview: '18+ styles available',
+    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+    badge: 'Grand Festive Edit',
+  },
+];
+
+export const INITIAL_TRUST_FEATURES: TrustFeatureConfig[] = [
+  {
+    id: 'tf-1',
+    title: 'Worldwide Shipping',
+    description: 'Prompt dispatch across India and overseas. Express shipping available right from our Kurukshetra boutique.',
+    iconType: 'globe',
+  },
+  {
+    id: 'tf-2',
+    title: 'Quality Assured',
+    description: '3-point quality inspection prior to dispatch. Final sale under our strict No Exchange & No Return Policy.',
+    iconType: 'shield',
+  },
+  {
+    id: 'tf-3',
+    title: 'WhatsApp Support',
+    description: 'Connect directly with store stylists on WhatsApp for live trial videos & sizing advice.',
+    iconType: 'whatsapp',
+  },
+];
 

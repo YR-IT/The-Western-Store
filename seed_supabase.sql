@@ -7,9 +7,7 @@
 INSERT INTO public.categories (id, name, slug, subtitle, image)
 VALUES
   ('cat-ethnic', 'Ethnic Wear', 'ethnic-wear', 'Royal Banarasi sarees, lehengas & festive edits', 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'),
-  ('cat-western', 'Western Wear', 'western-wear', 'Chic blazers, contemporary tops & denim edit', 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80'),
-  ('cat-fusion', 'Indo-Western Fusion', 'indo-western-fusion', 'Modern crop tops, cape sets & dhoti drapes', 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80'),
-  ('cat-acc', 'Accessories', 'accessories', 'Handcrafted potlis, dupattas & statement jewelry', 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80')
+  ('cat-western', 'Western Wear', 'western-wear', 'Chic blazers, contemporary tops & denim edit', 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   subtitle = EXCLUDED.subtitle,
@@ -71,39 +69,6 @@ INSERT INTO public.products (
     'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1000&q=80'
   ],
   4.7, 19
-),
-(
-  'prod-4',
-  'Draped Indo-Western Crop & Dhoti Set',
-  'draped-indo-western-crop-dhoti-set',
-  'Indo-Western Fusion',
-  1699, 2199, '-22%', true,
-  true, true, false, 6, 'under_1999',
-  'Modern fusion ensemble featuring a hand-sequined crop top, floor-length sheer cape jacket, and pleated satin dhoti pants.',
-  '{"fabric": "Georgette & Satin Silk", "washCare": "Dry Clean Only", "fit": "Tailored Crop & Pleated Bottom", "occasion": "Mehendi & Cocktail Evenings"}'::jsonb,
-  ARRAY['S', 'M', 'L'],
-  '[{"name": "Blush Rose", "hex": "#DE6FA1"}, {"name": "Champagne Gold", "hex": "#C5A059"}]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1000&q=80',
-    'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1000&q=80'
-  ],
-  5.0, 42
-),
-(
-  'prod-5',
-  'Handcrafted Zari Silk Potli Bag',
-  'handcrafted-zari-silk-potli-bag',
-  'Accessories',
-  899, 1199, '-25%', true,
-  false, false, false, 20, 'under_999',
-  'Bespoke embroidered potli pouch featuring antique zari tassel drawstrings and pearl wristlet chain. Perfect accompaniment for festive ethnic drapes.',
-  '{"fabric": "Raw Silk & Pearl Work", "washCare": "Wipe Clean Only", "fit": "One Size Drawstring Pouch", "occasion": "Weddings & Festive Accessories"}'::jsonb,
-  ARRAY['One Size'],
-  '[{"name": "Deep Ruby Maroon", "hex": "#721B29"}, {"name": "Antique Gold", "hex": "#D4AF37"}]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=1000&q=80'
-  ],
-  4.9, 15
 )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,

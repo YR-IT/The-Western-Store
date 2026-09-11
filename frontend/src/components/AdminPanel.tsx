@@ -118,6 +118,7 @@ export const AdminPanel: React.FC = () => {
     orders,
     updateOrderStatus,
     updateOrderTracking,
+    deleteOrder,
     products,
     updateProduct,
     addProduct,
@@ -772,6 +773,20 @@ export const AdminPanel: React.FC = () => {
                           <Truck className="w-3 h-3 text-[#721B29]" />
                           <span>Tracking</span>
                         </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete order #${order.orderNumber}?`)) {
+                              deleteOrder(order.id);
+                              showToast(`Deleted order #${order.orderNumber}`);
+                            }
+                          }}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xs transition-colors cursor-pointer"
+                          title="Delete Order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1040,7 +1055,7 @@ export const AdminPanel: React.FC = () => {
                                     <span>{hasTracking ? 'Edit Tracking' : 'Add Tracking'}</span>
                                   </button>
 
-                                  <a
+                                   <a
                                     href={`https://wa.me/91${order.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(order.customerName)}%2C%20greetings%20from%20The%20Western%20Store%20Kurukshetra!%20Regarding%20your%20order%20%23${order.orderNumber}...`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -1050,6 +1065,20 @@ export const AdminPanel: React.FC = () => {
                                     <Phone className="w-3 h-3" />
                                     <span>WhatsApp</span>
                                   </a>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to delete order #${order.orderNumber}?`)) {
+                                        deleteOrder(order.id);
+                                        showToast(`Deleted order #${order.orderNumber}`);
+                                      }
+                                    }}
+                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xs transition-colors cursor-pointer"
+                                    title="Delete Order"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>

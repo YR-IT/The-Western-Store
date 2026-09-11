@@ -54,7 +54,14 @@ const BUDGET_TILES: BudgetTile[] = [
 ];
 
 export const ShopByBudget: React.FC = () => {
-  const { navigateToBudget } = useStore();
+  const { navigateToBudget, budgetTiles, homeSections } = useStore();
+
+  const sec = homeSections.find((s) => s.id === 'budget-edit' || s.type === 'budget-edit');
+  const tagline = sec?.tagline || 'Smart Shopping';
+  const title = sec?.title || 'Shop By Budget';
+  const subtitle =
+    sec?.subtitle ||
+    'Effortless style crafted for every milestone, whether you’re refreshing your everyday rotation or dressing up for a sangeet.';
 
   return (
     <motion.section
@@ -70,19 +77,19 @@ export const ShopByBudget: React.FC = () => {
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 px-2">
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-[#B8860B]">
             <Tag className="w-3.5 h-3.5" />
-            <span>Smart Shopping</span>
+            <span>{tagline}</span>
           </span>
           <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] mt-1.5 tracking-tight">
-            Shop By Budget
+            {title}
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-[#736B63] font-normal">
-            Effortless style crafted for every milestone, whether you’re refreshing your everyday rotation or dressing up for a sangeet.
+            {subtitle}
           </p>
         </div>
 
         {/* 4 Budget Tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
-          {BUDGET_TILES.map((tile, idx) => (
+          {budgetTiles.map((tile, idx) => (
             <motion.div
               key={tile.tier}
               id={`budget-tile-${tile.tier}`}

@@ -117,10 +117,12 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
+    const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
+
     const row = {
       id: order.id,
       order_number: order.orderNumber,
-      user_id: userId || null,
+      user_id: isUuid ? userId : null,
       customer_name: order.customerName,
       customer_phone: order.phone,
       customer_email: order.email || order.userEmail || null,
@@ -141,12 +143,72 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
 
     const { error } = await supabase.from('orders').upsert(row);
     if (error) {
-      console.warn('[Supabase] Order save failed:', error.message);
+      console.warn('[Supabase] Order save failed:', error.message, error.details);
       return false;
     }
     return true;
   } catch (err) {
     console.error('[Supabase] Save order exception:', err);
+    return false;
+  }
+}
+
+export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
+  if (!isSupabaseConfigured() || !supabase) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase] Fetch orders failed:', error.message);
+      return null;
+    }
+
+    return (data || [])
+      .filter((row: any) => row.order_number && !row.order_number.startsWith('TWS-2026-100') && row.id !== 'order-1002')
+      .map((row: any) => ({
+        id: row.id,
+        orderNumber: row.order_number || row.id,
+        createdAt: row.created_at || new Date().toISOString(),
+        customerName: row.customer_name || 'Customer',
+        phone: row.customer_phone || '',
+        email: row.customer_email || undefined,
+        address: row.shipping_address?.address || '',
+        pincode: row.shipping_address?.pincode || '',
+        city: row.shipping_address?.city || '',
+        state: row.shipping_address?.state || '',
+        notes: row.shipping_address?.notes || undefined,
+        items: row.items || [],
+        subtotal: row.total_amount || 0,
+        shippingFee: 0,
+        total: row.total_amount || 0,
+        status: row.status || 'Pending WhatsApp',
+        courierName: row.courier_name || undefined,
+        trackingNumber: row.tracking_number || undefined,
+        trackingLink: row.tracking_number ? `https://delhivery.com/track/package/${row.tracking_number}` : undefined,
+        userId: row.user_id || undefined,
+      }));
+  } catch (err) {
+    console.error('[Supabase] Fetch orders exception:', err);
+    return null;
+  }
+}
+
+export async function deleteOrderFromSupabase(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) {
+      console.warn('[Supabase] Delete order failed:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Delete order exception:', err);
     return false;
   }
 }

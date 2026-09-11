@@ -2,10 +2,17 @@
 -- THE WESTERN STORE KURUKSHETRA — SUPABASE PRODUCTION SQL DATABASE SCHEMA
 -- ==============================================================================
 -- Paste this entire script into your Supabase Dashboard → SQL Editor → Run.
--- It creates all required tables, foreign keys, triggers, and Row Level Security (RLS) policies.
 
 -- 1. EXTENSIONS & SETUP
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Safe cleanup for re-running in Supabase SQL Editor
+DROP TABLE IF EXISTS public.orders CASCADE;
+DROP TABLE IF EXISTS public.wishlist_items CASCADE;
+DROP TABLE IF EXISTS public.cart_items CASCADE;
+DROP TABLE IF EXISTS public.products CASCADE;
+DROP TABLE IF EXISTS public.categories CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
 -- 2. PROFILES TABLE (Extends Supabase Auth users)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -47,7 +54,7 @@ CREATE TRIGGER on_auth_user_created
 -- 3. CATEGORIES TABLE
 CREATE TABLE IF NOT EXISTS public.categories (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT UNIQUE NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   subtitle TEXT,
   image TEXT NOT NULL,
@@ -59,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   slug TEXT UNIQUE,
-  category TEXT NOT NULL REFERENCES public.categories(name) ON UPDATE CASCADE,
+  category TEXT NOT NULL,
   price NUMERIC NOT NULL,
   original_price NUMERIC,
   sale_discount TEXT,
@@ -113,8 +120,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_email TEXT,
   shipping_address JSONB NOT NULL,
   total_amount NUMERIC NOT NULL,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'shipped', 'delivered', 'cancelled')),
-  payment_method TEXT DEFAULT 'cod',
+  status TEXT DEFAULT 'Pending WhatsApp',
+  payment_method TEXT DEFAULT 'whatsapp_cod',
   items JSONB NOT NULL,
   tracking_number TEXT,
   courier_name TEXT,
@@ -134,12 +141,16 @@ ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Categories & Products: Public Read, Authenticated Admin Write
+-- Categories & Products: Public Read, Authenticated Write
 CREATE POLICY "Public Categories Read" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Admin Categories All" ON public.categories FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Public Categories Insert" ON public.categories FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Categories Update" ON public.categories FOR UPDATE USING (true);
+CREATE POLICY "Public Categories Delete" ON public.categories FOR DELETE USING (true);
 
 CREATE POLICY "Public Products Read" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Admin Products All" ON public.products FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Public Products Insert" ON public.products FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Products Update" ON public.products FOR UPDATE USING (true);
+CREATE POLICY "Public Products Delete" ON public.products FOR DELETE USING (true);
 
 -- Profiles: Users read/write their own profile
 CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -156,7 +167,30 @@ CREATE POLICY "Users manage own wishlist select" ON public.wishlist_items FOR SE
 CREATE POLICY "Users manage own wishlist insert" ON public.wishlist_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users manage own wishlist delete" ON public.wishlist_items FOR DELETE USING (auth.uid() = user_id);
 
--- Orders: Users view own orders, Anyone insert (checkout), Admin update/read all
+-- Orders: Public Insert & Read for storefront checkout & order tracking
 CREATE POLICY "Public insert orders" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users select own orders" ON public.orders FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
-CREATE POLICY "Admin manage all orders" ON public.orders FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Public select orders" ON public.orders FOR SELECT USING (true);
+CREATE POLICY "Public update orders" ON public.orders FOR UPDATE USING (true);
+
+-- Enable Realtime broadcasting for live order tracking & catalog updates
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'products'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'categories'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.categories;
+  END IF;
+END $$;

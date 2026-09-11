@@ -150,6 +150,23 @@ export interface InstagramPost {
   productTag?: string;
 }
 
+export interface BudgetTileConfig {
+  tier: BudgetTier;
+  title: string;
+  priceLabel: string;
+  subtitle: string;
+  itemsPreview: string;
+  image: string;
+  badge: string;
+}
+
+export interface TrustFeatureConfig {
+  id: string;
+  title: string;
+  description: string;
+  iconType: 'globe' | 'shield' | 'whatsapp';
+}
+
 export type HomeSectionType =
   | 'hero'
   | 'categories'

@@ -2,9 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   fetchProductsFromSupabase,
   fetchCategoriesFromSupabase,
+  fetchOrdersFromSupabase,
   syncCartToSupabase,
   syncWishlistToSupabase,
   saveOrderToSupabase,
+  deleteOrderFromSupabase,
   upsertProductToSupabase,
   deleteProductFromSupabase,
   upsertCategoryToSupabase,
@@ -24,6 +26,10 @@ import {
   UserAccount,
   HomeSectionConfig,
   CollectionFilterConfig,
+  BudgetTileConfig,
+  TrustFeatureConfig,
+  Testimonial,
+  InstagramPost,
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -32,6 +38,10 @@ import {
   INITIAL_HERO_SLIDES,
   INITIAL_HOME_SECTIONS,
   INITIAL_COLLECTION_FILTERS,
+  INITIAL_BUDGET_TILES,
+  INITIAL_TRUST_FEATURES,
+  INITIAL_TESTIMONIALS,
+  INITIAL_INSTAGRAM_POSTS,
   STORE_INFO,
 } from '../data/mockData';
 
@@ -64,8 +74,34 @@ interface StoreContextType {
   products: Product[];
   categories: Category[];
   heroSlides: HeroSlide[];
+  updateHeroSlide: (id: string, updates: Partial<HeroSlide>) => void;
+  addHeroSlide: (slide: Omit<HeroSlide, 'id'>) => void;
+  deleteHeroSlide: (id: string) => void;
+  resetHeroSlides: () => void;
+
   announcementText: string;
   setAnnouncementText: (text: string) => void;
+
+  budgetTiles: BudgetTileConfig[];
+  updateBudgetTile: (tier: BudgetTier, updates: Partial<BudgetTileConfig>) => void;
+  resetBudgetTiles: () => void;
+
+  trustFeatures: TrustFeatureConfig[];
+  updateTrustFeature: (id: string, updates: Partial<TrustFeatureConfig>) => void;
+  resetTrustFeatures: () => void;
+
+  testimonials: Testimonial[];
+  updateTestimonial: (id: string, updates: Partial<Testimonial>) => void;
+  addTestimonial: (testimonial: Omit<Testimonial, 'id' | 'date'>) => void;
+  deleteTestimonial: (id: string) => void;
+  resetTestimonials: () => void;
+
+  instagramPosts: InstagramPost[];
+  updateInstagramPost: (id: string, updates: Partial<InstagramPost>) => void;
+  addInstagramPost: (post: Omit<InstagramPost, 'id'>) => void;
+  deleteInstagramPost: (id: string) => void;
+  instagramHandle: string;
+  setInstagramHandle: (handle: string) => void;
 
   // Dynamic Homepage Sections & Photos
   homeSections: HomeSectionConfig[];
@@ -127,6 +163,7 @@ interface StoreContextType {
   orders: Order[];
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateOrderTracking: (orderId: string, tracking: OrderTrackingUpdate) => void;
+  deleteOrder: (id: string) => void;
   submitWhatsAppOrder: (formData: CheckoutFormData) => { order: Order; waUrl: string };
 
   // Admin Catalog Management
@@ -134,6 +171,7 @@ interface StoreContextType {
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   toggleStockStatus: (productId: string) => void;
+  resetProductsToDefault: () => void;
 
   // Category Management
   addCategory: (category: Omit<Category, 'id'>) => void;
@@ -167,13 +205,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((p: Product) => {
-            const cat = p.category;
-            if (['Ethnic Wear', 'Stitched Sarees', 'Lehenga', 'Suits', 'Kurti', 'Ethnic & Western Wear'].includes(cat)) {
-              return { ...p, category: 'Ethnic Wear' };
-            }
-            return { ...p, category: 'Western Wear' };
-          });
+          return parsed;
         }
       } catch {}
     }
@@ -193,9 +225,67 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return INITIAL_CATEGORIES;
   });
-  const [heroSlides] = useState<HeroSlide[]>(INITIAL_HERO_SLIDES);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
+    const saved = localStorage.getItem('tws_hero_slides');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_HERO_SLIDES;
+  });
+
   const [announcementText, setAnnouncementText] = useState<string>(() => {
     return localStorage.getItem('tws_announcement') || STORE_INFO.announcement;
+  });
+
+  const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(() => {
+    const saved = localStorage.getItem('tws_budget_tiles');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_BUDGET_TILES;
+  });
+
+  const [trustFeatures, setTrustFeatures] = useState<TrustFeatureConfig[]>(() => {
+    const saved = localStorage.getItem('tws_trust_features');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_TRUST_FEATURES;
+  });
+
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
+    const saved = localStorage.getItem('tws_customer_reviews');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_TESTIMONIALS;
+  });
+
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
+    const saved = localStorage.getItem('tws_instagram_posts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_INSTAGRAM_POSTS;
+  });
+
+  const [instagramHandle, setInstagramHandle] = useState<string>(() => {
+    return localStorage.getItem('tws_instagram_handle') || STORE_INFO.instagram;
   });
 
   // Home Sections State
@@ -233,8 +323,40 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   useEffect(() => {
+    localStorage.setItem('tws_hero_slides', JSON.stringify(heroSlides));
+  }, [heroSlides]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_announcement', announcementText);
+  }, [announcementText]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_budget_tiles', JSON.stringify(budgetTiles));
+  }, [budgetTiles]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_trust_features', JSON.stringify(trustFeatures));
+  }, [trustFeatures]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_customer_reviews', JSON.stringify(testimonials));
+  }, [testimonials]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_instagram_posts', JSON.stringify(instagramPosts));
+  }, [instagramPosts]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_instagram_handle', instagramHandle);
+  }, [instagramHandle]);
+
+  useEffect(() => {
     localStorage.setItem('tws_home_sections', JSON.stringify(homeSections));
   }, [homeSections]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
+  }, [collectionFilters]);
 
   useEffect(() => {
     localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
@@ -292,12 +414,86 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('tws_collection_filters');
   };
 
+  const updateHeroSlide = (id: string, updates: Partial<HeroSlide>) => {
+    setHeroSlides((prev) => prev.map((slide) => (slide.id === id ? { ...slide, ...updates } : slide)));
+  };
+
+  const addHeroSlide = (slide: Omit<HeroSlide, 'id'>) => {
+    const newSlide: HeroSlide = { ...slide, id: `slide_${Date.now()}` };
+    setHeroSlides((prev) => [...prev, newSlide]);
+  };
+
+  const deleteHeroSlide = (id: string) => {
+    setHeroSlides((prev) => prev.filter((slide) => slide.id !== id));
+  };
+
+  const resetHeroSlides = () => {
+    setHeroSlides(INITIAL_HERO_SLIDES);
+    localStorage.removeItem('tws_hero_slides');
+  };
+
+  const updateBudgetTile = (tier: BudgetTier, updates: Partial<BudgetTileConfig>) => {
+    setBudgetTiles((prev) => prev.map((bt) => (bt.tier === tier ? { ...bt, ...updates } : bt)));
+  };
+
+  const resetBudgetTiles = () => {
+    setBudgetTiles(INITIAL_BUDGET_TILES);
+    localStorage.removeItem('tws_budget_tiles');
+  };
+
+  const updateTrustFeature = (id: string, updates: Partial<TrustFeatureConfig>) => {
+    setTrustFeatures((prev) => prev.map((tf) => (tf.id === id ? { ...tf, ...updates } : tf)));
+  };
+
+  const resetTrustFeatures = () => {
+    setTrustFeatures(INITIAL_TRUST_FEATURES);
+    localStorage.removeItem('tws_trust_features');
+  };
+
+  const updateTestimonial = (id: string, updates: Partial<Testimonial>) => {
+    setTestimonials((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+  };
+
+  const addTestimonial = (t: Omit<Testimonial, 'id' | 'date'>) => {
+    const newReview: Testimonial = {
+      ...t,
+      id: `rev_${Date.now()}`,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    };
+    setTestimonials((prev) => [newReview, ...prev]);
+  };
+
+  const deleteTestimonial = (id: string) => {
+    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const resetTestimonials = () => {
+    setTestimonials(INITIAL_TESTIMONIALS);
+    localStorage.removeItem('tws_customer_reviews');
+  };
+
+  const updateInstagramPost = (id: string, updates: Partial<InstagramPost>) => {
+    setInstagramPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
+  const addInstagramPost = (post: Omit<InstagramPost, 'id'>) => {
+    const newPost: InstagramPost = { ...post, id: `ig_${Date.now()}` };
+    setInstagramPosts((prev) => [...prev, newPost]);
+  };
+
+  const deleteInstagramPost = (id: string) => {
+    setInstagramPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
   // Orders (Starts completely empty for live production use)
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem('tws_orders');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((o: Order) => o && !o.id?.startsWith('order-100') && !o.orderNumber?.startsWith('TWS-2026-100'));
+        }
       } catch {
         return [];
       }
@@ -367,20 +563,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
   // Initial Fetch from Supabase (if configured)
+  // Initial Fetch & Realtime Subscriptions from Supabase (if configured)
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
     fetchProductsFromSupabase().then((remoteProducts) => {
-      if (remoteProducts && remoteProducts.length > 0) {
+      if (remoteProducts !== null) {
         setProducts(remoteProducts);
       }
     });
 
     fetchCategoriesFromSupabase().then((remoteCategories) => {
-      if (remoteCategories && remoteCategories.length > 0) {
+      if (remoteCategories !== null) {
         setCategories(remoteCategories);
       }
     });
+
+    fetchOrdersFromSupabase().then((remoteOrders) => {
+      if (remoteOrders !== null) {
+        setOrders((prev) => {
+          const remoteIds = new Set(remoteOrders.map((o) => o.id));
+          const localOnly = prev.filter((o) => o && o.id && !remoteIds.has(o.id));
+          return [...localOnly, ...remoteOrders];
+        });
+      }
+    });
+
+    if (supabase) {
+      const ordersChannel = supabase
+        .channel('public-orders-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          () => {
+            fetchOrdersFromSupabase().then((remoteOrders) => {
+              if (remoteOrders !== null) {
+                setOrders((prev) => {
+                  const remoteIds = new Set(remoteOrders.map((o) => o.id));
+                  const localOnly = prev.filter((o) => o && o.id && !remoteIds.has(o.id));
+                  return [...localOnly, ...remoteOrders];
+                });
+              }
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(ordersChannel);
+      };
+    }
   }, []);
 
   // Sync state to localStorage & Supabase
@@ -688,6 +920,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  const deleteOrder = (id: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    deleteOrderFromSupabase(id).catch((err) => console.warn('[Supabase] Delete order notice:', err));
+  };
+
   const submitWhatsAppOrder = (formData: CheckoutFormData) => {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const orderNumber = `TWS-2026-${randomSuffix}`;
@@ -878,6 +1115,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('tws_categories');
   };
 
+  const resetProductsToDefault = () => {
+    setProducts(INITIAL_PRODUCTS);
+    localStorage.removeItem('tws_products_v4');
+    localStorage.removeItem('tws_products');
+  };
+
   const openOrderTracking = (orderNumber?: string, phone?: string) => {
     if (orderNumber || phone) {
       setTrackingPrefill({ orderNumber: orderNumber || '', phone: phone || '' });
@@ -905,8 +1148,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         products,
         categories,
         heroSlides,
+        updateHeroSlide,
+        addHeroSlide,
+        deleteHeroSlide,
+        resetHeroSlides,
         announcementText,
         setAnnouncementText,
+        budgetTiles,
+        updateBudgetTile,
+        resetBudgetTiles,
+        trustFeatures,
+        updateTrustFeature,
+        resetTrustFeatures,
+        testimonials,
+        updateTestimonial,
+        addTestimonial,
+        deleteTestimonial,
+        resetTestimonials,
+        instagramPosts,
+        updateInstagramPost,
+        addInstagramPost,
+        deleteInstagramPost,
+        instagramHandle,
+        setInstagramHandle,
         homeSections,
         updateHomeSection,
         addHomeSection,
@@ -955,11 +1219,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orders,
         updateOrderStatus,
         updateOrderTracking,
+        deleteOrder,
         submitWhatsAppOrder,
         addProduct,
         updateProduct,
         deleteProduct,
         toggleStockStatus,
+        resetProductsToDefault,
         addCategory,
         updateCategory,
         deleteCategory,

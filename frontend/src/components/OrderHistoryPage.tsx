@@ -38,14 +38,13 @@ export const OrderHistoryPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  // Filter orders for the current user or show demo customer orders
+  // Filter orders strictly for the current logged-in user
   const userOrders = orders.filter((o) => {
     if (!currentUser) return false;
-    if (o.userId === currentUser.id) return true;
+    if (o.userId && o.userId === currentUser.id) return true;
     if (currentUser.email && o.email?.toLowerCase() === currentUser.email.toLowerCase()) return true;
     if (currentUser.email && o.userEmail?.toLowerCase() === currentUser.email.toLowerCase()) return true;
-    // Fallback: if logged in user has no custom orders yet, include sample orders for smooth demo
-    return true;
+    return false;
   });
 
   // Apply tab and text search
@@ -179,15 +178,15 @@ export const OrderHistoryPage: React.FC = () => {
               Sign In to View Your Order History
             </h2>
             <p className="text-xs sm:text-sm text-[#736B63] mb-6 leading-relaxed max-w-md mx-auto">
-              Please sign in with your Google account to associate past orders, access live courier tracking links, and manage your boutique profile.
+              Please sign in to your account to associate past orders, access live courier tracking links, and manage your profile.
             </p>
             <button
               type="button"
-              onClick={() => openAuthModal('customer', 'Sign in with Google to view your order history.')}
+              onClick={() => openAuthModal('customer', 'Sign in to view your order history.')}
               className="px-6 py-3 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 inline-flex items-center gap-2"
             >
               <User className="w-4 h-4" />
-              <span>Continue with Google</span>
+              <span>Sign In / Register</span>
             </button>
           </motion.div>
         ) : (

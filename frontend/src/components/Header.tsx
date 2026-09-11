@@ -36,6 +36,7 @@ export const Header: React.FC = () => {
     setIsCartDrawerOpen,
     wishlist,
     setIsSearchOpen,
+    categories,
     setAdminActiveTab,
     currentUser,
     openAuthModal,
@@ -44,7 +45,7 @@ export const Header: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | 'boutique' | 'budget' | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | 'budget' | null>(null);
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const dropdownNavRef = useRef<HTMLElement>(null);
@@ -199,7 +200,7 @@ export const Header: React.FC = () => {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <UserCheck className="w-3 h-3" />
-                            {currentUser.authProvider === 'google' ? 'Google Account' : 'Admin'}
+                            {currentUser.isAdmin ? 'Admin' : 'Customer'}
                           </span>
                         </div>
                         <p className="text-xs font-bold text-[#242120] truncate">{currentUser.name}</p>
@@ -212,13 +213,13 @@ export const Header: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            openAuthModal('customer', 'Sign in with Google to associate your cart and order history.');
+                            openAuthModal('customer', 'Sign in to associate your cart and order history.');
                             setAccountMenuOpen(false);
                           }}
                           className="mt-2 w-full py-1.5 px-3 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#52131D] flex items-center justify-center gap-2 shadow-xs"
                         >
                           <User className="w-3.5 h-3.5" />
-                          <span>Sign in with Google</span>
+                          <span>Sign In / Register</span>
                         </button>
                       </div>
                     )}
@@ -349,33 +350,22 @@ export const Header: React.FC = () => {
               Home
             </button>
 
-            {/* Link 1: Ethnic Wear */}
-            <button
-              id="nav-ethnic-wear"
-              type="button"
-              onClick={() => handleCategoryClick('Ethnic Wear')}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
-                view === 'plp' && selectedCategory === 'Ethnic Wear'
-                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-              }`}
-            >
-              Ethnic Wear
-            </button>
-
-            {/* Link 2: Western Wear */}
-            <button
-              id="nav-western-wear"
-              type="button"
-              onClick={() => handleCategoryClick('Western Wear')}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
-                view === 'plp' && selectedCategory === 'Western Wear'
-                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-              }`}
-            >
-              Western Wear
-            </button>
+            {/* Dynamic Category Navigation Links */}
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                id={`nav-cat-${cat.slug}`}
+                type="button"
+                onClick={() => handleCategoryClick(cat.name)}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
+                  view === 'plp' && selectedCategory === cat.name
+                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
 
             {/* Link 3: All Collections */}
             <button
@@ -486,104 +476,6 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Dropdown 4: Boutique & Services */}
-            <div
-              className="relative"
-              onMouseEnter={() => setActiveDropdown('boutique')}
-              onMouseLeave={() => setActiveDropdown(null)}
-            >
-              <button
-                id="nav-dropdown-boutique"
-                type="button"
-                onClick={() => setActiveDropdown(activeDropdown === 'boutique' ? null : 'boutique')}
-                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1.5 ${
-                  activeDropdown === 'boutique' || ['track-order', 'admin'].includes(view)
-                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-                }`}
-              >
-                <span>Boutique & Services</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'boutique' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
-              </button>
-
-              {/* Boutique Dropdown Menu */}
-              {activeDropdown === 'boutique' && (
-                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Customer Services & Store</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setView('track-order');
-                      setActiveDropdown(null);
-                    }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-[#242120] group-hover:text-[#721B29] flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-[#721B29]" />
-                        <span>Live Order Tracking</span>
-                      </p>
-                      <p className="text-[10px] text-[#736B63]">Check status with order ID or phone</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <a
-                    href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store!%20I%20need%20styling%20assistance.`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-[#242120] group-hover:text-emerald-800 flex items-center gap-1.5">
-                        <MessageCircle className="w-3.5 h-3.5 text-emerald-700" />
-                        <span>WhatsApp Boutique Support</span>
-                      </p>
-                      <p className="text-[10px] text-[#736B63]">Video proof & size consultation</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('testimonials-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      setActiveDropdown(null);
-                    }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-[#242120] group-hover:text-[#721B29] flex items-center gap-1.5">
-                        <Heart className="w-3.5 h-3.5 text-[#721B29]" />
-                        <span>Patron Reviews & Stories</span>
-                      </p>
-                      <p className="text-[10px] text-[#736B63]">Real customer feedback from Haryana</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (currentUser?.isAdmin) {
-                          setView('admin');
-                          setAdminActiveTab('dashboard');
-                        } else {
-                          openAuthModal('admin', 'Boutique Admin Authentication Required');
-                        }
-                        setActiveDropdown(null);
-                      }}
-                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#721B29]" />
-                      <span>Boutique Manager (Admin)</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </nav>
         </div>
       </div>
@@ -645,7 +537,7 @@ export const Header: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        openAuthModal('customer', 'Sign in with Google');
+                        openAuthModal('customer', 'Sign in to access your account');
                         setMobileMenuOpen(false);
                       }}
                       className="px-2.5 py-1 bg-[#721B29] text-white text-xs font-bold rounded-xs shadow-xs"
@@ -744,14 +636,14 @@ export const Header: React.FC = () => {
                 <div className="px-4 py-1.5 text-xs font-bold text-[#721B29] uppercase tracking-wider bg-[#F3EFE6]/60 border-y border-[#EAE4D9]">
                   Explore Categories
                 </div>
-                {['Ethnic Wear', 'Western Wear'].map((cat) => (
+                {categories.map((cat) => (
                   <button
-                    key={cat}
+                    key={cat.id}
                     type="button"
-                    onClick={() => handleCategoryClick(cat)}
+                    onClick={() => handleCategoryClick(cat.name)}
                     className="w-full text-left px-6 py-3 text-xs font-bold text-[#242120] hover:bg-[#F3EFE6] hover:text-[#721B29] flex items-center justify-between border-b border-[#F4EFE6]/60 transition-colors"
                   >
-                    <span>{cat}</span>
+                    <span>{cat.name}</span>
                     <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D]" />
                   </button>
                 ))}

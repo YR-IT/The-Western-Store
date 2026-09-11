@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { INITIAL_TESTIMONIALS } from '../data/mockData';
 import { Testimonial } from '../types';
 import { useStore } from '../context/StoreContext';
 import {
@@ -23,18 +22,13 @@ import {
 const FILTER_TAGS = ['All', 'Wedding Drape', 'Ethnic Elegance', 'Western Wear', 'Campus Style', 'Boutique Finish', 'Budget Edit'];
 
 export const Testimonials: React.FC = () => {
-  const { navigateToProduct } = useStore();
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
-    const saved = localStorage.getItem('tws_customer_reviews');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_TESTIMONIALS;
-      }
-    }
-    return INITIAL_TESTIMONIALS;
-  });
+  const { navigateToProduct, testimonials, addTestimonial, homeSections } = useStore();
+
+  const sec = homeSections.find((s) => s.id === 'testimonials' || s.type === 'testimonials');
+  const tagline = sec?.tagline || 'Loved By 10,000+ Women';
+  const title = sec?.title || 'Customer Stories';
+  const subtitle =
+    sec?.subtitle || 'Real reviews from our boutique shoppers across Haryana & beyond.';
 
   const [activeTag, setActiveTag] = useState<string>('All');
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -126,26 +120,16 @@ export const Testimonials: React.FC = () => {
     e.preventDefault();
     if (!newReview.name.trim() || !newReview.comment.trim()) return;
 
-    const created: Testimonial = {
-      id: `t-user-${Date.now()}`,
+    addTestimonial({
       name: newReview.name.trim(),
       location: newReview.location.trim() || 'Kurukshetra, Haryana',
       rating: newReview.rating,
       comment: newReview.comment.trim(),
-      date: 'Just now',
       outfitPurchased: newReview.outfitPurchased.trim() || 'Custom Boutique Outfit',
       verified: true,
       helpfulCount: 1,
       tag: newReview.tag,
-    };
-
-    const updated = [created, ...testimonials];
-    setTestimonials(updated);
-    try {
-      localStorage.setItem('tws_customer_reviews', JSON.stringify(updated));
-    } catch (err) {
-      console.error(err);
-    }
+    });
 
     setIsWriteModalOpen(false);
     setNewReview({
@@ -176,13 +160,13 @@ export const Testimonials: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 text-[#B8860B] text-xs font-semibold uppercase tracking-widest mb-2">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Verified Patron Reviews</span>
+              <span>{tagline}</span>
             </div>
             <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] tracking-tight">
-              Words From Our Patrons
+              {title}
             </h2>
             <p className="mt-1.5 text-xs sm:text-sm text-[#736B63] font-light max-w-xl">
-              Authentic styling experiences from women who wear The Western Store for family weddings, college days, and festive gatherings.
+              {subtitle}
             </p>
           </div>
 

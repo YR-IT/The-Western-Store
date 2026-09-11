@@ -24,7 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       viewport={{ once: true }}
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
-      className="group relative flex flex-col bg-white rounded-lg overflow-hidden border border-[#EAE4D9]/80 hover:border-[#D0C5B4] hover:shadow-md transition-all duration-300"
+      className="group relative flex flex-col h-full bg-white rounded-lg overflow-hidden border border-[#EAE4D9]/80 hover:border-[#D0C5B4] hover:shadow-md transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

@@ -1,9 +1,18 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { INITIAL_INSTAGRAM_POSTS, STORE_INFO } from '../data/mockData';
+import { useStore } from '../context/StoreContext';
 import { Instagram, Heart, MessageCircle, ExternalLink } from 'lucide-react';
+import { STORE_INFO } from '../data/mockData';
 
 export const InstagramFeed: React.FC = () => {
+  const { instagramPosts, instagramHandle, homeSections } = useStore();
+
+  const sec = homeSections.find((s) => s.id === 'instagram' || s.type === 'instagram');
+  const tagline = sec?.tagline || instagramHandle;
+  const title = sec?.title || `Follow Us ${instagramHandle}`;
+  const subtitle =
+    sec?.subtitle || 'Tag us in your fits from Kurukshetra & beyond for a chance to be featured on our official grid.';
+
   return (
     <motion.section
       id="instagram-feed"
@@ -18,15 +27,15 @@ export const InstagramFeed: React.FC = () => {
         <div className="text-center max-w-xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 text-[#721B29] text-xs font-semibold uppercase tracking-widest mb-1.5">
             <Instagram className="w-4 h-4" />
-            <span>Join Our Style Diary</span>
+            <span>{tagline}</span>
           </div>
 
           <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] tracking-tight">
-            Follow Us {STORE_INFO.instagram}
+            {title}
           </h2>
 
           <p className="mt-2 text-xs sm:text-sm text-[#736B63] font-normal">
-            Tag us in your fits from Kurukshetra & beyond for a chance to be featured on our official grid.
+            {subtitle}
           </p>
 
           <a
@@ -43,7 +52,7 @@ export const InstagramFeed: React.FC = () => {
 
         {/* 6-Grid of tagged customer photos */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {INITIAL_INSTAGRAM_POSTS.map((post) => (
+          {instagramPosts.map((post) => (
             <a
               key={post.id}
               href={STORE_INFO.instagramUrl}
