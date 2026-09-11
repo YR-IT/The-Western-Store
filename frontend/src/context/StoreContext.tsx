@@ -5,6 +5,10 @@ import {
   syncCartToSupabase,
   syncWishlistToSupabase,
   saveOrderToSupabase,
+  upsertProductToSupabase,
+  deleteProductFromSupabase,
+  upsertCategoryToSupabase,
+  deleteCategoryFromSupabase,
 } from '../lib/supabaseServices';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -288,17 +292,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('tws_collection_filters');
   };
 
-  // Orders
+  // Orders (Starts completely empty for live production use)
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem('tws_orders');
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch {
-        return INITIAL_ORDERS;
+        return [];
       }
     }
-    return INITIAL_ORDERS;
+    return [];
   });
 
   // Active User & Auth State
@@ -340,7 +344,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [];
   });
 
-  // Wishlist
+  // Wishlist (Starts completely empty until user adds items)
   const [wishlist, setWishlist] = useState<string[]>(() => {
     const saved = localStorage.getItem('tws_wishlist');
     if (saved) {
@@ -350,7 +354,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return [];
       }
     }
-    return ['prod-1', 'prod-4'];
+    return [];
   });
 
   // Modals
@@ -715,40 +719,52 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return { order: newOrder, waUrl };
   };
 
-  // Admin Catalog
+  // Admin Catalog & Supabase DB Sync
   const addProduct = (productData: Omit<Product, 'id'>) => {
     const newProduct: Product = {
       ...productData,
       id: `prod-${Date.now()}`,
     };
     setProducts((prev) => [newProduct, ...prev]);
+    upsertProductToSupabase(newProduct).catch((err) => console.warn('[Supabase] Product sync notice:', err));
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
     setProducts((prev) =>
-      prev.map((prod) => (prod.id === id ? { ...prod, ...updates } : prod))
+      prev.map((prod) => {
+        if (prod.id === id) {
+          const updated = { ...prod, ...updates };
+          upsertProductToSupabase(updated).catch((err) => console.warn('[Supabase] Product sync notice:', err));
+          return updated;
+        }
+        return prod;
+      })
     );
   };
 
   const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((prod) => prod.id !== id));
+    deleteProductFromSupabase(id).catch((err) => console.warn('[Supabase] Delete product notice:', err));
   };
 
   const toggleStockStatus = (productId: string) => {
     setProducts((prev) =>
-      prev.map((prod) =>
-        prod.id === productId
-          ? {
-              ...prod,
-              isSoldOut: !prod.isSoldOut,
-              inStockCount: !prod.isSoldOut ? 0 : 15,
-            }
-          : prod
-      )
+      prev.map((prod) => {
+        if (prod.id === productId) {
+          const updated = {
+            ...prod,
+            isSoldOut: !prod.isSoldOut,
+            inStockCount: !prod.isSoldOut ? 0 : 15,
+          };
+          upsertProductToSupabase(updated).catch((err) => console.warn('[Supabase] Stock status sync notice:', err));
+          return updated;
+        }
+        return prod;
+      })
     );
   };
 
-  // Category Management
+  // Category Management & Supabase DB Sync
   const addCategory = (categoryData: Omit<Category, 'id'>) => {
     const slug =
       categoryData.slug ||
@@ -763,6 +779,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       itemCount: categoryData.itemCount || 0,
     };
     setCategories((prev) => [...prev, newCategory]);
+    upsertCategoryToSupabase(newCategory).catch((err) => console.warn('[Supabase] Category add notice:', err));
   };
 
   const updateCategory = (id: string, updates: Partial<Category>) => {
@@ -782,12 +799,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/(^-|-$)+/g, '');
           }
+          upsertCategoryToSupabase(updated).catch((err) => console.warn('[Supabase] Category update notice:', err));
           return updated;
         }
         return cat;
       })
     );
-
     // If category name was changed, sync products associated with old category name
     if (updates.name && updates.name !== oldName) {
       setProducts((prev) =>
@@ -807,6 +824,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSelectedCategory('All');
     }
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    deleteCategoryFromSupabase(id).catch((err) => console.warn('[Supabase] Delete category notice:', err));
   };
 
   const resetCategoriesToDefault = () => {

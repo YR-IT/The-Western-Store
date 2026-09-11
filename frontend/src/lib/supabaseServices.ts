@@ -150,3 +150,88 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
     return false;
   }
 }
+
+// ─── PRODUCT CRUD ─────────────────────────────────────────────────────────
+export async function upsertProductToSupabase(product: Product): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const row = {
+      id: product.id,
+      title: product.title,
+      slug: product.slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      category: product.category,
+      price: product.price,
+      original_price: product.originalPrice,
+      sale_discount: product.saleDiscount || null,
+      on_sale: product.onSale,
+      is_bestseller: product.isBestSeller,
+      is_new: product.isNew,
+      is_sold_out: product.isSoldOut,
+      in_stock_count: product.inStockCount,
+      budget_tier: product.budgetTier,
+      description: product.description,
+      fabric_care: product.fabricCare,
+      sizes: product.sizes,
+      colors: product.colors,
+      images: product.images,
+      rating: product.rating || 4.9,
+      review_count: product.reviewCount || 24,
+    };
+
+    const { error } = await supabase.from('products').upsert(row);
+    if (error) console.warn('[Supabase] Product upsert error:', error.message);
+    return !error;
+  } catch (err) {
+    console.error('[Supabase] Product upsert exception:', err);
+    return false;
+  }
+}
+
+export async function deleteProductFromSupabase(productId: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', productId);
+    if (error) console.warn('[Supabase] Delete product error:', error.message);
+    return !error;
+  } catch (err) {
+    console.error('[Supabase] Delete product exception:', err);
+    return false;
+  }
+}
+
+// ─── CATEGORY CRUD ────────────────────────────────────────────────────────
+export async function upsertCategoryToSupabase(category: Category): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const row = {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      subtitle: category.subtitle || null,
+      image: category.image,
+    };
+
+    const { error } = await supabase.from('categories').upsert(row);
+    if (error) console.warn('[Supabase] Category upsert error:', error.message);
+    return !error;
+  } catch (err) {
+    console.error('[Supabase] Category upsert exception:', err);
+    return false;
+  }
+}
+
+export async function deleteCategoryFromSupabase(categoryId: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+    if (error) console.warn('[Supabase] Delete category error:', error.message);
+    return !error;
+  } catch (err) {
+    console.error('[Supabase] Delete category exception:', err);
+    return false;
+  }
+}
