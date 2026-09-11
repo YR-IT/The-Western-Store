@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { X, Lock, ShieldCheck, Sparkles, CheckCircle2, UserCheck, AlertCircle, Mail, User, KeyRound, Loader2 } from 'lucide-react';
+import { X, Lock, ShieldCheck, Sparkles, CheckCircle2, UserCheck, AlertCircle, Mail, User, Loader2 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -39,39 +39,39 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
 
     try {
-      if (isSupabaseConfigured() && supabase) {
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              full_name: fullName.trim() || 'Valued Customer',
-            },
-          },
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          setSuccessMessage('Account created successfully! Check your email if confirmation is required.');
-          loginWithGoogle({
-            id: data.user.id,
-            name: fullName.trim() || 'Valued Customer',
-            email: email.trim(),
-          });
-          setTimeout(() => setIsAuthModalOpen(false), 1500);
-          return;
-        }
+      if (!isSupabaseConfigured() || !supabase) {
+        throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to frontend/.env.');
       }
 
-      // Local Fallback if Supabase credentials not set
-      loginWithGoogle({
-        name: fullName.trim() || 'Valued Customer',
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim() || 'Store Customer',
+          },
+        },
       });
-      setIsAuthModalOpen(false);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        setSuccessMessage('Account registered successfully! Check your email inbox to confirm your account.');
+        loginWithGoogle({
+          id: data.user.id,
+          name: fullName.trim() || email.split('@')[0],
+          email: email.trim(),
+        });
+        setTimeout(() => {
+          setIsAuthModalOpen(false);
+          setSuccessMessage('');
+        }, 2000);
+      }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to create account. Please check inputs.');
+      console.error('[Supabase SignUp Error]', err);
+      setErrorMessage(err.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -85,61 +85,36 @@ export const AuthModal: React.FC = () => {
     setLoading(true);
 
     try {
-      if (isSupabaseConfigured() && supabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          const userMeta = data.user.user_metadata || {};
-          loginWithGoogle({
-            id: data.user.id,
-            name: userMeta.full_name || userMeta.name || email.split('@')[0],
-            email: data.user.email || email.trim(),
-          });
-          setIsAuthModalOpen(false);
-          return;
-        }
+      if (!isSupabaseConfigured() || !supabase) {
+        throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to frontend/.env.');
       }
 
-      // Local Fallback
-      loginWithGoogle({
-        name: email.split('@')[0] || 'Valued Customer',
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
+        password,
       });
-      setIsAuthModalOpen(false);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        const userMeta = data.user.user_metadata || {};
+        const displayName = userMeta.full_name || userMeta.name || email.split('@')[0];
+
+        loginWithGoogle({
+          id: data.user.id,
+          name: displayName,
+          email: data.user.email || email.trim(),
+        });
+        setIsAuthModalOpen(false);
+      }
     } catch (err: any) {
+      console.error('[Supabase SignIn Error]', err);
       setErrorMessage(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
-  };
-
-  // Supabase Google OAuth
-  const handleGoogleSignIn = async () => {
-    setErrorMessage('');
-    if (isSupabaseConfigured() && supabase) {
-      try {
-        await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-      } catch (err: any) {
-        console.warn('[Supabase Auth] OAuth redirect notice:', err.message);
-      }
-    }
-
-    loginWithGoogle({
-      name: 'Valued Customer',
-      email: 'customer@example.com',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Customer`,
-    });
-    setIsAuthModalOpen(false);
   };
 
   // Admin Server Login
@@ -154,7 +129,7 @@ export const AuthModal: React.FC = () => {
         setView('admin');
         setIsAuthModalOpen(false);
       } else {
-        setErrorMessage('Invalid admin credentials. Please verify server environment keys.');
+        setErrorMessage('Invalid admin credentials. Please check backend environment configuration.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to authenticate admin.');
@@ -227,8 +202,9 @@ export const AuthModal: React.FC = () => {
                   onClick={() => {
                     setCustomerTab('signin');
                     setErrorMessage('');
+                    setSuccessMessage('');
                   }}
-                  className={`py-2 rounded-lg transition-all ${
+                  className={`py-2 rounded-lg transition-all cursor-pointer ${
                     customerTab === 'signin'
                       ? 'bg-white text-[#721B29] shadow-xs font-bold'
                       : 'text-[#736B63] hover:text-[#242120]'
@@ -241,8 +217,9 @@ export const AuthModal: React.FC = () => {
                   onClick={() => {
                     setCustomerTab('signup');
                     setErrorMessage('');
+                    setSuccessMessage('');
                   }}
-                  className={`py-2 rounded-lg transition-all ${
+                  className={`py-2 rounded-lg transition-all cursor-pointer ${
                     customerTab === 'signup'
                       ? 'bg-white text-[#721B29] shadow-xs font-bold'
                       : 'text-[#736B63] hover:text-[#242120]'
@@ -311,57 +288,23 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 px-4 bg-[#721B29] hover:bg-[#52131D] text-white font-bold text-xs rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-[#721B29] hover:bg-[#52131D] text-white font-bold text-xs rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer mt-1"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : customerTab === 'signin' ? (
                     <>
                       <UserCheck className="w-4 h-4" />
-                      <span>Sign In with Email</span>
+                      <span>Sign In to Account</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>Register Account</span>
+                      <span>Register New Account</span>
                     </>
                   )}
                 </button>
               </form>
-
-              {/* Divider */}
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-[#EAE4D9]"></div>
-                <span className="flex-shrink mx-3 text-[10px] uppercase font-bold tracking-wider text-[#8C8276]">Or continue with</span>
-                <div className="flex-grow border-t border-[#EAE4D9]"></div>
-              </div>
-
-              {/* Official Google Sign-In Button */}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full py-3 px-4 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl text-gray-800 font-semibold text-xs flex items-center justify-center gap-3 shadow-xs hover:shadow transition-all cursor-pointer"
-              >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Google OAuth Login</span>
-              </button>
 
               <div className="pt-2 text-center border-t border-[#EAE4D9]">
                 <button

@@ -10,7 +10,7 @@ import {
   upsertCategoryToSupabase,
   deleteCategoryFromSupabase,
 } from '../lib/supabaseServices';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   Product,
   Category,
@@ -408,6 +408,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [currentUser]);
 
+  // Real-time Supabase Auth Listener
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata || {};
+        const userName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Store Customer';
+        setCurrentUser({
+          id: session.user.id,
+          name: userName,
+          email: session.user.email || '',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName)}`,
+          authProvider: 'google',
+          isAdmin: false,
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata || {};
+        const userName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Store Customer';
+        setCurrentUser({
+          id: session.user.id,
+          name: userName,
+          email: session.user.email || '',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName)}`,
+          authProvider: 'google',
+          isAdmin: false,
+        });
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setCart([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   // Auth Methods
   const openAuthModal = (mode: 'customer' | 'admin' = 'customer', message = '') => {
     if (mode === 'admin' && currentUser?.isAdmin) {
@@ -422,17 +464,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const loginWithGoogle = (userInfo?: Partial<UserAccount>) => {
+    if (!userInfo?.email) return;
     const newUser: UserAccount = {
-      id: `usr_g_${Date.now()}`,
-      name: userInfo?.name || 'Valued Customer',
-      email: userInfo?.email || 'customer@example.com',
-      avatar: userInfo?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=Customer`,
+      id: userInfo.id || `usr_${Date.now()}`,
+      name: userInfo.name || userInfo.email.split('@')[0],
+      email: userInfo.email,
+      avatar: userInfo.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userInfo.name || 'Customer')}`,
       authProvider: 'google',
       isAdmin: false,
     };
     setCurrentUser(newUser);
 
-    // Load account cart or migrate current guest cart into this account
     const savedAccountCart = localStorage.getItem(`tws_cart_${newUser.id}`);
     if (savedAccountCart) {
       try {
@@ -475,6 +517,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const logout = () => {
     if (currentUser) {
       localStorage.setItem(`tws_cart_${currentUser.id}`, JSON.stringify(cart));
+    }
+    if (isSupabaseConfigured() && supabase) {
+      supabase.auth.signOut().catch(() => {});
     }
     setCurrentUser(null);
     setCart([]);
