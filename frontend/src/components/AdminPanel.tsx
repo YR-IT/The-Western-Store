@@ -45,6 +45,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Star,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 const CATEGORIES: ProductCategory[] = [
@@ -127,6 +129,7 @@ export const AdminPanel: React.FC = () => {
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     resetCategoriesToDefault,
     setView,
     openOrderTracking,
@@ -491,6 +494,26 @@ export const AdminPanel: React.FC = () => {
   const handleResetCategories = () => {
     resetCategoriesToDefault();
     showToast('Reset categories to default Ethnic Wear & Western Wear');
+  };
+
+  const handleMoveCategoryUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...categories];
+    const temp = updated[index - 1];
+    updated[index - 1] = updated[index];
+    updated[index] = temp;
+    reorderCategories(updated);
+    showToast(`Moved "${updated[index - 1].name}" up`);
+  };
+
+  const handleMoveCategoryDown = (index: number) => {
+    if (index >= categories.length - 1) return;
+    const updated = [...categories];
+    const temp = updated[index + 1];
+    updated[index + 1] = updated[index];
+    updated[index] = temp;
+    reorderCategories(updated);
+    showToast(`Moved "${updated[index + 1].name}" down`);
   };
 
   return (
@@ -1490,50 +1513,81 @@ export const AdminPanel: React.FC = () => {
                     ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl'
                     : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                 }`}>
-                  {categories.map((c) => {
+                  {categories.map((c, index) => {
                     const linkedCount = products.filter((p) => p.category === c.name).length;
 
                     return (
                       <div
                         key={c.id}
-                        className="bg-white rounded-xl p-4 border border-[#EAE4D9] hover:border-[#721B29] transition-all shadow-xs hover:shadow-md flex flex-col justify-between group space-y-3"
+                        className="bg-white rounded-xl p-4 border border-[#EAE4D9] hover:border-[#721B29] transition-all shadow-xs hover:shadow-md flex flex-col justify-between group space-y-3 relative"
                       >
-                        <div className="flex items-start gap-3.5">
-                          <div className="relative w-16 h-16 rounded-full border-2 border-[#721B29]/30 group-hover:border-[#721B29] overflow-hidden flex-shrink-0 bg-[#FAF8F3] shadow-xs transition-colors">
-                            <img
-                              src={c.image}
-                              alt={c.name}
-                              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80';
-                              }}
-                            />
+                        <div>
+                          {/* Order Index Header */}
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className="text-[10px] font-mono font-bold text-[#8C8276] bg-[#FAF8F3] px-2 py-0.5 rounded border border-[#EAE4D9]">
+                              Category #{index + 1}
+                            </span>
                           </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-serif font-bold text-sm text-[#242120] group-hover:text-[#721B29] transition-colors line-clamp-1">
-                              {c.name}
-                            </h4>
-                            {c.subtitle && (
-                              <p className="text-[11px] text-[#8C8276] line-clamp-1 mt-0.5">
-                                {c.subtitle}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              <span className="text-[11px] font-semibold text-[#721B29] bg-[#721B29]/10 px-2 py-0.5 rounded-full">
-                                {linkedCount} Active {linkedCount === 1 ? 'Style' : 'Styles'}
-                              </span>
+                          <div className="flex items-start gap-3.5">
+                            <div className="relative w-16 h-16 rounded-full border-2 border-[#721B29]/30 group-hover:border-[#721B29] overflow-hidden flex-shrink-0 bg-[#FAF8F3] shadow-xs transition-colors">
+                              <img
+                                src={c.image}
+                                alt={c.name}
+                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80';
+                                }}
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-serif font-bold text-sm text-[#242120] group-hover:text-[#721B29] transition-colors line-clamp-1">
+                                {c.name}
+                              </h4>
+                              {c.subtitle && (
+                                <p className="text-[11px] text-[#8C8276] line-clamp-1 mt-0.5">
+                                  {c.subtitle}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <span className="text-[11px] font-semibold text-[#721B29] bg-[#721B29]/10 px-2 py-0.5 rounded-full">
+                                  {linkedCount} Active {linkedCount === 1 ? 'Style' : 'Styles'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         {/* Action buttons footer */}
-                        <div className="pt-3 border-t border-[#F4EFE6] flex items-center justify-between gap-2">
+                        <div className="pt-3 border-t border-[#F4EFE6] flex items-center justify-between gap-1.5">
+                          {/* Reordering Controls */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => handleMoveCategoryUp(index)}
+                              className="p-1.5 bg-[#FAF8F3] text-[#242120] hover:bg-[#721B29] hover:text-white border border-[#EAE4D9] rounded-sm text-xs transition-colors disabled:opacity-30 disabled:hover:bg-[#FAF8F3] disabled:hover:text-[#242120] cursor-pointer"
+                              title="Move left/up in navbar order"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === categories.length - 1}
+                              onClick={() => handleMoveCategoryDown(index)}
+                              className="p-1.5 bg-[#FAF8F3] text-[#242120] hover:bg-[#721B29] hover:text-white border border-[#EAE4D9] rounded-sm text-xs transition-colors disabled:opacity-30 disabled:hover:bg-[#FAF8F3] disabled:hover:text-[#242120] cursor-pointer"
+                              title="Move right/down in navbar order"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
                           <button
                             type="button"
                             onClick={() => handleOpenEditCategory(c)}
-                            className="flex-1 py-1.5 px-2 bg-[#FAF8F3] hover:bg-[#721B29] hover:text-white border border-[#D9CEBF] text-[#242120] rounded-sm text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="flex-1 py-1.5 px-2 bg-[#FAF8F3] hover:bg-[#721B29] hover:text-white border border-[#D9CEBF] text-[#242120] rounded-sm text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                             <span>Edit</span>

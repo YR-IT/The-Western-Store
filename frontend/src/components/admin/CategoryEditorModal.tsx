@@ -157,6 +157,8 @@ export const CategoryEditorModal: React.FC<CategoryEditorModalProps> = ({
               />
             </div>
 
+
+
             {/* Category Image Section (Upload or Link Only) */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#4A453E]">

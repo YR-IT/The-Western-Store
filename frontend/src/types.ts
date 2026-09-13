@@ -18,6 +18,8 @@ export interface Category {
   image: string;
   subtitle: string;
   itemCount?: number;
+  showOnNavbar?: boolean;
+  navbarOrder?: number;
 }
 
 export interface Product {

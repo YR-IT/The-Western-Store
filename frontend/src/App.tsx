@@ -170,7 +170,7 @@ const StorefrontContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#242120] flex flex-col selection:bg-[#721B29] selection:text-white w-full max-w-full overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#242120] flex flex-col selection:bg-[#721B29] selection:text-white w-full relative">
       {/* 1. Scrolling Announcement Bar */}
       <AnnouncementBar />
 
@@ -178,7 +178,7 @@ const StorefrontContent: React.FC = () => {
       <Header />
 
       {/* Main View Router with Smooth Fade-in Transition */}
-      <main className="flex-1 w-full max-w-full overflow-x-hidden">
+      <main className={`flex-1 w-full ${currentView !== 'home' ? 'pt-[98px] sm:pt-[114px]' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}

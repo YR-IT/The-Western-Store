@@ -24,6 +24,8 @@ import {
   UserCheck,
 } from 'lucide-react';
 
+import logoImg from '../assets/images/Logo_Final.jpg';
+
 export const Header: React.FC = () => {
   const {
     view,
@@ -46,6 +48,7 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | 'budget' | null>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const dropdownNavRef = useRef<HTMLElement>(null);
@@ -62,6 +65,13 @@ export const Header: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Scroll detection for transparent → solid transition
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleCategoryClick = (cat: ProductCategory) => {
@@ -84,56 +94,213 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#EAE4D9] transition-all w-full">
-      {/* Tier 1: Main Top Bar (Store Info, Logo, Utility Actions) */}
+    <header
+      className={`fixed left-0 right-0 z-40 transition-all duration-500 w-full ${
+        scrolled || view !== 'home'
+          ? 'top-[34px] bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#EAE4D9] shadow-sm'
+          : 'top-[34px] bg-transparent backdrop-blur-none border-b border-transparent'
+      }`}
+    >
+      {/* Unified Single-Row Header Container */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
-          {/* Left: Mobile menu triggers OR Desktop Store Info Badge */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Left: Mobile menu trigger + Brand Logo & Text */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 lg:flex-1 lg:justify-start">
             {/* Mobile / Tablet Menu Trigger */}
             <button
               id="mobile-menu-btn"
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-[#242120] hover:text-[#721B29] transition-colors focus:outline-none rounded-lg hover:bg-[#F3EFE6]"
+              className={`lg:hidden p-2 transition-colors focus:outline-none rounded-lg ${
+                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
+              }`}
               aria-label="Open navigation menu"
             >
               <Menu className="w-6 h-6" />
             </button>
 
-            {/* Desktop Store Info Badge */}
-            <div className="hidden lg:flex items-center gap-2 text-xs text-[#736B63] bg-[#FAF8F3] px-3 py-1.5 rounded-full border border-[#EAE4D9]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="font-medium">Theme Park, Kurukshetra • Express Delivery</span>
+            {/* Brand Logo & Title */}
+            <div
+              className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group py-1"
+              onClick={handleLogoClick}
+            >
+              <img
+                src={logoImg}
+                alt="The Western Store Logo"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-[#EAE4D9] shadow-xs group-hover:scale-105 transition-transform"
+              />
+              <div className="shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-lg xs:text-xl sm:text-2xl font-bold tracking-tight transition-colors duration-300 ${
+                      (scrolled || view !== 'home') ? 'text-[#721B29]' : 'text-white'
+                    }`}
+                    style={{ fontFamily: "'Great Vibes', cursive", transform: 'translateY(4px)', display: 'inline-block' }}
+                  >
+                    The Western Store
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#B8860B] shrink-0 hidden sm:inline-block" />
+                </div>
+                <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-[#736B63] font-medium hidden xs:block">
+                  Kurukshetra • Boutique
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Center: Brand Title */}
-          <div
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group py-1"
-            onClick={handleLogoClick}
-          >
-            <div className="text-center sm:text-left">
-              <div className="flex items-center gap-1.5 justify-center sm:justify-start">
-                <span className="font-serif text-lg xs:text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-[#721B29]">
-                  The Western Store
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#B8860B] shrink-0 hidden sm:inline-block" />
-              </div>
-              <p className="text-[9px] sm:text-[10px] tracking-[0.18em] uppercase text-[#736B63] font-medium hidden xs:block">
-                Kurukshetra • Ethnic & Western Boutique
-              </p>
+          {/* Center: Hardcoded 4 Navigation Links (Single-Row Navbar Items) */}
+          <nav ref={dropdownNavRef} className="hidden lg:flex items-center space-x-2 xl:space-x-5 justify-center px-2 shrink-0">
+            {/* 1. Home Link */}
+            <button
+              id="nav-home"
+              type="button"
+              onClick={handleLogoClick}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 ${
+                view === 'home' && activeDropdown === null
+                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
+                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Home
+            </button>
+
+            {/* 2. New Arrival Link */}
+            <button
+              id="nav-new-arrival"
+              type="button"
+              onClick={() => handleCategoryClick('New Arrivals')}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap ${
+                view === 'plp' && (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival')
+                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
+                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              New Arrival
+            </button>
+
+            {/* 3. All Collections Link */}
+            <button
+              id="nav-all-collections"
+              type="button"
+              onClick={() => handleCategoryClick('All')}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap ${
+                view === 'plp' && selectedCategory === 'All'
+                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
+                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              All Collections
+            </button>
+
+            {/* Budget Edits Dropdown */}
+            <div
+              className="relative shrink-0"
+              onMouseEnter={() => setActiveDropdown('budget')}
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
+              <button
+                id="nav-dropdown-budget"
+                type="button"
+                onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
+                className={`px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1 whitespace-nowrap ${
+                  activeDropdown === 'budget' || selectedBudgetTier !== 'all'
+                    ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
+                    : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Tag className="w-3.5 h-3.5 text-[#B8860B]" />
+                <span>Budget Edits</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'budget' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
+              </button>
+
+              {/* Budget Dropdown Menu */}
+              {activeDropdown === 'budget' && (
+                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Curated Price Ranges</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_999')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
+                      <p className="text-[10px] text-[#736B63]">Daily cottons, crop tops & tees</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1499')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
+                      <p className="text-[10px] text-[#736B63]">Party co-ords, midis & wide denims</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_1999')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
+                      <p className="text-[10px] text-[#736B63]">Silk drapes, anarkalis & suit sets</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('under_2499')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
+                      <p className="text-[10px] text-[#736B63]">Heavy festive co-ords & festive sets</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBudgetClick('premium')}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#242120]">Luxury & Bridal (₹2,500+)</p>
+                      <p className="text-[10px] text-[#736B63]">Heavy Banarasi lehengas & drapes</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
+                  </button>
+                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
+                    <button
+                      type="button"
+                      onClick={() => handleBudgetClick('all')}
+                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
+                    >
+                      <Tag className="w-3.5 h-3.5 text-[#721B29]" />
+                      <span>View All Budget Collections</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </nav>
 
           {/* Right: Actions (Search, Wishlist, Account, Cart) */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 lg:flex-1 lg:justify-end">
             {/* Desktop Search Button */}
             <button
               id="header-search-btn"
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#E3DCCE] bg-[#FAF8F3] text-[#736B63] text-xs hover:border-[#721B29] hover:text-[#721B29] transition-all"
+              className={`hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+                scrolled
+                  ? 'border-[#E3DCCE] bg-[#FAF8F3] text-[#736B63] hover:border-[#721B29] hover:text-[#721B29]'
+                  : 'border-white/30 bg-white/10 text-white/80 hover:border-white hover:text-white'
+              }`}
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search outfits...</span>
@@ -144,7 +311,9 @@ export const Header: React.FC = () => {
               id="mobile-search-btn"
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className="lg:hidden p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6]"
+              className={`lg:hidden p-1.5 xs:p-2 sm:p-2.5 transition-colors rounded-full ${
+                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
+              }`}
               aria-label="Search items"
             >
               <Search className="w-4 h-4 xs:w-5 xs:h-5" />
@@ -155,7 +324,9 @@ export const Header: React.FC = () => {
               id="header-wishlist-btn"
               type="button"
               onClick={() => setView('wishlist')}
-              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6]"
+              className={`p-1.5 xs:p-2 sm:p-2.5 relative transition-colors rounded-full ${
+                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
+              }`}
               aria-label="Wishlist"
             >
               <Heart className={`w-4 h-4 xs:w-5 xs:h-5 ${wishlist.length > 0 ? 'text-[#721B29] fill-[#721B29]/15' : ''}`} />
@@ -172,7 +343,9 @@ export const Header: React.FC = () => {
                 id="header-account-btn"
                 type="button"
                 onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                className="p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] transition-colors rounded-full hover:bg-[#F3EFE6] flex items-center gap-1.5"
+                className={`p-1.5 xs:p-2 sm:p-2.5 transition-colors rounded-full flex items-center gap-1.5 ${
+                  (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
+                }`}
                 aria-label="Account and store manager"
               >
                 {currentUser?.avatar ? (
@@ -318,7 +491,9 @@ export const Header: React.FC = () => {
               id="header-cart-btn"
               type="button"
               onClick={() => setIsCartDrawerOpen(true)}
-              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#721B29] hover:text-[#52131D] transition-colors rounded-full hover:bg-[#721B29]/10 flex items-center gap-1"
+              className={`p-1.5 xs:p-2 sm:p-2.5 relative transition-colors rounded-full flex items-center gap-1 ${
+                (scrolled || view !== 'home') ? 'text-[#721B29] hover:text-[#52131D] hover:bg-[#721B29]/10' : 'text-white hover:text-white/80 hover:bg-white/10'
+              }`}
               aria-label={`Cart with ${cartCount} items`}
             >
               <ShoppingBag className="w-4 h-4 xs:w-5 xs:h-5" />
@@ -332,153 +507,7 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Tier 2: Dedicated Desktop Navigation Bar (PC / Laptop View) */}
-      <div className="hidden lg:block border-t border-[#EAE4D9]/80 bg-[#FAF8F3]/80">
-        <div className="max-w-7xl mx-auto px-4">
-          <nav ref={dropdownNavRef} className="flex items-center justify-center space-x-6 xl:space-x-10 py-2.5">
-            {/* Home Link */}
-            <button
-              id="nav-home"
-              type="button"
-              onClick={handleLogoClick}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md ${
-                view === 'home' && activeDropdown === null
-                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-              }`}
-            >
-              Home
-            </button>
 
-            {/* Dynamic Category Navigation Links */}
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                id={`nav-cat-${cat.slug}`}
-                type="button"
-                onClick={() => handleCategoryClick(cat.name)}
-                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
-                  view === 'plp' && selectedCategory === cat.name
-                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-
-            {/* Link 3: All Collections */}
-            <button
-              id="nav-all-collections"
-              type="button"
-              onClick={() => handleCategoryClick('All')}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md ${
-                view === 'plp' && selectedCategory === 'All'
-                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                  : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-              }`}
-            >
-              All Collections
-            </button>
-
-            {/* Dropdown 3: Budget Edits (Curated Price Ranges) */}
-            <div
-              className="relative"
-              onMouseEnter={() => setActiveDropdown('budget')}
-              onMouseLeave={() => setActiveDropdown(null)}
-            >
-              <button
-                id="nav-dropdown-budget"
-                type="button"
-                onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
-                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1.5 ${
-                  activeDropdown === 'budget' || selectedBudgetTier !== 'all'
-                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                    : 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-                }`}
-              >
-                <Tag className="w-3.5 h-3.5 text-[#B8860B]" />
-                <span>Budget Edits</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'budget' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
-              </button>
-
-              {/* Budget Dropdown Menu */}
-              {activeDropdown === 'budget' && (
-                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Curated Price Ranges</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_999')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
-                      <p className="text-[10px] text-[#736B63]">Daily cottons, crop tops & tees</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1499')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
-                      <p className="text-[10px] text-[#736B63]">Party co-ords, midis & wide denims</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1999')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
-                      <p className="text-[10px] text-[#736B63]">Silk drapes, anarkalis & suit sets</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_2499')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
-                      <p className="text-[10px] text-[#736B63]">Heavy festive co-ords & festive sets</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('premium')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#242120]">Luxury & Bridal (₹2,500+)</p>
-                      <p className="text-[10px] text-[#736B63]">Heavy Banarasi lehengas & drapes</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
-                    <button
-                      type="button"
-                      onClick={() => handleBudgetClick('all')}
-                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
-                    >
-                      <Tag className="w-3.5 h-3.5 text-[#721B29]" />
-                      <span>View All Budget Collections</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </nav>
-        </div>
-      </div>
 
       {/* Mobile / Tablet Drawer Navigation rendered via React Portal to document.body */}
       {mobileMenuOpen &&
@@ -495,6 +524,11 @@ export const Header: React.FC = () => {
               {/* Drawer Header - EXACTLY MATCHES NAVBAR TITLE AND BRANDING */}
               <div className="p-4 border-b border-[#EAE4D9] flex items-center justify-between bg-[#F8F5EE]">
                 <div className="flex items-center gap-2.5 cursor-pointer" onClick={handleLogoClick}>
+                  <img
+                    src={logoImg}
+                    alt="The Western Store Logo"
+                    className="w-9 h-9 rounded-full object-cover border border-[#EAE4D9] shrink-0"
+                  />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-serif text-lg font-bold tracking-tight text-[#721B29]">

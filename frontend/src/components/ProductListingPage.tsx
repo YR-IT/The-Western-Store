@@ -74,7 +74,9 @@ export const ProductListingPage: React.FC = () => {
     return products
       .filter((p) => {
         // Category filter
-        if (selectedCategory !== 'All' && p.category !== selectedCategory) {
+        if (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival') {
+          if (!p.isNew) return false;
+        } else if (selectedCategory !== 'All' && p.category !== selectedCategory) {
           return false;
         }
 

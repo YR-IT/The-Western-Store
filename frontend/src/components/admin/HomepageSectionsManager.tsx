@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { HomeSectionConfig, HomeSectionType, HeroSlide, Testimonial, InstagramPost, BudgetTier } from '../../types';
+import { ImageKitUploader } from './ImageKitUploader';
 import {
   Plus,
   Trash2,
@@ -593,13 +594,13 @@ export const HomepageSectionsManager: React.FC = () => {
           </div>
 
           {/* Slide Cards Grid matching Hero Carousel */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {heroSlides.map((slide, idx) => {
               const isEditing = editingSlideId === slide.id;
               return (
                 <div
                   key={slide.id}
-                  className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col justify-between"
+                  className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col"
                 >
                   {/* Live Hero Banner Preview Card */}
                   <div className="relative h-60 bg-[#241B1A] overflow-hidden p-6 flex flex-col justify-end text-white">
@@ -714,16 +715,24 @@ export const HomepageSectionsManager: React.FC = () => {
                           />
                         </div>
 
-                        <div>
+                        <div className="space-y-2">
                           <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Hero Image URL
+                            Hero Banner Image *
                           </label>
-                          <input
-                            type="url"
-                            value={slide.image}
-                            onChange={(e) => updateHeroSlide(slide.id, { image: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md focus:outline-none focus:border-[#721B29]"
-                          />
+                          <div className="space-y-2">
+                            <ImageKitUploader
+                              folder="/hero-slides"
+                              buttonText="Upload Slide Photo to ImageKit"
+                              onUploadSuccess={(url) => updateHeroSlide(slide.id, { image: url })}
+                            />
+                            <input
+                              type="url"
+                              placeholder="Or paste image URL (https://...)"
+                              value={slide.image}
+                              onChange={(e) => updateHeroSlide(slide.id, { image: e.target.value })}
+                              className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md text-xs font-mono focus:outline-none focus:border-[#721B29]"
+                            />
+                          </div>
                         </div>
 
                         <div>
@@ -735,8 +744,17 @@ export const HomepageSectionsManager: React.FC = () => {
                             onChange={(e) => updateHeroSlide(slide.id, { category: e.target.value })}
                             className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md font-medium focus:outline-none focus:border-[#721B29]"
                           >
-                            <option value="Ethnic Wear">Ethnic Wear</option>
-                            <option value="Western Wear">Western Wear</option>
+                            <option value="All">All Collections (Full Catalog)</option>
+                            <option value="New Arrivals">New Arrivals</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.name}>
+                                {c.name}
+                              </option>
+                            ))}
+                            {slide.category &&
+                              !['All', 'New Arrivals', ...categories.map((c) => c.name)].includes(slide.category) && (
+                                <option value={slide.category}>{slide.category}</option>
+                              )}
                           </select>
                         </div>
                       </div>
@@ -772,11 +790,11 @@ export const HomepageSectionsManager: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
             {budgetTiles.map((tile) => (
               <div
                 key={tile.tier}
-                className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col justify-between"
+                className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col"
               >
                 {/* Live Card Preview */}
                 <div className="relative h-64 bg-[#1A1415] overflow-hidden p-4 flex flex-col justify-end text-white">
@@ -894,11 +912,11 @@ export const HomepageSectionsManager: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             {testimonials.map((t) => {
               const isEditing = editingReviewId === t.id;
               return (
-                <div key={t.id} className="bg-white rounded-xl border border-[#EAE4D9] p-4 shadow-xs space-y-3 text-xs flex flex-col justify-between">
+                <div key={t.id} className="bg-white rounded-xl border border-[#EAE4D9] p-4 shadow-xs space-y-3 text-xs flex flex-col">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex text-amber-400">
@@ -1150,15 +1168,23 @@ export const HomepageSectionsManager: React.FC = () => {
                   className="w-full px-3 py-2 border rounded-lg"
                 />
               </div>
-              <div>
-                <label className="block font-bold uppercase text-[11px] mb-1">Hero Photo URL *</label>
-                <input
-                  type="url"
-                  required
-                  value={newSlide.image}
-                  onChange={(e) => setNewSlide({ ...newSlide, image: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
+              <div className="space-y-2">
+                <label className="block font-bold uppercase text-[11px] mb-1">Hero Banner Image *</label>
+                <div className="space-y-2">
+                  <ImageKitUploader
+                    folder="/hero-slides"
+                    buttonText="Upload Slide Photo to ImageKit"
+                    onUploadSuccess={(url) => setNewSlide({ ...newSlide, image: url })}
+                  />
+                  <input
+                    type="url"
+                    required
+                    placeholder="Or paste image URL (https://...)"
+                    value={newSlide.image}
+                    onChange={(e) => setNewSlide({ ...newSlide, image: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1175,10 +1201,15 @@ export const HomepageSectionsManager: React.FC = () => {
                   <select
                     value={newSlide.category}
                     onChange={(e) => setNewSlide({ ...newSlide, category: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 border rounded-lg font-medium focus:outline-none focus:border-[#721B29]"
                   >
-                    <option value="Ethnic Wear">Ethnic Wear</option>
-                    <option value="Western Wear">Western Wear</option>
+                    <option value="All">All Collections (Full Catalog)</option>
+                    <option value="New Arrivals">New Arrivals</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

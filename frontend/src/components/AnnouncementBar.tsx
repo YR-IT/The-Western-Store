@@ -9,9 +9,9 @@ export const AnnouncementBar: React.FC = () => {
   return (
     <aside
       aria-label="Store Announcement"
-      className="group bg-[#721B29] text-[#FDFBF7] py-2 px-3 text-xs font-medium tracking-wide overflow-hidden border-b border-[#5e1622] relative z-40 select-none cursor-pointer"
+      className="group fixed top-0 left-0 right-0 z-50 bg-[#721B29] text-[#FDFBF7] h-[34px] text-xs font-medium tracking-wide overflow-hidden border-b border-[#5e1622] select-none cursor-pointer w-full flex items-center"
     >
-      <div className="w-full overflow-hidden whitespace-nowrap flex items-center">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full overflow-hidden whitespace-nowrap flex items-center">
         {/* Primary Marquee Track */}
         <div className="animate-marquee flex items-center gap-8 shrink-0 pr-8">
           <span className="flex items-center gap-2">
