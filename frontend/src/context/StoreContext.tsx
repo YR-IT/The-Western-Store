@@ -177,6 +177,7 @@ interface StoreContextType {
   addCategory: (category: Omit<Category, 'id'>) => void;
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
+  reorderCategories: (newCategories: Category[]) => void;
   resetCategoriesToDefault: () => void;
 
   // Helper navigation actions
@@ -1109,6 +1110,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteCategoryFromSupabase(id).catch((err) => console.warn('[Supabase] Delete category notice:', err));
   };
 
+  const reorderCategories = (newCategories: Category[]) => {
+    setCategories(newCategories);
+  };
+
   const resetCategoriesToDefault = () => {
     setCategories(INITIAL_CATEGORIES);
     localStorage.removeItem('tws_categories_v4');
@@ -1229,6 +1234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCategory,
         updateCategory,
         deleteCategory,
+        reorderCategories,
         resetCategoriesToDefault,
         navigateToCategory,
         navigateToBudget,
