@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { X, Ruler, HelpCircle } from 'lucide-react';
 
@@ -29,13 +30,22 @@ export const SizeChartModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/60 backdrop-blur-xs"
         onClick={() => setIsSizeChartOpen(false)}
       />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-2xl bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#E0D7C8] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-2xl bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#E0D7C8] overflow-hidden z-10"
+      >
         {/* Header */}
         <div className="p-5 border-b border-[#EAE4D9] flex items-center justify-between bg-[#F8F5EE]">
           <div className="flex items-center gap-2">
@@ -174,7 +184,7 @@ export const SizeChartModal: React.FC = () => {
             Got It
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

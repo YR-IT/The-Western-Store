@@ -1,19 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const HeroCarousel: React.FC = () => {
   const { heroSlides, navigateToCategory } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [direction, setDirection] = useState<1 | -1>(1);
 
   const nextSlide = useCallback(() => {
+    setDirection(1);
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   }, [heroSlides.length]);
 
   const prevSlide = useCallback(() => {
+    setDirection(-1);
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
   }, [heroSlides.length]);
+
+  const goToSlide = (idx: number) => {
+    setDirection(idx > currentSlide ? 1 : -1);
+    setCurrentSlide(idx);
+  };
 
   useEffect(() => {
     if (isPaused) return;
@@ -24,6 +33,39 @@ export const HeroCarousel: React.FC = () => {
   if (!heroSlides || heroSlides.length === 0) return null;
 
   const active = heroSlides[currentSlide];
+
+  // Stagger variants for text children
+  const textContainerVariants = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.11,
+        delayChildren: 0.08,
+      },
+    },
+    exit: {
+      transition: {
+        staggerChildren: 0.06,
+        staggerDirection: -1,
+      },
+    },
+  };
+
+  const textItemVariants = {
+    hidden: { opacity: 0, y: 24, filter: 'blur(4px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+    },
+    exit: {
+      opacity: 0,
+      y: -14,
+      filter: 'blur(2px)',
+      transition: { duration: 0.28, ease: 'easeIn' },
+    },
+  };
 
   return (
     <section
@@ -59,42 +101,67 @@ export const HeroCarousel: React.FC = () => {
         );
       })}
 
-      {/* Slide Content Overlay */}
+      {/* Slide Content Overlay — animated with AnimatePresence */}
       <div className="relative z-20 max-w-7xl mx-auto h-full px-4 sm:px-10 lg:px-12 flex flex-col justify-center">
-        <div className="max-w-xl text-white">
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-[#FDFBF7]/15 backdrop-blur-md border border-white/20 text-[#E6C280] text-[11px] sm:text-xs font-semibold tracking-wider uppercase mb-3 sm:mb-4 animate-in fade-in duration-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#E6C280]" />
-            <span>{active.tagline}</span>
-          </div>
-
-          <h1 className="font-serif text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#FDFBF7] leading-tight mb-3 sm:mb-4 drop-shadow-xs">
-            {active.title}
-          </h1>
-
-          <p className="text-xs sm:text-base text-[#FDFBF7]/90 font-light leading-relaxed mb-6 sm:mb-8 max-w-lg">
-            {active.subtitle}
-          </p>
-
-          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4">
-            <button
-              id={`hero-cta-${active.id}`}
-              type="button"
-              onClick={() => navigateToCategory(active.category)}
-              className="px-5 sm:px-7 py-3 sm:py-3.5 bg-[#721B29] text-white hover:bg-[#852031] transition-all font-medium text-xs sm:text-sm tracking-wide rounded-xs shadow-lg shadow-black/20 flex items-center justify-center gap-2 group cursor-pointer"
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active.id}
+            className="max-w-xl text-white"
+            variants={textContainerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {/* Tagline pill */}
+            <motion.div
+              variants={textItemVariants}
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 rounded-full bg-[#FDFBF7]/15 backdrop-blur-md border border-white/20 text-[#E6C280] text-[11px] sm:text-xs font-semibold tracking-wider uppercase mb-3 sm:mb-4"
             >
-              <span>{active.ctaText}</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E6C280]" />
+              <span>{active.tagline}</span>
+            </motion.div>
 
-            <button
-              type="button"
-              onClick={() => navigateToCategory('Ethnic & Western Wear')}
-              className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-xs transition-all font-medium text-xs sm:text-sm tracking-wide rounded-xs border border-white/30 text-center"
+            {/* Title */}
+            <motion.h1
+              variants={textItemVariants}
+              className="font-serif text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#FDFBF7] leading-tight mb-3 sm:mb-4 drop-shadow-xs"
             >
-              Explore All Collections
-            </button>
-          </div>
-        </div>
+              {active.title}
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              variants={textItemVariants}
+              className="text-xs sm:text-base text-[#FDFBF7]/90 font-light leading-relaxed mb-6 sm:mb-8 max-w-lg"
+            >
+              {active.subtitle}
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              variants={textItemVariants}
+              className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4"
+            >
+              <button
+                id={`hero-cta-${active.id}`}
+                type="button"
+                onClick={() => navigateToCategory(active.category)}
+                className="px-5 sm:px-7 py-3 sm:py-3.5 bg-[#721B29] text-white hover:bg-[#852031] transition-all font-medium text-xs sm:text-sm tracking-wide rounded-xs shadow-lg shadow-black/20 flex items-center justify-center gap-2 group cursor-pointer active:scale-95"
+              >
+                <span>{active.ctaText}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigateToCategory('Ethnic & Western Wear')}
+                className="px-4 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white backdrop-blur-xs transition-all font-medium text-xs sm:text-sm tracking-wide rounded-xs border border-white/30 text-center active:scale-95"
+              >
+                Explore All Collections
+              </button>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Slide Navigation Controls */}
@@ -113,7 +180,7 @@ export const HeroCarousel: React.FC = () => {
             type="button"
             onClick={prevSlide}
             aria-label="Previous slide"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all active:scale-90"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -122,7 +189,7 @@ export const HeroCarousel: React.FC = () => {
             type="button"
             onClick={nextSlide}
             aria-label="Next slide"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all active:scale-90"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -135,9 +202,9 @@ export const HeroCarousel: React.FC = () => {
           <button
             key={i}
             type="button"
-            onClick={() => setCurrentSlide(i)}
+            onClick={() => goToSlide(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${
+            className={`h-1.5 rounded-full transition-all duration-400 ${
               i === currentSlide ? 'w-8 bg-[#E6C280]' : 'w-2 bg-white/40 hover:bg-white/70'
             }`}
           />

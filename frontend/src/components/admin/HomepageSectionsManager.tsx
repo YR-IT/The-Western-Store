@@ -40,7 +40,6 @@ type ManagerTab =
   | 'hero'
   | 'categories'
   | 'budget'
-  | 'trust'
   | 'testimonials'
   | 'instagram'
   | 'custom-banners';
@@ -318,19 +317,6 @@ export const HomepageSectionsManager: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('trust')}
-          className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-            activeTab === 'trust'
-              ? 'bg-[#721B29] text-white shadow-xs'
-              : 'text-[#4A453E] hover:bg-[#FAF8F3]'
-          }`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Store Guarantees ({trustFeatures.length})</span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => setActiveTab('testimonials')}
           className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
             activeTab === 'testimonials'
@@ -461,21 +447,19 @@ export const HomepageSectionsManager: React.FC = () => {
                         <span>{isEditing ? 'Done' : 'Edit Text'}</span>
                       </button>
 
-                      {sec.id.startsWith('sec_') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (confirm(`Delete section "${sec.title}"?`)) {
-                              deleteHomeSection(sec.id);
-                              showToast('Section removed');
-                            }
-                          }}
-                          className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete Custom Section"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Delete section "${sec.title}" from homepage?`)) {
+                            deleteHomeSection(sec.id);
+                            showToast(`Deleted section "${sec.title}"`);
+                          }
+                        }}
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Section Block"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -888,87 +872,7 @@ export const HomepageSectionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 5: STORE GUARANTEES & TRUST STRIP */}
-      {activeTab === 'trust' && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-[#EAE4D9] flex items-center justify-between">
-            <div>
-              <h2 className="font-serif text-lg font-bold text-[#242120]">Store Guarantees & Trust Features</h2>
-              <p className="text-xs text-[#736B63]">
-                Edit the 3 trust pillars (Shipping, Quality Inspection, WhatsApp Support) rendered on the homepage.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                resetTrustFeatures();
-                showToast('Reset trust features');
-              }}
-              className="px-3.5 py-2 bg-white border border-[#D9CEBF] text-xs font-semibold rounded-lg flex items-center gap-1"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-[#736B63]" />
-              <span>Reset Guarantees</span>
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {trustFeatures.map((tf) => (
-              <div key={tf.id} className="bg-white rounded-xl border border-[#EAE4D9] p-5 shadow-xs space-y-3 text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#721B29]/10 text-[#721B29] flex items-center justify-center font-bold">
-                    {tf.iconType === 'globe' && <Globe className="w-5 h-5" />}
-                    {tf.iconType === 'shield' && <ShieldCheck className="w-5 h-5" />}
-                    {tf.iconType === 'whatsapp' && <MessageSquare className="w-5 h-5" />}
-                  </div>
-                  <div>
-                    <h3 className="font-serif font-bold text-base text-[#242120]">{tf.title}</h3>
-                    <span className="text-[10px] text-[#736B63] font-mono">ID: {tf.id}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
-                    Feature Title
-                  </label>
-                  <input
-                    type="text"
-                    value={tf.title}
-                    onChange={(e) => updateTrustFeature(tf.id, { title: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-semibold focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
-                    Feature Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={tf.description}
-                    onChange={(e) => updateTrustFeature(tf.id, { description: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
-                    Icon Type
-                  </label>
-                  <select
-                    value={tf.iconType}
-                    onChange={(e) => updateTrustFeature(tf.id, { iconType: e.target.value as any })}
-                    className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-medium focus:outline-none focus:border-[#721B29]"
-                  >
-                    <option value="globe">Globe (Shipping)</option>
-                    <option value="shield">Shield (Quality Assured)</option>
-                    <option value="whatsapp">WhatsApp (Live Chat Support)</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* TAB 6: CUSTOMER TESTIMONIALS */}
       {activeTab === 'testimonials' && (

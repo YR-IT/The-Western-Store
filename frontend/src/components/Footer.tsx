@@ -13,11 +13,29 @@ import {
   Heart,
   ChevronRight,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const CATEGORIES: ProductCategory[] = [
   'Ethnic Wear',
   'Western Wear',
 ];
+
+const footerContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+const footerColVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+  },
+};
 
 export const Footer: React.FC = () => {
   const { navigateToCategory, setView, setAdminActiveTab } = useStore();
@@ -25,9 +43,15 @@ export const Footer: React.FC = () => {
   return (
     <footer className="bg-[#1C1717] text-[#E8E1D5] border-t border-[#332A2B] pt-14 pb-8 w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#2E2425]">
+        <motion.div
+          variants={footerContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#2E2425]"
+        >
           {/* Col 1 & 2: Brand & Kurukshetra Physical Boutique */}
-          <div className="lg:col-span-2">
+          <motion.div variants={footerColVariants} className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-3">
               <div>
                 <div className="flex items-center gap-1.5">
@@ -83,10 +107,10 @@ export const Footer: React.FC = () => {
                 </a>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Col 3: Categories */}
-          <div>
+          <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
               Categories
             </h4>
@@ -96,18 +120,18 @@ export const Footer: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigateToCategory(cat)}
-                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1"
+                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
                   >
-                    <ChevronRight className="w-3 h-3 text-[#721B29]" />
+                    <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
                     <span>{cat}</span>
                   </button>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Col 4: More Categories */}
-          <div>
+          <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
               Western & Sets
             </h4>
@@ -117,9 +141,9 @@ export const Footer: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigateToCategory(cat)}
-                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1"
+                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
                   >
-                    <ChevronRight className="w-3 h-3 text-[#721B29]" />
+                    <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
                     <span>{cat}</span>
                   </button>
                 </li>
@@ -128,17 +152,17 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setView('wishlist')}
-                  className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1"
+                  className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
                 >
-                  <ChevronRight className="w-3 h-3 text-[#721B29]" />
+                  <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
                   <span>My Wishlist</span>
                 </button>
               </li>
             </ul>
-          </div>
+          </motion.div>
 
           {/* Col 5: Quick Links & Store Policies */}
-          <div>
+          <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
               Customer Care
             </h4>
@@ -147,9 +171,9 @@ export const Footer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setView('track-order')}
-                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
-                  <ChevronRight className="w-3 h-3 text-[#E6C280]" />
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
                   <span>Track Order Status</span>
                 </button>
               </li>
@@ -187,34 +211,46 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
             </ul>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Bottom Bar: Copyright & Payment/Trust Badges */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8C8276]">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8C8276]"
+        >
           <p className="flex items-center gap-1">
             <span>© {new Date().getFullYear()} The Western Store, Kurukshetra. All rights reserved.</span>
           </p>
 
           {/* Payment & WhatsApp ordering badges */}
           <div className="flex items-center flex-wrap gap-2 text-[11px]">
-            <span className="px-2 py-1 bg-[#282122] rounded-xs border border-[#3D3335] text-[#D1C7B8]">
-              UPI / QR
-            </span>
-            <span className="px-2 py-1 bg-[#282122] rounded-xs border border-[#3D3335] text-[#D1C7B8]">
-              Google Pay
-            </span>
-            <span className="px-2 py-1 bg-[#282122] rounded-xs border border-[#3D3335] text-[#D1C7B8]">
-              PhonePe
-            </span>
-            <span className="px-2 py-1 bg-[#282122] rounded-xs border border-[#3D3335] text-[#D1C7B8]">
-              Paytm
-            </span>
-            <span className="px-2 py-1 bg-[#721B29]/30 rounded-xs border border-[#721B29]/60 text-[#E6C280] font-medium flex items-center gap-1">
+            {['UPI / QR', 'Google Pay', 'PhonePe', 'Paytm'].map((method, idx) => (
+              <motion.span
+                key={method}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.35 + idx * 0.06 }}
+                className="px-2 py-1 bg-[#282122] rounded-xs border border-[#3D3335] text-[#D1C7B8]"
+              >
+                {method}
+              </motion.span>
+            ))}
+            <motion.span
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.59 }}
+              className="px-2 py-1 bg-[#721B29]/30 rounded-xs border border-[#721B29]/60 text-[#E6C280] font-medium flex items-center gap-1"
+            >
               <span>📲 WhatsApp Checkout</span>
-            </span>
+            </motion.span>
           </div>
-        </div>
+        </motion.div>
       </div>
     </footer>
   );

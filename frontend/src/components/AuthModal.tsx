@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { X, Lock, ShieldCheck, Sparkles, CheckCircle2, UserCheck, AlertCircle, Mail, User, Loader2 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -139,9 +140,20 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
-      <div
-        className="relative w-full max-w-md bg-[#FDFBF7] border border-[#E5DFD3] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs"
+      onClick={() => setIsAuthModalOpen(false)}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 24 }}
+        transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+        className="relative w-full max-w-md bg-[#FDFBF7] border border-[#E5DFD3] rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
@@ -391,7 +403,7 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

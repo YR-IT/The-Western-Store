@@ -1,69 +1,104 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Globe, RefreshCw, MessageSquare, ShieldCheck, HeartHandshake } from 'lucide-react';
-import { STORE_INFO } from '../data/mockData';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import shoppingCartLottie from '../gifs/shopping cart.lottie';
+import walletLottie from '../gifs/Wallet.lottie';
+import supportIconLottie from '../gifs/Support icon.lottie';
 
-import { useStore } from '../context/StoreContext';
+const HARDCODED_TRUST_FEATURES = [
+  {
+    id: 'free-shipping',
+    title: 'Free Shipping',
+    description: 'Free shipping on orders above ₹999',
+    lottie: shoppingCartLottie,
+  },
+  {
+    id: 'flexible-payment',
+    title: 'Flexible Payment',
+    description: 'Multiple payment options available',
+    lottie: walletLottie,
+  },
+  {
+    id: 'premium-support',
+    title: 'Premium Support',
+    description: '24/7 customer support',
+    lottie: supportIconLottie,
+  },
+];
 
 export const TrustStrip: React.FC = () => {
-  const { trustFeatures } = useStore();
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'shield':
-        return <ShieldCheck className="w-6 h-6" />;
-      case 'whatsapp':
-        return <MessageSquare className="w-6 h-6" />;
-      case 'globe':
-      default:
-        return <Globe className="w-6 h-6" />;
-    }
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.1,
+      },
+    },
   };
 
-  const getBgClass = (type: string) => {
-    switch (type) {
-      case 'shield':
-        return 'bg-[#B8860B]/10 text-[#B8860B]';
-      case 'whatsapp':
-        return 'bg-emerald-700/10 text-emerald-800';
-      case 'globe':
-      default:
-        return 'bg-[#721B29]/10 text-[#721B29]';
-    }
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+    },
   };
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.4 }}
-      className="py-10 bg-[#FAF8F3] border-b border-[#EAE4D9]"
+      className="py-12 sm:py-16 bg-white border-y border-[#EAE4D9]/80"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-6 divide-y md:divide-y-0 md:divide-x divide-[#E5DDCF]">
-          {trustFeatures.map((tf, idx) => (
-            <div
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 text-center"
+        >
+          {HARDCODED_TRUST_FEATURES.map((tf) => (
+            <motion.div
               key={tf.id}
-              className={`flex items-start gap-4 pt-4 md:pt-0 md:px-6 ${
-                idx === 0 ? 'first:pl-0' : idx === trustFeatures.length - 1 ? 'last:pr-0' : ''
-              }`}
+              variants={itemVariants}
+              className="flex flex-col items-center justify-center p-3 group"
             >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${getBgClass(tf.iconType)}`}>
-                {getIcon(tf.iconType)}
-              </div>
-              <div>
-                <h3 className="font-serif text-base font-bold text-[#242120] tracking-tight">
-                  {tf.title}
-                </h3>
-                <p className="text-xs text-[#736B63] mt-1 font-light leading-relaxed">
-                  {tf.description}
-                </p>
-              </div>
-            </div>
+              {/* Circular Animated Lottie Container */}
+              <motion.div
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 20 }}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center mb-4 bg-[#FAF8F3] group-hover:bg-[#F3EDE0] transition-colors duration-300 overflow-hidden shadow-xs border border-[#EAE4D9]/80 p-3"
+              >
+                <DotLottieReact
+                  src={tf.lottie}
+                  loop
+                  autoplay
+                  className="w-full h-full object-contain pointer-events-none"
+                />
+              </motion.div>
+
+              {/* Feature Title */}
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#242120] tracking-tight group-hover:text-[#721B29] transition-colors">
+                {tf.title}
+              </h3>
+
+              {/* Subtitle / Description */}
+              <p className="text-xs sm:text-sm text-[#736B63] mt-1.5 font-light leading-relaxed max-w-xs">
+                {tf.description}
+              </p>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </motion.section>
   );
 };
+
+

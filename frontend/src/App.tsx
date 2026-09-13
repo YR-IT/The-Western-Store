@@ -31,7 +31,18 @@ import { STORE_INFO } from './data/mockData';
 import { MessageCircle } from 'lucide-react';
 
 const StorefrontContent: React.FC = () => {
-  const { currentView, products, setSelectedCategory, setView, homeSections } = useStore();
+  const {
+    currentView,
+    products,
+    setSelectedCategory,
+    setView,
+    homeSections,
+    quickViewProduct,
+    isSearchOpen,
+    isAuthModalOpen,
+    isCheckoutModalOpen,
+    isSizeChartOpen,
+  } = useStore();
 
   // Scroll to top on view changes
   useEffect(() => {
@@ -103,9 +114,12 @@ const StorefrontContent: React.FC = () => {
           />
         );
       case 'lookbook':
-        return <EditorialLookbook key={sec.id} />;
-      case 'trust-strip':
-        return <TrustStrip key={sec.id} />;
+        return (
+          <React.Fragment key={sec.id}>
+            <EditorialLookbook />
+            <TrustStrip />
+          </React.Fragment>
+        );
       case 'testimonials':
         return <Testimonials key={sec.id} />;
       case 'instagram':
@@ -191,13 +205,28 @@ const StorefrontContent: React.FC = () => {
       {/* 12. Footer */}
       <Footer />
 
-      {/* Global Modals & Drawers */}
+      {/* Global Modals & Drawers — wrapped in AnimatePresence for exit animations */}
       <CartDrawer />
-      <WhatsAppCheckoutModal />
-      <QuickViewModal />
-      <SizeChartModal />
-      <SearchModal />
-      <AuthModal />
+
+      <AnimatePresence>
+        {isCheckoutModalOpen && <WhatsAppCheckoutModal />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {quickViewProduct && <QuickViewModal />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSearchOpen && <SearchModal />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isAuthModalOpen && <AuthModal />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSizeChartOpen && <SizeChartModal />}
+      </AnimatePresence>
 
       {/* Floating WhatsApp Quick-Chat button for mobile & desktop */}
       <a

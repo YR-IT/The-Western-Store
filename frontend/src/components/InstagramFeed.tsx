@@ -51,13 +51,27 @@ export const InstagramFeed: React.FC = () => {
         </div>
 
         {/* 6-Grid of tagged customer photos */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+          }}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4"
+        >
           {instagramPosts.map((post) => (
-            <a
+            <motion.a
               key={post.id}
               href={STORE_INFO.instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
+              variants={{
+                hidden: { opacity: 0, scale: 0.85, y: 12 },
+                visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+              }}
+              whileHover={{ scale: 1.04, zIndex: 2 }}
               className="group relative aspect-square rounded-lg overflow-hidden bg-[#ECE6DB] border border-[#E0D7C8] block shadow-2xs cursor-pointer"
             >
               <img
@@ -89,9 +103,9 @@ export const InstagramFeed: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </a>
+            </motion.a>
           ))}
-        </div>
+        </motion.div>
       </div>
     </motion.section>
   );

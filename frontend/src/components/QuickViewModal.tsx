@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Heart, ArrowRight, Check, Flame } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const QuickViewModal: React.FC = () => {
   const {
@@ -47,12 +48,22 @@ export const QuickViewModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.22 }}
         className="fixed inset-0 bg-black/60 backdrop-blur-xs"
         onClick={() => setQuickViewProduct(null)}
       />
 
-      <div className="relative w-full max-w-2xl bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#EAE4D9] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 20 }}
+        transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+        className="relative w-full max-w-2xl bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#EAE4D9] overflow-hidden z-10 max-h-[90vh] overflow-y-auto"
+      >
         <button
           type="button"
           onClick={() => setQuickViewProduct(null)}
@@ -235,7 +246,7 @@ export const QuickViewModal: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

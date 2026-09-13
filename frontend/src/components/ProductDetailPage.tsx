@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Sparkles,
   ChevronDown,
-  ChevronUp,
   MessageSquare,
   Ruler,
   Check,
@@ -24,6 +23,7 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from 'lucide-react';
+
 
 export const ProductDetailPage: React.FC = () => {
   const {
@@ -123,17 +123,26 @@ export const ProductDetailPage: React.FC = () => {
     .filter((p) => p.id !== product.id && p.category === product.category)
     .slice(0, 4);
 
-  if (isLoading) {
-    return <PDPSkeleton />;
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden"
-    >
+    <AnimatePresence mode="wait">
+      {isLoading ? (
+        <motion.div
+          key="pdp-skeleton"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          <PDPSkeleton />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="pdp-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden"
+        >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-[#8C8276] mb-6 sm:mb-8 overflow-x-auto whitespace-nowrap pb-1">
@@ -250,7 +259,12 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Details Column (5 cols on large screen) */}
-          <div className="lg:col-span-5 flex flex-col justify-between">
+          <motion.div
+            className="lg:col-span-5 flex flex-col justify-between"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div>
               {/* Category & Badge */}
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -362,18 +376,20 @@ export const ProductDetailPage: React.FC = () => {
                   {product.sizes.map((sz) => {
                     const isSelected = selectedSize === sz;
                     return (
-                      <button
+                      <motion.button
                         key={sz}
                         type="button"
                         onClick={() => setSelectedSize(sz)}
-                        className={`min-w-[48px] px-3.5 py-2 text-xs font-semibold rounded-sm border transition-all ${
+                        whileHover={{ scale: 1.06 }}
+                        whileTap={{ scale: 0.93 }}
+                        className={`min-w-[48px] px-3.5 py-2 text-xs font-semibold rounded-sm border transition-colors ${
                           isSelected
                             ? 'bg-[#721B29] text-white border-[#721B29] shadow-xs'
                             : 'bg-white text-[#242120] border-[#D9CEBF] hover:border-[#721B29]'
                         }`}
                       >
                         {sz}
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -408,12 +424,14 @@ export const ProductDetailPage: React.FC = () => {
 
               {/* CTA Buttons */}
               <div className="mt-8 space-y-3">
-                <button
+                <motion.button
                   id="pdp-add-to-cart-btn"
                   type="button"
                   onClick={handleAddToCart}
                   disabled={product.isSoldOut}
-                  className={`w-full py-4 px-6 rounded-sm font-medium text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                  whileHover={!product.isSoldOut ? { scale: 1.015 } : {}}
+                  whileTap={!product.isSoldOut ? { scale: 0.97 } : {}}
+                  className={`w-full py-4 px-6 rounded-sm font-medium text-sm tracking-wide transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer ${
                     product.isSoldOut
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : addedAnimation
@@ -421,29 +439,45 @@ export const ProductDetailPage: React.FC = () => {
                       : 'bg-[#721B29] text-white hover:bg-[#852031]'
                   }`}
                 >
-                  {addedAnimation ? (
-                    <>
-                      <Check className="w-5 h-5" />
-                      <span>Added to Bag!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-5 h-5" />
-                      <span>{product.isSoldOut ? 'Sold Out' : 'Add To Shopping Bag'}</span>
-                    </>
-                  )}
-                </button>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {addedAnimation ? (
+                      <motion.span
+                        key="added"
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Check className="w-5 h-5" />
+                        <span>Added to Bag!</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="add"
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        className="flex items-center gap-2"
+                      >
+                        <ShoppingBag className="w-5 h-5" />
+                        <span>{product.isSoldOut ? 'Sold Out' : 'Add To Shopping Bag'}</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
 
                 {/* Direct WhatsApp Inquiry */}
-                <button
+                <motion.button
                   id="pdp-whatsapp-inquire-btn"
                   type="button"
                   onClick={handleWhatsAppInquiry}
+                  whileHover={{ scale: 1.012 }}
+                  whileTap={{ scale: 0.97 }}
                   className="w-full py-3 px-6 rounded-sm border-2 border-emerald-700 bg-emerald-50/60 text-emerald-900 hover:bg-emerald-100 transition-colors font-medium text-xs tracking-wide flex items-center justify-center gap-2"
                 >
                   <MessageSquare className="w-4 h-4 text-emerald-700" />
                   <span>Ask Store Stylist on WhatsApp (📲 9729515288)</span>
-                </button>
+                </motion.button>
               </div>
 
               {/* Social Media Share Buttons */}
@@ -544,18 +578,31 @@ export const ProductDetailPage: React.FC = () => {
                   className="w-full py-3.5 flex items-center justify-between text-left font-serif font-bold text-sm text-[#242120]"
                 >
                   <span>Fabric & Silhouette Details</span>
-                  {accordionOpen.fabric ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <motion.span animate={{ rotate: accordionOpen.fabric ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
                 </button>
-                {accordionOpen.fabric && (
-                  <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed">
-                    <p>{product.description}</p>
-                    <ul className="list-disc pl-4 space-y-1 pt-1 text-[11px]">
-                      <li><strong>Fabric:</strong> {product.fabricCare.fabric}</li>
-                      <li><strong>Fit & Silhouette:</strong> {product.fabricCare.fit}</li>
-                      <li><strong>Occasion:</strong> {product.fabricCare.occasion}</li>
-                    </ul>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.fabric && (
+                    <motion.div
+                      key="fabric"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed">
+                        <p>{product.description}</p>
+                        <ul className="list-disc pl-4 space-y-1 pt-1 text-[11px]">
+                          <li><strong>Fabric:</strong> {product.fabricCare.fabric}</li>
+                          <li><strong>Fit & Silhouette:</strong> {product.fabricCare.fit}</li>
+                          <li><strong>Occasion:</strong> {product.fabricCare.occasion}</li>
+                        </ul>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Return & Exchange Policy Accordion */}
@@ -569,17 +616,30 @@ export const ProductDetailPage: React.FC = () => {
                     <ShieldAlert className="w-4 h-4" />
                     <span>No Return & No Exchange Policy</span>
                   </span>
-                  {accordionOpen.returnPolicy ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <motion.span animate={{ rotate: accordionOpen.returnPolicy ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
                 </button>
-                {accordionOpen.returnPolicy && (
-                  <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed text-[11px]">
-                    <div className="p-2.5 bg-amber-50/80 border border-amber-200 text-[#8C3E00] rounded font-medium">
-                      ⚠️ <strong>Final Sale:</strong> We follow a strict <strong>No Exchange and No Return Policy</strong> for all ordered garments.
-                    </div>
-                    <p>• Please double-check your sizing using our size guide or message our store stylist on WhatsApp before confirming your order.</p>
-                    <p>• Every piece undergoes a rigorous 3-point quality check at our Railway Road store prior to dispatch to ensure pristine craftsmanship.</p>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.returnPolicy && (
+                    <motion.div
+                      key="returnPolicy"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed text-[11px]">
+                        <div className="p-2.5 bg-amber-50/80 border border-amber-200 text-[#8C3E00] rounded font-medium">
+                          ⚠️ <strong>Final Sale:</strong> We follow a strict <strong>No Exchange and No Return Policy</strong> for all ordered garments.
+                        </div>
+                        <p>• Please double-check your sizing using our size guide or message our store stylist on WhatsApp before confirming your order.</p>
+                        <p>• Every piece undergoes a rigorous 3-point quality check at our Railway Road store prior to dispatch to ensure pristine craftsmanship.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Wash Care */}
@@ -590,15 +650,28 @@ export const ProductDetailPage: React.FC = () => {
                   className="w-full py-3.5 flex items-center justify-between text-left font-serif font-bold text-sm text-[#242120]"
                 >
                   <span>Wash Care & Maintenance</span>
-                  {accordionOpen.care ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <motion.span animate={{ rotate: accordionOpen.care ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
                 </button>
-                {accordionOpen.care && (
-                  <div className="pb-4 text-[#5C544B] space-y-1.5 leading-relaxed text-[11px]">
-                    <p>• {product.fabricCare.washCare}</p>
-                    <p>• Store folded in a cool dry place or breathable muslin cover for zari longevity.</p>
-                    <p>• Iron on reverse or use garment steamer on delicate silk/georgette fabrics.</p>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.care && (
+                    <motion.div
+                      key="care"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="pb-4 text-[#5C544B] space-y-1.5 leading-relaxed text-[11px]">
+                        <p>• {product.fabricCare.washCare}</p>
+                        <p>• Store folded in a cool dry place or breathable muslin cover for zari longevity.</p>
+                        <p>• Iron on reverse or use garment steamer on delicate silk/georgette fabrics.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Delivery info */}
@@ -609,18 +682,31 @@ export const ProductDetailPage: React.FC = () => {
                   className="w-full py-3.5 flex items-center justify-between text-left font-serif font-bold text-sm text-[#242120]"
                 >
                   <span>Courier & Delivery Timeline</span>
-                  {accordionOpen.shipping ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <motion.span animate={{ rotate: accordionOpen.shipping ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
                 </button>
-                {accordionOpen.shipping && (
-                  <div className="pb-4 text-[#5C544B] space-y-1 text-[11px] leading-relaxed">
-                    <p>• <strong>Haryana & Delhi NCR:</strong> 1-2 business days.</p>
-                    <p>• <strong>Rest of India:</strong> 3-5 business days via Delhivery or Blue Dart.</p>
-                    <p>• <strong>International:</strong> 7-10 business days via DHL / FedEx.</p>
-                  </div>
-                )}
+                <AnimatePresence initial={false}>
+                  {accordionOpen.shipping && (
+                    <motion.div
+                      key="shipping"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: [0.4, 0, 0.2, 1] }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div className="pb-4 text-[#5C544B] space-y-1 text-[11px] leading-relaxed">
+                        <p>• <strong>Haryana & Delhi NCR:</strong> 1-2 business days.</p>
+                        <p>• <strong>Rest of India:</strong> 3-5 business days via Delhivery or Blue Dart.</p>
+                        <p>• <strong>International:</strong> 7-10 business days via DHL / FedEx.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Related Outfits Section */}
@@ -643,6 +729,9 @@ export const ProductDetailPage: React.FC = () => {
         )}
       </div>
     </motion.div>
-  );
+  )}
+</AnimatePresence>
+);
 };
+
 

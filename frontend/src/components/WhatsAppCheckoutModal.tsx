@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { X, Send, ShieldCheck, ShoppingBag, MapPin, Phone, User, CheckCircle2, Package } from 'lucide-react';
@@ -74,10 +75,22 @@ export const WhatsAppCheckoutModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={handleClose} />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+        onClick={handleClose}
+      />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#E0D7C8] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-lg bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#E0D7C8] overflow-hidden z-10 max-h-[90vh] flex flex-col"
+      >
         {/* Header */}
         <div className="p-5 border-b border-[#EAE4D9] flex items-center justify-between bg-[#F8F5EE]">
           <div className="flex items-center gap-2.5">
@@ -338,7 +351,7 @@ export const WhatsAppCheckoutModal: React.FC = () => {
             </form>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

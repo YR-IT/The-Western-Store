@@ -164,7 +164,7 @@ export interface TrustFeatureConfig {
   id: string;
   title: string;
   description: string;
-  iconType: 'globe' | 'shield' | 'whatsapp';
+  iconType: 'globe' | 'shield' | 'whatsapp' | 'cart' | 'wallet' | 'support' | string;
 }
 
 export type HomeSectionType =

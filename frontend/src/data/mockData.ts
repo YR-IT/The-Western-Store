@@ -724,16 +724,6 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     buttonLink: 'plp',
   },
   {
-    id: 'trust-strip',
-    type: 'trust-strip',
-    title: 'Trust & Customer Assurance',
-    tagline: 'Why Shop With Us',
-    subtitle: 'Worldwide shipping, easy exchange, and instant WhatsApp support.',
-    enabled: true,
-    order: 7,
-    images: [],
-  },
-  {
     id: 'testimonials',
     type: 'testimonials',
     title: 'Customer Stories',
@@ -847,21 +837,21 @@ export const INITIAL_BUDGET_TILES: BudgetTileConfig[] = [
 export const INITIAL_TRUST_FEATURES: TrustFeatureConfig[] = [
   {
     id: 'tf-1',
-    title: 'Worldwide Shipping',
-    description: 'Prompt dispatch across India and overseas. Express shipping available right from our Kurukshetra boutique.',
-    iconType: 'globe',
+    title: 'Free Shipping',
+    description: 'Free shipping on orders above ₹999',
+    iconType: 'cart',
   },
   {
     id: 'tf-2',
-    title: 'Quality Assured',
-    description: '3-point quality inspection prior to dispatch. Final sale under our strict No Exchange & No Return Policy.',
-    iconType: 'shield',
+    title: 'Flexible Payment',
+    description: 'Multiple payment options available',
+    iconType: 'wallet',
   },
   {
     id: 'tf-3',
-    title: 'WhatsApp Support',
-    description: 'Connect directly with store stylists on WhatsApp for live trial videos & sizing advice.',
-    iconType: 'whatsapp',
+    title: 'Premium Support',
+    description: '24/7 customer support',
+    iconType: 'support',
   },
 ];
 

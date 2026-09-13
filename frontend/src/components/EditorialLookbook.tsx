@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { ShoppingBag, Sparkles, ArrowRight, Eye } from 'lucide-react';
 
@@ -91,15 +91,18 @@ export const EditorialLookbook: React.FC = () => {
                 {/* Ping ring */}
                 <span className="animate-ping absolute inline-flex h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#E6C280] opacity-75" />
                 {/* Center dot */}
-                <div
-                  className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center transition-all shadow-md ${
+                <motion.div
+                  animate={{ scale: activeHotspot === idx ? 1.15 : 1 }}
+                  whileHover={{ scale: 1.2 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center shadow-md ${
                     activeHotspot === idx
-                      ? 'bg-[#721B29] border-[#E6C280] text-white scale-110'
+                      ? 'bg-[#721B29] border-[#E6C280] text-white'
                       : 'bg-white/90 border-[#721B29] text-[#721B29]'
                   }`}
                 >
                   <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                </div>
+                </motion.div>
                 {/* Tooltip on hover */}
                 <div className="absolute left-10 top-1/2 -translate-y-1/2 whitespace-nowrap bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-sm text-[11px] font-medium text-white border border-white/15 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden sm:block">
                   {spot.label}
@@ -124,51 +127,60 @@ export const EditorialLookbook: React.FC = () => {
             </div>
 
             {/* Floating Product Callout Card */}
-            <div className="w-full sm:w-80 bg-white/95 backdrop-blur-md text-[#242120] rounded-xl p-3.5 sm:p-4 shadow-xl border border-white/30 flex items-center gap-3">
-              <img
-                src={activeProduct.images[0]}
-                alt={activeProduct.title}
-                className="w-16 h-20 sm:w-18 sm:h-22 object-cover object-top rounded-md border border-[#EAE4D9] flex-shrink-0"
-              />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeHotspot}
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.96 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full sm:w-80 bg-white/95 backdrop-blur-md text-[#242120] rounded-xl p-3.5 sm:p-4 shadow-xl border border-white/30 flex items-center gap-3"
+              >
+                <img
+                  src={activeProduct.images[0]}
+                  alt={activeProduct.title}
+                  className="w-16 h-20 sm:w-18 sm:h-22 object-cover object-top rounded-md border border-[#EAE4D9] flex-shrink-0"
+                />
 
-              <div className="flex-1 min-w-0">
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#721B29] block">
-                  Shop The Look
-                </span>
-                <h4 className="font-serif text-xs sm:text-sm font-bold text-[#242120] truncate mt-0.5">
-                  {activeProduct.title}
-                </h4>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="font-sans font-bold text-xs sm:text-sm text-[#721B29]">
-                    ₹{activeProduct.price.toLocaleString('en-IN')}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#721B29] block">
+                    Shop The Look
                   </span>
-                  {activeProduct.onSale && (
-                    <span className="text-[10px] sm:text-[11px] text-[#8C8276] line-through">
-                      ₹{activeProduct.originalPrice.toLocaleString('en-IN')}
+                  <h4 className="font-serif text-xs sm:text-sm font-bold text-[#242120] truncate mt-0.5">
+                    {activeProduct.title}
+                  </h4>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-sans font-bold text-xs sm:text-sm text-[#721B29]">
+                      ₹{activeProduct.price.toLocaleString('en-IN')}
                     </span>
-                  )}
-                </div>
+                    {activeProduct.onSale && (
+                      <span className="text-[10px] sm:text-[11px] text-[#8C8276] line-through">
+                        ₹{activeProduct.originalPrice.toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="mt-2.5 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigateToProduct(activeProduct.id)}
-                    className="flex-1 py-1.5 px-2 bg-[#721B29] text-white text-[10px] sm:text-[11px] font-semibold rounded-xs hover:bg-[#852031] transition-colors flex items-center justify-center gap-1"
-                  >
-                    <span>View Detail</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setQuickViewProduct(activeProduct)}
-                    className="p-1.5 border border-[#D9CEBF] text-[#4A453E] hover:text-[#721B29] rounded-xs hover:bg-[#F3EFE6] transition-colors"
-                    title="Quick View"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigateToProduct(activeProduct.id)}
+                      className="flex-1 py-1.5 px-2 bg-[#721B29] text-white text-[10px] sm:text-[11px] font-semibold rounded-xs hover:bg-[#852031] transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>View Detail</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuickViewProduct(activeProduct)}
+                      className="p-1.5 border border-[#D9CEBF] text-[#4A453E] hover:text-[#721B29] rounded-xs hover:bg-[#F3EFE6] transition-colors"
+                      title="Quick View"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

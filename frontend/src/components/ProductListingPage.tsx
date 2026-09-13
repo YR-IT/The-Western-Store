@@ -161,17 +161,26 @@ export const ProductListingPage: React.FC = () => {
     selectedPriceRange !== 'all' ||
     selectedColor !== 'all';
 
-  if (isLoading) {
-    return <PLPSkeleton />;
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden"
-    >
+    <AnimatePresence mode="wait">
+      {isLoading ? (
+        <motion.div
+          key="plp-skeleton"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          <PLPSkeleton />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="plp-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden"
+        >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Breadcrumb & Header */}
         <div className="mb-6">
@@ -229,67 +238,109 @@ export const ProductListingPage: React.FC = () => {
         </div>
 
         {/* Active Filter Chips */}
-        {hasActiveFilters && (
-          <div className="flex items-center flex-wrap gap-2 mb-6">
-            <span className="text-xs text-[#736B63]">Applied:</span>
-
-            {selectedCategory !== 'All' && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#721B29]/10 text-[#721B29] text-xs rounded-full font-medium">
-                <span>{selectedCategory}</span>
-                <button type="button" onClick={() => setSelectedCategory('All')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedBudgetTier !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#B8860B]/15 text-[#8F6808] text-xs rounded-full font-medium">
-                <span>Budget: {selectedBudgetTier.replace('_', ' ')}</span>
-                <button type="button" onClick={() => setSelectedBudgetTier('all')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedSizes.map((size) => (
-              <span
-                key={size}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
-              >
-                <span>Size: {size}</span>
-                <button type="button" onClick={() => toggleSize(size)}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-
-            {selectedPriceRange !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium">
-                <span>Price: {selectedPriceRange}</span>
-                <button type="button" onClick={() => setSelectedPriceRange('all')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            {selectedColor !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium">
-                <span>Color: {selectedColor}</span>
-                <button type="button" onClick={() => setSelectedColor('all')}>
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="text-xs text-[#721B29] font-medium underline underline-offset-2 ml-2 hover:opacity-80"
+        <AnimatePresence>
+          {hasActiveFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex items-center flex-wrap gap-2 mb-6 overflow-hidden"
             >
-              Clear All
-            </button>
-          </div>
-        )}
+              <span className="text-xs text-[#736B63]">Applied:</span>
+
+              <AnimatePresence mode="popLayout">
+                {selectedCategory !== 'All' && (
+                  <motion.span
+                    key="cat-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#721B29]/10 text-[#721B29] text-xs rounded-full font-medium"
+                  >
+                    <span>{selectedCategory}</span>
+                    <button type="button" onClick={() => setSelectedCategory('All')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
+                {selectedBudgetTier !== 'all' && (
+                  <motion.span
+                    key="budget-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#B8860B]/15 text-[#8F6808] text-xs rounded-full font-medium"
+                  >
+                    <span>Budget: {selectedBudgetTier.replace('_', ' ')}</span>
+                    <button type="button" onClick={() => setSelectedBudgetTier('all')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
+                {selectedSizes.map((size) => (
+                  <motion.span
+                    key={`size-${size}`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
+                  >
+                    <span>Size: {size}</span>
+                    <button type="button" onClick={() => toggleSize(size)}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                ))}
+
+                {selectedPriceRange !== 'all' && (
+                  <motion.span
+                    key="price-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
+                  >
+                    <span>Price: {selectedPriceRange}</span>
+                    <button type="button" onClick={() => setSelectedPriceRange('all')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
+                {selectedColor !== 'all' && (
+                  <motion.span
+                    key="color-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
+                  >
+                    <span>Color: {selectedColor}</span>
+                    <button type="button" onClick={() => setSelectedColor('all')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+              </AnimatePresence>
+
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-xs text-[#721B29] font-medium underline underline-offset-2 ml-2 hover:opacity-80"
+              >
+                Clear All
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Grid + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
@@ -525,107 +576,121 @@ export const ProductListingPage: React.FC = () => {
       </div>
 
       {/* Mobile Filter Drawer */}
-      {isMobileFilterOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
-          <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-xs"
-            onClick={() => setIsMobileFilterOpen(false)}
-          />
-          <div className="relative w-4/5 max-w-xs bg-white h-full p-5 overflow-y-auto shadow-2xl z-10 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[#EAE4D9] mb-4">
-                <h3 className="font-serif text-base font-bold text-[#242120]">Filter Collections</h3>
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+              onClick={() => setIsMobileFilterOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 340, damping: 34, mass: 0.9 }}
+              className="relative w-4/5 max-w-xs bg-white h-full p-5 overflow-y-auto shadow-2xl z-10 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-[#EAE4D9] mb-4">
+                  <h3 className="font-serif text-base font-bold text-[#242120]">Filter Collections</h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileFilterOpen(false)}
+                    className="p-1 text-[#4A453E] hover:text-[#721B29] transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Category */}
+                <div className="mb-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Category</p>
+                  <div className="space-y-1">
+                    {categoryList.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`w-full text-left text-xs py-1.5 px-2 rounded-xs ${
+                          selectedCategory === cat ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="mb-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Budget</p>
+                  <div className="space-y-1.5 text-xs">
+                    {[
+                      { label: 'All', val: 'all' },
+                      { label: 'Under ₹999', val: 'under-999' },
+                      { label: 'Under ₹1499', val: '1000-1499' },
+                      { label: 'Under ₹1999', val: '1500-1999' },
+                      { label: 'Above ₹2000', val: 'above-2000' },
+                    ].map((item) => (
+                      <label key={item.val} className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={selectedPriceRange === item.val}
+                          onChange={() => setSelectedPriceRange(item.val)}
+                          className="accent-[#721B29]"
+                        />
+                        <span>{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sizes */}
+                <div className="mb-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Size</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SIZES.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => toggleSize(size)}
+                        className={`px-2.5 py-1 text-xs border rounded-xs ${
+                          selectedSizes.includes(size) ? 'bg-[#721B29] text-white' : 'border-[#D9CEBF]'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[#EAE4D9] flex gap-2">
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="flex-1 py-2 border border-[#D9CEBF] text-xs font-medium rounded-xs text-[#4A453E]"
+                >
+                  Reset
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="p-1 text-[#4A453E]"
+                  className="flex-1 py-2 bg-[#721B29] text-white text-xs font-semibold rounded-xs"
                 >
-                  <X className="w-5 h-5" />
+                  Apply ({filteredProducts.length})
                 </button>
               </div>
-
-              {/* Category */}
-              <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Category</p>
-                <div className="space-y-1">
-                  {categoryList.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`w-full text-left text-xs py-1.5 px-2 rounded-xs ${
-                        selectedCategory === cat ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E]'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price */}
-              <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Budget</p>
-                <div className="space-y-1.5 text-xs">
-                  {[
-                    { label: 'All', val: 'all' },
-                    { label: 'Under ₹999', val: 'under-999' },
-                    { label: 'Under ₹1499', val: '1000-1499' },
-                    { label: 'Under ₹1999', val: '1500-1999' },
-                    { label: 'Above ₹2000', val: 'above-2000' },
-                  ].map((item) => (
-                    <label key={item.val} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        checked={selectedPriceRange === item.val}
-                        onChange={() => setSelectedPriceRange(item.val)}
-                        className="accent-[#721B29]"
-                      />
-                      <span>{item.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sizes */}
-              <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Size</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {SIZES.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => toggleSize(size)}
-                      className={`px-2.5 py-1 text-xs border rounded-xs ${
-                        selectedSizes.includes(size) ? 'bg-[#721B29] text-white' : 'border-[#D9CEBF]'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#EAE4D9] flex gap-2">
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="flex-1 py-2 border border-[#D9CEBF] text-xs font-medium rounded-xs text-[#4A453E]"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsMobileFilterOpen(false)}
-                className="flex-1 py-2 bg-[#721B29] text-white text-xs font-semibold rounded-xs"
-              >
-                Apply ({filteredProducts.length})
-              </button>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </motion.div>
-  );
+        )}
+      </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 };
