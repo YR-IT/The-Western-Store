@@ -552,8 +552,8 @@ export const Header: React.FC = () => {
               </div>
 
               {/* Account / Login Prompt Banner inside Drawer */}
-              <div className="p-3 bg-[#721B29]/10 border-b border-[#721B29]/15 flex items-center justify-between">
-                {currentUser ? (
+              {currentUser && (
+                <div className="p-3 bg-[#721B29]/10 border-b border-[#721B29]/15 flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <img
                       src={currentUser.avatar}
@@ -565,22 +565,8 @@ export const Header: React.FC = () => {
                       <p className="text-[10px] text-[#721B29] font-medium truncate">{currentUser.email}</p>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-xs text-[#242120] font-medium">Sign in to sync cart across devices</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openAuthModal('customer', 'Sign in to access your account');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="px-2.5 py-1 bg-[#721B29] text-white text-xs font-bold rounded-xs shadow-xs"
-                    >
-                      Google Sign-In
-                    </button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Mobile Quick Actions */}
               <div className="p-3 border-b border-[#EAE4D9] bg-[#FAF8F3] space-y-2 text-xs">

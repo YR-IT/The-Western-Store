@@ -45,7 +45,7 @@ export const WhatsAppCheckoutModal: React.FC = () => {
 
   if (!isCheckoutModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim()) {
       alert('Please fill in your name, phone number, and delivery address.');
@@ -55,14 +55,15 @@ export const WhatsAppCheckoutModal: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const { order, waUrl } = submitWhatsAppOrder(formData);
-      setSuccessOrderInfo({ orderNumber: order.orderNumber, waUrl });
+      const { orderNumber, waUrl } = await submitWhatsAppOrder(formData);
+      setSuccessOrderInfo({ orderNumber, waUrl });
       setIsSubmitting(false);
 
       // Open WhatsApp in a new tab
       window.open(waUrl, '_blank');
     } catch (err) {
       console.error(err);
+      alert('Failed to place order. Please try again or contact us directly.');
       setIsSubmitting(false);
     }
   };

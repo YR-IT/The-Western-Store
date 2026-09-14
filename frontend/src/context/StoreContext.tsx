@@ -192,12 +192,47 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation State
-  const [view, setView] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history'>('home');
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
-  const [selectedBudgetTier, setSelectedBudgetTier] = useState<BudgetTier | 'all'>('all');
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [adminActiveTab, setAdminActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'homepage'>('dashboard');
+  const [view, setView] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history'>(
+    () => (localStorage.getItem('tws_view') as any) || 'home'
+  );
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>(
+    () => (localStorage.getItem('tws_selected_category') as ProductCategory | 'All') || 'All'
+  );
+  const [selectedBudgetTier, setSelectedBudgetTier] = useState<BudgetTier | 'all'>(
+    () => (localStorage.getItem('tws_selected_budget_tier') as BudgetTier | 'all') || 'all'
+  );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    () => localStorage.getItem('tws_selected_product_id') || null
+  );
+  const [adminActiveTab, setAdminActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'homepage' | 'sections' | 'filters'>(
+    () => (localStorage.getItem('tws_admin_active_tab') as any) || 'dashboard'
+  );
   const [trackingPrefill, setTrackingPrefill] = useState<{ orderNumber: string; phone: string } | null>(null);
+
+  // Sync Navigation State to localStorage
+  useEffect(() => {
+    localStorage.setItem('tws_view', view);
+  }, [view]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_selected_category', selectedCategory);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_selected_budget_tier', selectedBudgetTier);
+  }, [selectedBudgetTier]);
+
+  useEffect(() => {
+    if (selectedProductId) {
+      localStorage.setItem('tws_selected_product_id', selectedProductId);
+    } else {
+      localStorage.removeItem('tws_selected_product_id');
+    }
+  }, [selectedProductId]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_admin_active_tab', adminActiveTab);
+  }, [adminActiveTab]);
 
   // Products
   const [products, setProducts] = useState<Product[]>(() => {
@@ -926,80 +961,67 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteOrderFromSupabase(id).catch((err) => console.warn('[Supabase] Delete order notice:', err));
   };
 
-  const submitWhatsAppOrder = (formData: CheckoutFormData) => {
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `TWS-2026-${randomSuffix}`;
-    const newOrderId = `order-${Date.now()}`;
+  const submitWhatsAppOrder = async (formData: CheckoutFormData) => {
+    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
 
     const itemsSummary = cart.map((item) => ({
       productId: item.productId,
-      title: item.product.title,
-      image: item.product.images[0],
       size: item.size,
       color: item.color,
       quantity: item.quantity,
-      price: item.price,
     }));
 
-    const newOrder: Order = {
-      id: newOrderId,
-      orderNumber,
-      createdAt: new Date().toISOString(),
-      userId: currentUser?.id,
-      userEmail: currentUser?.email || formData.email,
-      customerName: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      pincode: formData.pincode,
-      city: formData.city,
-      state: formData.state,
-      notes: formData.notes,
-      items: itemsSummary,
-      subtotal: cartSubtotal,
-      shippingFee: 0,
-      total: cartSubtotal,
-      status: 'Pending WhatsApp',
-    };
+    try {
+      const response = await fetch(`${backendUrl}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formData,
+          items: itemsSummary,
+        }),
+      });
 
-    // Save order locally and sync to Supabase
-    setOrders((prev) => [newOrder, ...prev]);
-    setLastPlacedOrder(newOrder);
-    saveOrderToSupabase(newOrder, currentUser?.id).catch((err) => {
-      console.warn('[Supabase] Non-blocking order sync notice:', err);
-    });
+      if (!response.ok) {
+        throw new Error('Failed to submit order');
+      }
 
-    // Build formatted message for WhatsApp
-    let message = `*NEW ORDER - THE WESTERN STORE, KURUKSHETRA*\n\n`;
-    message += `*Order ID:* ${orderNumber}\n`;
-    message += `*Date:* ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n`;
-    message += `👤 *Customer Details:*\n`;
-    message += `• Name: ${formData.name}\n`;
-    message += `• Phone: ${formData.phone}\n`;
-    message += `• Address: ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}\n`;
-    if (formData.notes) {
-      message += `• Note: ${formData.notes}\n`;
+      const { orderNumber, total } = await response.json();
+
+      // Clear cart
+      clearCart();
+
+      // Build formatted message for WhatsApp using the server-calculated total
+      let message = `*NEW ORDER - THE WESTERN STORE, KURUKSHETRA*\n\n`;
+      message += `*Order ID:* ${orderNumber}\n`;
+      message += `*Date:* ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n`;
+      message += `👤 *Customer Details:*\n`;
+      message += `• Name: ${formData.name}\n`;
+      message += `• Phone: ${formData.phone}\n`;
+      message += `• Address: ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}\n`;
+      if (formData.notes) {
+        message += `• Note: ${formData.notes}\n`;
+      }
+      message += `\n👗 *Items Ordered:*\n`;
+      cart.forEach((item, index) => {
+        message += `${index + 1}. *${item.product.title}*\n`;
+        message += `   Size: ${item.size} | Color: ${item.color}\n`;
+        message += `   Qty: ${item.quantity} × ₹${item.price.toLocaleString('en-IN')} = ₹${(item.quantity * item.price).toLocaleString('en-IN')}\n`;
+      });
+      message += `\n─────────────────────\n`;
+      message += `*Total Amount:* ₹${total.toLocaleString('en-IN')}\n`;
+      message += `*Shipping:* Free / Pan-India Delivery\n`;
+      message += `*Status:* Pending WhatsApp Confirmation\n`;
+      message += `─────────────────────\n\n`;
+      message += `Hi The Western Store team! I have submitted this order on your website. Kindly confirm availability and share payment/QR details for dispatch from your Kurukshetra store. Thank you!`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const waUrl = `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedMessage}`;
+
+      return { orderNumber, waUrl };
+    } catch (err) {
+      console.error('[Order Submission Error]', err);
+      throw err;
     }
-    message += `\n👗 *Items Ordered:*\n`;
-    itemsSummary.forEach((item, index) => {
-      message += `${index + 1}. *${item.title}*\n`;
-      message += `   Size: ${item.size} | Color: ${item.color}\n`;
-      message += `   Qty: ${item.quantity} × ₹${item.price.toLocaleString('en-IN')} = ₹${(item.quantity * item.price).toLocaleString('en-IN')}\n`;
-    });
-    message += `\n─────────────────────\n`;
-    message += `*Total Amount:* ₹${cartSubtotal.toLocaleString('en-IN')}\n`;
-    message += `*Shipping:* Free / Pan-India Delivery\n`;
-    message += `*Status:* Pending WhatsApp Confirmation\n`;
-    message += `─────────────────────\n\n`;
-    message += `Hi The Western Store team! I have submitted this order on your website. Kindly confirm availability and share payment/QR details for dispatch from your Kurukshetra store. Thank you!`;
-
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedMessage}`;
-
-    // Clear cart (Stock will be deducted by Admin upon order confirmation)
-    clearCart();
-
-    return { order: newOrder, waUrl };
   };
 
   // Admin Catalog & Supabase DB Sync

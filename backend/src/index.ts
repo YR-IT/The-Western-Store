@@ -2,10 +2,27 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import ImageKit from '@imagekit/nodejs';
+import rateLimit from 'express-rate-limit';
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+// ─── Supabase Backend Client ──────────────────────────────────────────────
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
+// ─── Rate Limiter Setup ────────────────────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: { error: 'Too many login attempts, please try again after 15 minutes.' },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 
 // ─── Render & Multi-Origin CORS Setup ──────────────────────────────────────
 const allowedOrigins = [
@@ -50,6 +67,7 @@ app.get('/', (_req, res) => {
     documentation: {
       health: 'GET /api/health',
       imagekitAuth: 'GET /api/imagekit/auth',
+      orders: 'POST /api/orders',
     },
   });
 });
@@ -65,12 +83,15 @@ app.get('/api/health', (_req, res) => {
         !!process.env.IMAGEKIT_URL_ENDPOINT,
       urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || 'NOT_SET',
     },
+    supabase: {
+      configured: !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    }
   });
 });
 
 // ─── Admin Login Authentication Endpoint ──────────────────────────────────
 // Keeps ADMIN_EMAIL & ADMIN_PASSWORD strictly on the server — never in frontend JS!
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', loginLimiter, (req, res) => {
   const { email, password } = req.body || {};
   const expectedEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   const expectedPassword = process.env.ADMIN_PASSWORD || '';
@@ -96,6 +117,80 @@ app.post('/api/admin/login', (req, res) => {
     res.status(401).json({ error: 'Invalid admin credentials.' });
   }
 });
+
+// ─── Secure Order Processing Endpoint ──────────────────────────────────────
+app.post('/api/orders', async (req, res) => {
+  const { formData, items } = req.body;
+
+  if (!formData || !items || items.length === 0) {
+    return res.status(400).json({ error: 'Invalid order data.' });
+  }
+
+  try {
+    // 1. Fetch latest product details from Supabase to validate prices
+    const productIds = items.map((i: any) => i.productId);
+    const { data: products, error: productError } = await supabase
+      .from('products')
+      .select('id, title, price, images')
+      .in('id', productIds);
+
+    if (productError || !products) {
+      throw new Error('Failed to validate product prices.');
+    }
+
+    // 2. Calculate totals on the server
+    let calculatedSubtotal = 0;
+    const validatedItems = items.map((item: any) => {
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) throw new Error(`Product not found: ${item.productId}`);
+      
+      calculatedSubtotal += product.price * item.quantity;
+      return {
+        productId: product.id,
+        title: product.title,
+        image: product.images[0],
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: product.price,
+      };
+    });
+
+    // 3. Create Order Object
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `TWS-2026-${randomSuffix}`;
+    const newOrderId = `order-${Date.now()}`;
+
+    const newOrder = {
+      id: newOrderId,
+      order_number: orderNumber,
+      customer_name: formData.name,
+      customer_phone: formData.phone,
+      customer_email: formData.email,
+      shipping_address: {
+        address: formData.address,
+        pincode: formData.pincode,
+        city: formData.city,
+        state: formData.state,
+      },
+      total_amount: calculatedSubtotal,
+      status: 'Pending WhatsApp',
+      items: JSON.stringify(validatedItems),
+      notes: formData.notes
+    };
+
+    // 4. Save to Supabase
+    const { error: orderError } = await supabase.from('orders').insert([newOrder]);
+
+    if (orderError) throw orderError;
+
+    res.json({ success: true, orderNumber, total: calculatedSubtotal });
+  } catch (err) {
+    console.error('[Order Processing Error]', err);
+    res.status(500).json({ error: 'Failed to process order securely.' });
+  }
+});
+
 app.get('/api/imagekit/auth', (req, res) => {
   const adminSecret = req.headers['x-admin-secret'];
   const expectedSecret = process.env.ADMIN_SECRET || 'westernstore_admin_2026';
