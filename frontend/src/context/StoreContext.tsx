@@ -1013,38 +1013,52 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts((prev) =>
-      prev.map((prod) => {
+    let updatedProduct: Product | undefined;
+    setProducts((prev) => {
+      const updatedProducts = prev.map((prod) => {
         if (prod.id === id) {
-          const updated = { ...prod, ...updates };
-          upsertProductToSupabase(updated).catch((err) => console.warn('[Supabase] Product sync notice:', err));
-          return updated;
+          updatedProduct = { ...prod, ...updates };
+          return updatedProduct;
         }
         return prod;
-      })
-    );
+      });
+      localStorage.setItem('tws_products_v4', JSON.stringify(updatedProducts));
+      return updatedProducts;
+    });
+    if (updatedProduct) {
+      upsertProductToSupabase(updatedProduct).catch((err) => console.warn('[Supabase] Product sync notice:', err));
+    }
   };
 
   const deleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((prod) => prod.id !== id));
+    setProducts((prev) => {
+      const updatedProducts = prev.filter((prod) => prod.id !== id);
+      localStorage.setItem('tws_products_v4', JSON.stringify(updatedProducts));
+      return updatedProducts;
+    });
     deleteProductFromSupabase(id).catch((err) => console.warn('[Supabase] Delete product notice:', err));
   };
 
   const toggleStockStatus = (productId: string) => {
-    setProducts((prev) =>
-      prev.map((prod) => {
+    let updatedProduct: Product | undefined;
+    setProducts((prev) => {
+      const updatedProducts = prev.map((prod) => {
         if (prod.id === productId) {
-          const updated = {
+          updatedProduct = {
             ...prod,
             isSoldOut: !prod.isSoldOut,
             inStockCount: !prod.isSoldOut ? 0 : 15,
           };
-          upsertProductToSupabase(updated).catch((err) => console.warn('[Supabase] Stock status sync notice:', err));
-          return updated;
+          return updatedProduct;
         }
         return prod;
-      })
-    );
+      });
+      localStorage.setItem('tws_products_v4', JSON.stringify(updatedProducts));
+      return updatedProducts;
+    });
+    if (updatedProduct) {
+      upsertProductToSupabase(updatedProduct).catch((err) => console.warn('[Supabase] Stock status sync notice:', err));
+    }
   };
 
   // Category Management & Supabase DB Sync
