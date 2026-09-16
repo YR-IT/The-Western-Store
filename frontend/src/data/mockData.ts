@@ -12,6 +12,32 @@ export const STORE_INFO = {
   email: 'thewesternstorekkr@gmail.com',
   announcement: 'Worldwide Shipping | 📲 9729515288 | DM us on Instagram @the_western_store_kkr to Order',
   operatingHours: '10:30 AM – 9:00 PM (Mon-Sun)',
+  storeLocations: [
+    {
+      id: 'loc-1',
+      name: 'Kurukshetra (Flagship Store)',
+      address: 'Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank, Kurukshetra - 136118, Haryana',
+      phone: '+91 97295 15288',
+      hours: '10:30 AM – 9:00 PM',
+      mapUrl: 'https://maps.google.com/?q=The+Western+Store+Kurukshetra',
+    },
+    {
+      id: 'loc-2',
+      name: 'Karnal Store',
+      address: 'Opp. City Mall, Main Model Town Road, Karnal - 132001, Haryana',
+      phone: '+91 97295 15288',
+      hours: '10:30 AM – 9:00 PM',
+      mapUrl: 'https://maps.google.com/?q=The+Western+Store+Karnal',
+    },
+    {
+      id: 'loc-3',
+      name: 'Ambala Cantt Store',
+      address: 'Near Sadar Bazaar Chowk, Nicholson Road, Ambala Cantt - 133001, Haryana',
+      phone: '+91 97295 15288',
+      hours: '10:30 AM – 9:00 PM',
+      mapUrl: 'https://maps.google.com/?q=The+Western+Store+Ambala',
+    },
+  ],
 };
 
 export const INITIAL_CATEGORIES: Category[] = [
@@ -665,23 +691,13 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     ],
   },
   {
-    id: 'categories',
-    type: 'categories',
-    title: 'Explore By Category',
-    tagline: 'Curated Categories',
-    subtitle: 'From 60-second ready sarees to high-street denims',
-    enabled: true,
-    order: 2,
-    images: [],
-  },
-  {
     id: 'new-arrivals',
     type: 'new-arrivals',
     title: 'New Arrivals',
     tagline: 'Fresh Off The Loom',
     subtitle: 'Latest festive drapes, co-ords, and everyday separates curated for the season.',
     enabled: true,
-    order: 3,
+    order: 2,
     images: [],
   },
   {
@@ -691,7 +707,7 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     tagline: 'Pocket-Friendly Fashion',
     subtitle: 'High-end style crafted for every price segment',
     enabled: true,
-    order: 4,
+    order: 3,
     images: [
       'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80',
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80',
@@ -705,7 +721,7 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     tagline: 'Most Loved in Haryana',
     subtitle: 'Customer favorites repeatedly restocked due to overwhelming demand.',
     enabled: true,
-    order: 5,
+    order: 4,
     images: [],
   },
   {
@@ -715,7 +731,7 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     tagline: 'Shop The Look',
     subtitle: 'Bespoke Kurukshetra boutique styling for festive gatherings & weddings.',
     enabled: true,
-    order: 6,
+    order: 5,
     images: [
       'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
@@ -730,7 +746,7 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     tagline: 'Loved By 10,000+ Women',
     subtitle: 'Real reviews from our boutique shoppers across Haryana & beyond.',
     enabled: true,
-    order: 8,
+    order: 6,
     images: [],
   },
   {
@@ -740,7 +756,7 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
     tagline: '@the_western_store_kkr',
     subtitle: 'Tag us in your fits to get featured on our official store feed!',
     enabled: true,
-    order: 9,
+    order: 7,
     images: [],
   },
 ];

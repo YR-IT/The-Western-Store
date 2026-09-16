@@ -109,34 +109,13 @@ export const Footer: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Col 3: Categories */}
+          {/* Col 3: Categories & Quick Links */}
           <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
               Categories
             </h4>
             <ul className="space-y-2 text-xs">
-              {CATEGORIES.slice(0, 5).map((cat) => (
-                <li key={cat}>
-                  <button
-                    type="button"
-                    onClick={() => navigateToCategory(cat)}
-                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
-                    <span>{cat}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Col 4: More Categories */}
-          <motion.div variants={footerColVariants}>
-            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-              Western & Sets
-            </h4>
-            <ul className="space-y-2 text-xs">
-              {CATEGORIES.slice(5).map((cat) => (
+              {CATEGORIES.map((cat) => (
                 <li key={cat}>
                   <button
                     type="button"
@@ -158,6 +137,31 @@ export const Footer: React.FC = () => {
                   <span>My Wishlist</span>
                 </button>
               </li>
+            </ul>
+          </motion.div>
+
+          {/* Col 4: Store Locator (3 Locations) */}
+          <motion.div variants={footerColVariants}>
+            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
+              Store Locator
+            </h4>
+            <ul className="space-y-3.5 text-xs">
+              {(STORE_INFO.storeLocations || []).map((loc) => (
+                <li key={loc.id} className="space-y-0.5">
+                  <a
+                    href={loc.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#E8E1D5] hover:text-[#E6C280] transition-colors text-left flex items-start gap-1.5 group font-medium"
+                  >
+                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform mt-0.5 flex-shrink-0" />
+                    <span className="leading-snug">{loc.name}</span>
+                  </a>
+                  <p className="text-[11px] text-[#A3998C] pl-4 leading-relaxed font-light">
+                    {loc.address}
+                  </p>
+                </li>
+              ))}
             </ul>
           </motion.div>
 

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AnnouncementBar } from './components/AnnouncementBar';
 import { Header } from './components/Header';
 import { HeroCarousel } from './components/HeroCarousel';
-import { ShopByCategory } from './components/ShopByCategory';
+// import { ShopByCategory } from './components/ShopByCategory';
 import { ProductSection } from './components/ProductSection';
 import { ShopByBudget } from './components/ShopByBudget';
 import { EditorialLookbook } from './components/EditorialLookbook';
@@ -78,7 +78,7 @@ const StorefrontContent: React.FC = () => {
       case 'hero':
         return <HeroCarousel key={sec.id} />;
       case 'categories':
-        return <ShopByCategory key={sec.id} />;
+        return null;
       case 'new-arrivals':
         return (
           <ProductSection

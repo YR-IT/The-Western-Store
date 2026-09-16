@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory, Product, BudgetTier } from '../types';
 import { ProductCard } from './ProductCard';
-import { PLPSkeleton } from './Skeletons';
-import { Filter, X, SlidersHorizontal, ArrowUpDown, Sparkles } from 'lucide-react';
+import { PLPSkeleton, ProductCardSkeleton } from './Skeletons';
+import { Filter, X, SlidersHorizontal, ArrowUpDown, Sparkles, ChevronDown } from 'lucide-react';
 
 const SIZES = ['Free Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34'];
 
@@ -20,16 +20,33 @@ export const ProductListingPage: React.FC = () => {
     setView,
   } = useStore();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isGridLoading, setIsGridLoading] = useState(false);
 
-  // Trigger loading skeleton on category/budget change or initial mount
+  // Collapsible accordion state for main filter section titles
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    category: true,
+    budget: true,
+    size: true,
+    fabric: true,
+    occasion: true,
+    color: true,
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  // If there's an async operation or initial mount without products, show grid loading
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [selectedCategory, selectedBudgetTier]);
+    if (products.length === 0) {
+      setIsGridLoading(true);
+    } else {
+      setIsGridLoading(false);
+    }
+  }, [products]);
 
   const categoryList: (string | 'All')[] = useMemo(() => {
     return ['All', ...categories.map((c) => c.name)];
@@ -154,6 +171,8 @@ export const ProductListingPage: React.FC = () => {
     setSelectedSizes([]);
     setSelectedPriceRange('all');
     setSelectedColor('all');
+    setSelectedFabric('all');
+    setSelectedOccasion('all');
   };
 
   const hasActiveFilters =
@@ -161,28 +180,12 @@ export const ProductListingPage: React.FC = () => {
     selectedBudgetTier !== 'all' ||
     selectedSizes.length > 0 ||
     selectedPriceRange !== 'all' ||
-    selectedColor !== 'all';
+    selectedColor !== 'all' ||
+    selectedFabric !== 'all' ||
+    selectedOccasion !== 'all';
 
   return (
-    <AnimatePresence mode="wait">
-      {isLoading ? (
-        <motion.div
-          key="plp-skeleton"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          <PLPSkeleton />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="plp-content"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden"
-        >
+    <div className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Breadcrumb & Header */}
         <div className="mb-6">
@@ -331,6 +334,38 @@ export const ProductListingPage: React.FC = () => {
                     </button>
                   </motion.span>
                 )}
+
+                {selectedFabric !== 'all' && (
+                  <motion.span
+                    key="fabric-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
+                  >
+                    <span>Fabric: {selectedFabric}</span>
+                    <button type="button" onClick={() => setSelectedFabric('all')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
+                {selectedOccasion !== 'all' && (
+                  <motion.span
+                    key="occasion-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
+                  >
+                    <span>Occasion: {selectedOccasion}</span>
+                    <button type="button" onClick={() => setSelectedOccasion('all')}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
               </AnimatePresence>
 
               <button
@@ -347,209 +382,353 @@ export const ProductListingPage: React.FC = () => {
         {/* Main Grid + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           {/* Desktop Filter Sidebar */}
-          <aside className="hidden lg:block space-y-8 bg-white p-6 rounded-xl border border-[#EAE4D9] sticky top-28">
+          <aside className="hidden lg:block space-y-6 bg-white p-6 rounded-xl border border-[#EAE4D9] sticky top-28">
             {/* Category Filter */}
             <div>
-              <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                Categories
-              </h3>
-              <div className="space-y-1.5">
-                {categoryList.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`w-full text-left text-xs py-1.5 px-2 rounded-sm transition-colors flex items-center justify-between ${
-                      selectedCategory === cat
-                        ? 'bg-[#721B29] text-white font-medium'
-                        : 'text-[#4A453E] hover:bg-[#F7F4EE] hover:text-[#721B29]'
-                    }`}
+              <button
+                type="button"
+                onClick={() => toggleSection('category')}
+                className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+              >
+                <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                  Categories
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                    expandedSections['category'] ? 'rotate-180 text-[#721B29]' : ''
+                  }`}
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {expandedSections['category'] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-2.5"
                   >
-                    <span>{cat}</span>
-                    {cat !== 'All' && (
-                      <span className="text-[10px] opacity-70">
-                        {products.filter((p) => p.category === cat).length}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
+                    <div className="space-y-1.5">
+                      {categoryList.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`w-full text-left text-xs py-1.5 px-2 rounded-sm transition-colors flex items-center justify-between ${
+                            selectedCategory === cat
+                              ? 'bg-[#721B29] text-white font-medium'
+                              : 'text-[#4A453E] hover:bg-[#F7F4EE] hover:text-[#721B29]'
+                          }`}
+                        >
+                          <span>{cat}</span>
+                          {cat !== 'All' && (
+                            <span className="text-[10px] opacity-70">
+                              {products.filter((p) => p.category === cat).length}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Budget Tiers Filter */}
             {enabledBudgetTiers.length > 0 && (
               <div>
-                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                  Budget / Price Range
-                </h3>
-                <div className="space-y-2 text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]">
-                    <input
-                      type="radio"
-                      name="price-range"
-                      checked={selectedPriceRange === 'all'}
-                      onChange={() => setSelectedPriceRange('all')}
-                      className="accent-[#721B29]"
-                    />
-                    <span>All Prices</span>
-                  </label>
-                  {enabledBudgetTiers.map((tier) => (
-                    <label
-                      key={tier.id}
-                      className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]"
+                <button
+                  type="button"
+                  onClick={() => toggleSection('budget')}
+                  className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                >
+                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                    Budget / Price Range
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                      expandedSections['budget'] ? 'rotate-180 text-[#721B29]' : ''
+                    }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {expandedSections['budget'] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pt-2.5"
                     >
-                      <input
-                        type="radio"
-                        name="price-range"
-                        checked={selectedPriceRange === tier.id || selectedPriceRange === tier.label}
-                        onChange={() => setSelectedPriceRange(tier.id)}
-                        className="accent-[#721B29]"
-                      />
-                      <span>{tier.label}</span>
-                    </label>
-                  ))}
-                </div>
+                      <div className="space-y-2 text-xs">
+                        <label className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]">
+                          <input
+                            type="radio"
+                            name="price-range"
+                            checked={selectedPriceRange === 'all'}
+                            onChange={() => setSelectedPriceRange('all')}
+                            className="accent-[#721B29]"
+                          />
+                          <span>All Prices</span>
+                        </label>
+                        {enabledBudgetTiers.map((tier) => (
+                          <label
+                            key={tier.id}
+                            className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]"
+                          >
+                            <input
+                              type="radio"
+                              name="price-range"
+                              checked={selectedPriceRange === tier.id || selectedPriceRange === tier.label}
+                              onChange={() => setSelectedPriceRange(tier.id)}
+                              className="accent-[#721B29]"
+                            />
+                            <span>{tier.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
             {/* Size Filter Chips */}
             {enabledSizes.length > 0 && (
               <div>
-                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                  Size
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {enabledSizes.map((size) => {
-                    const isSelected = selectedSizes.includes(size);
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => toggleSize(size)}
-                        className={`px-2.5 py-1 text-xs rounded-xs border transition-all ${
-                          isSelected
-                            ? 'bg-[#721B29] border-[#721B29] text-white font-medium'
-                            : 'bg-white border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    );
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleSection('size')}
+                  className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                >
+                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                    Size
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                      expandedSections['size'] ? 'rotate-180 text-[#721B29]' : ''
+                    }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {expandedSections['size'] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pt-2.5"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {enabledSizes.map((size) => {
+                          const isSelected = selectedSizes.includes(size);
+                          return (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => toggleSize(size)}
+                              className={`px-2.5 py-1 text-xs rounded-xs border transition-all ${
+                                isSelected
+                                  ? 'bg-[#721B29] border-[#721B29] text-white font-medium'
+                                  : 'bg-white border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
             {/* Fabric Filter */}
             {enabledFabrics.length > 0 && (
               <div>
-                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                  Fabric
-                </h3>
-                <div className="space-y-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFabric('all')}
-                    className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
-                      selectedFabric === 'all'
-                        ? 'bg-[#721B29] text-white font-medium'
-                        : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                <button
+                  type="button"
+                  onClick={() => toggleSection('fabric')}
+                  className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                >
+                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                    Fabric
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                      expandedSections['fabric'] ? 'rotate-180 text-[#721B29]' : ''
                     }`}
-                  >
-                    All Fabrics
-                  </button>
-                  {enabledFabrics.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setSelectedFabric(selectedFabric === f.value ? 'all' : f.value)}
-                      className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
-                        selectedFabric === f.value
-                          ? 'bg-[#721B29] text-white font-medium'
-                          : 'text-[#4A453E] hover:bg-[#F7F4EE]'
-                      }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {expandedSections['fabric'] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pt-2.5"
                     >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
+                      <div className="space-y-1 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFabric('all')}
+                          className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
+                            selectedFabric === 'all'
+                              ? 'bg-[#721B29] text-white font-medium'
+                              : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                          }`}
+                        >
+                          All Fabrics
+                        </button>
+                        {enabledFabrics.map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => setSelectedFabric(selectedFabric === f.value ? 'all' : f.value)}
+                            className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
+                              selectedFabric === f.value
+                                ? 'bg-[#721B29] text-white font-medium'
+                                : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                            }`}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
             {/* Occasion Filter */}
             {enabledOccasions.length > 0 && (
               <div>
-                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                  Occasion
-                </h3>
-                <div className="space-y-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedOccasion('all')}
-                    className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
-                      selectedOccasion === 'all'
-                        ? 'bg-[#721B29] text-white font-medium'
-                        : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                <button
+                  type="button"
+                  onClick={() => toggleSection('occasion')}
+                  className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                >
+                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                    Occasion
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                      expandedSections['occasion'] ? 'rotate-180 text-[#721B29]' : ''
                     }`}
-                  >
-                    All Occasions
-                  </button>
-                  {enabledOccasions.map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => setSelectedOccasion(selectedOccasion === o.value ? 'all' : o.value)}
-                      className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
-                        selectedOccasion === o.value
-                          ? 'bg-[#721B29] text-white font-medium'
-                          : 'text-[#4A453E] hover:bg-[#F7F4EE]'
-                      }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {expandedSections['occasion'] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pt-2.5"
                     >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
+                      <div className="space-y-1 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOccasion('all')}
+                          className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
+                            selectedOccasion === 'all'
+                              ? 'bg-[#721B29] text-white font-medium'
+                              : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                          }`}
+                        >
+                          All Occasions
+                        </button>
+                        {enabledOccasions.map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setSelectedOccasion(selectedOccasion === o.value ? 'all' : o.value)}
+                            className={`w-full text-left py-1 px-2 rounded-sm transition-colors ${
+                              selectedOccasion === o.value
+                                ? 'bg-[#721B29] text-white font-medium'
+                                : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                            }`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
             {/* Color Swatches */}
             {enabledColors.length > 0 && (
               <div>
-                <h3 className="font-serif text-sm font-bold uppercase tracking-wider text-[#242120] mb-3 pb-2 border-b border-[#F4EFE6]">
-                  Color
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedColor('all')}
-                    className={`px-2 py-1 text-xs rounded-xs border ${
-                      selectedColor === 'all'
-                        ? 'bg-[#242120] text-white'
-                        : 'border-[#D9CEBF] text-[#4A453E]'
+                <button
+                  type="button"
+                  onClick={() => toggleSection('color')}
+                  className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                >
+                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                    Color
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                      expandedSections['color'] ? 'rotate-180 text-[#721B29]' : ''
                     }`}
-                  >
-                    All
-                  </button>
-                  {enabledColors.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setSelectedColor(selectedColor === c.name ? 'all' : c.name)}
-                      className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                        selectedColor === c.name ? 'scale-125 border-[#721B29]' : 'border-white shadow-xs'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {expandedSections['color'] && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden pt-2.5"
+                    >
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedColor('all')}
+                          className={`px-2 py-1 text-xs rounded-xs border ${
+                            selectedColor === 'all'
+                              ? 'bg-[#242120] text-white'
+                              : 'border-[#D9CEBF] text-[#4A453E]'
+                          }`}
+                        >
+                          All
+                        </button>
+                        {enabledColors.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setSelectedColor(selectedColor === c.name ? 'all' : c.name)}
+                            className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                              selectedColor === c.name ? 'scale-125 border-[#721B29]' : 'border-white shadow-xs'
+                            }`}
+                            style={{ backgroundColor: c.hex }}
+                            title={c.name}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </aside>
 
           {/* Product Grid Area */}
           <div className="lg:col-span-3">
-            {filteredProducts.length === 0 ? (
+            {isGridLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 items-stretch">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-white rounded-xl p-12 text-center border border-[#EAE4D9]">
                 <Sparkles className="w-8 h-8 text-[#B8860B] mx-auto mb-3" />
                 <h3 className="font-serif text-lg font-bold text-[#242120]">
@@ -567,11 +746,17 @@ export const ProductListingPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 items-stretch">
+              <motion.div
+                key={`${selectedCategory}-${selectedBudgetTier}-${selectedPriceRange}`}
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 items-stretch"
+              >
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
@@ -609,66 +794,323 @@ export const ProductListingPage: React.FC = () => {
                 </div>
 
                 {/* Category */}
-                <div className="mb-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Category</p>
-                  <div className="space-y-1">
-                    {categoryList.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`w-full text-left text-xs py-1.5 px-2 rounded-xs ${
-                          selectedCategory === cat ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E]'
-                        }`}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('category')}
+                    className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                  >
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                      Category
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                        expandedSections['category'] ? 'rotate-180 text-[#721B29]' : ''
+                      }`}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {expandedSections['category'] && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden pt-2"
                       >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
+                        <div className="space-y-1">
+                          {categoryList.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setSelectedCategory(cat)}
+                              className={`w-full text-left text-xs py-1.5 px-2 rounded-xs flex items-center justify-between transition-colors ${
+                                selectedCategory === cat ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                              }`}
+                            >
+                              <span>{cat}</span>
+                              {cat !== 'All' && (
+                                <span className="text-[10px] opacity-70">
+                                  {products.filter((p) => p.category === cat).length}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* Price */}
-                <div className="mb-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Budget</p>
-                  <div className="space-y-1.5 text-xs">
-                    {[
-                      { label: 'All', val: 'all' },
-                      { label: 'Under ₹999', val: 'under-999' },
-                      { label: 'Under ₹1499', val: '1000-1499' },
-                      { label: 'Under ₹1999', val: '1500-1999' },
-                      { label: 'Above ₹2000', val: 'above-2000' },
-                    ].map((item) => (
-                      <label key={item.val} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          checked={selectedPriceRange === item.val}
-                          onChange={() => setSelectedPriceRange(item.val)}
-                          className="accent-[#721B29]"
-                        />
-                        <span>{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Sizes */}
-                <div className="mb-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#8F867C] mb-2">Size</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {SIZES.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => toggleSize(size)}
-                        className={`px-2.5 py-1 text-xs border rounded-xs ${
-                          selectedSizes.includes(size) ? 'bg-[#721B29] text-white' : 'border-[#D9CEBF]'
+                {/* Budget / Price Range */}
+                {enabledBudgetTiers.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('budget')}
+                      className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                        Budget / Price Range
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                          expandedSections['budget'] ? 'rotate-180 text-[#721B29]' : ''
                         }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections['budget'] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pt-2"
+                        >
+                          <div className="space-y-2 text-xs">
+                            <label className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]">
+                              <input
+                                type="radio"
+                                name="mobile-price-range"
+                                checked={selectedPriceRange === 'all'}
+                                onChange={() => setSelectedPriceRange('all')}
+                                className="accent-[#721B29]"
+                              />
+                              <span>All Prices</span>
+                            </label>
+                            {enabledBudgetTiers.map((tier) => (
+                              <label key={tier.id} className="flex items-center gap-2 cursor-pointer text-[#4A453E] hover:text-[#721B29]">
+                                <input
+                                  type="radio"
+                                  name="mobile-price-range"
+                                  checked={selectedPriceRange === tier.id || selectedPriceRange === tier.label}
+                                  onChange={() => setSelectedPriceRange(tier.id)}
+                                  className="accent-[#721B29]"
+                                />
+                                <span>{tier.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
+                )}
+
+                {/* Size */}
+                {enabledSizes.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('size')}
+                      className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                        Size
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                          expandedSections['size'] ? 'rotate-180 text-[#721B29]' : ''
+                        }`}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections['size'] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pt-2"
+                        >
+                          <div className="flex flex-wrap gap-1.5">
+                            {enabledSizes.map((size) => {
+                              const isSelected = selectedSizes.includes(size);
+                              return (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  onClick={() => toggleSize(size)}
+                                  className={`px-2.5 py-1 text-xs border rounded-xs transition-all ${
+                                    isSelected ? 'bg-[#721B29] border-[#721B29] text-white font-medium' : 'bg-white border-[#D9CEBF] text-[#4A453E]'
+                                  }`}
+                                >
+                                  {size}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Fabric */}
+                {enabledFabrics.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('fabric')}
+                      className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                        Fabric
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                          expandedSections['fabric'] ? 'rotate-180 text-[#721B29]' : ''
+                        }`}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections['fabric'] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pt-2"
+                        >
+                          <div className="space-y-1 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFabric('all')}
+                              className={`w-full text-left py-1.5 px-2 rounded-xs transition-colors ${
+                                selectedFabric === 'all' ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                              }`}
+                            >
+                              All Fabrics
+                            </button>
+                            {enabledFabrics.map((f) => (
+                              <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => setSelectedFabric(selectedFabric === f.value ? 'all' : f.value)}
+                                className={`w-full text-left py-1.5 px-2 rounded-xs transition-colors ${
+                                  selectedFabric === f.value ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                                }`}
+                              >
+                                {f.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Occasion */}
+                {enabledOccasions.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('occasion')}
+                      className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                        Occasion
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                          expandedSections['occasion'] ? 'rotate-180 text-[#721B29]' : ''
+                        }`}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections['occasion'] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pt-2"
+                        >
+                          <div className="space-y-1 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOccasion('all')}
+                              className={`w-full text-left py-1.5 px-2 rounded-xs transition-colors ${
+                                selectedOccasion === 'all' ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                              }`}
+                            >
+                              All Occasions
+                            </button>
+                            {enabledOccasions.map((o) => (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onClick={() => setSelectedOccasion(selectedOccasion === o.value ? 'all' : o.value)}
+                                className={`w-full text-left py-1.5 px-2 rounded-xs transition-colors ${
+                                  selectedOccasion === o.value ? 'bg-[#721B29] text-white font-medium' : 'text-[#4A453E] hover:bg-[#F7F4EE]'
+                                }`}
+                              >
+                                {o.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Color Swatches */}
+                {enabledColors.length > 0 && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('color')}
+                      className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                    >
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                        Color
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                          expandedSections['color'] ? 'rotate-180 text-[#721B29]' : ''
+                        }`}
+                      />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expandedSections['color'] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pt-2"
+                        >
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedColor('all')}
+                              className={`px-2 py-1 text-xs rounded-xs border ${
+                                selectedColor === 'all' ? 'bg-[#242120] text-white' : 'border-[#D9CEBF] text-[#4A453E]'
+                              }`}
+                            >
+                              All
+                            </button>
+                            {enabledColors.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => setSelectedColor(selectedColor === c.name ? 'all' : c.name)}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                                  selectedColor === c.name ? 'scale-125 border-[#721B29]' : 'border-white shadow-xs'
+                                }`}
+                                style={{ backgroundColor: c.hex }}
+                                title={c.name}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-[#EAE4D9] flex gap-2">
@@ -691,8 +1133,6 @@ export const ProductListingPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-      </motion.div>
-    )}
-  </AnimatePresence>
-);
+    </div>
+  );
 };

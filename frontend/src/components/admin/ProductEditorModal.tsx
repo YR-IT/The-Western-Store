@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ImageKitUploader } from './ImageKitUploader';
-import { Product, BudgetTier, Category } from '../../types';
+import { Product, BudgetTier, Category, ReviewItem } from '../../types';
 import {
   X,
   Plus,
@@ -15,6 +15,9 @@ import {
   Ruler,
   Layers,
   Info,
+  MessageSquare,
+  Edit2,
+  User,
 } from 'lucide-react';
 
 interface ProductEditorModalProps {
@@ -40,8 +43,6 @@ const LUXURY_COLOR_PALETTE = [
   { name: 'Wine Plum', hex: '#581845' },
 ];
 
-
-
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
   categories,
@@ -59,13 +60,13 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [isNew, setIsNew] = useState(true);
 
   // Pricing & Discounts
-  const [price, setPrice] = useState<number>(1499);
-  const [originalPrice, setOriginalPrice] = useState<number>(1999);
-  const [onSale, setOnSale] = useState(true);
-  const [saleDiscount, setSaleDiscount] = useState('-25%');
+  const [price, setPrice] = useState<number | ''>('');
+  const [originalPrice, setOriginalPrice] = useState<number | ''>('');
+  const [onSale, setOnSale] = useState(false);
+  const [saleDiscount, setSaleDiscount] = useState('');
 
   // Stock
-  const [inStockCount, setInStockCount] = useState<number>(15);
+  const [inStockCount, setInStockCount] = useState<number | ''>(1);
   const [isSoldOut, setIsSoldOut] = useState(false);
 
   // Images
@@ -81,6 +82,26 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [fit, setFit] = useState('');
   const [occasion, setOccasion] = useState('');
 
+  // Custom Accordions Per Product
+  const [customReturnPolicy, setCustomReturnPolicy] = useState('');
+  const [customWashCareNotesText, setCustomWashCareNotesText] = useState('');
+  const [haryanaDelivery, setHaryanaDelivery] = useState('');
+  const [restOfIndiaDelivery, setRestOfIndiaDelivery] = useState('');
+  const [internationalDelivery, setInternationalDelivery] = useState('');
+
+  // Custom Product Reviews Tab State
+  const [customReviews, setCustomReviews] = useState<ReviewItem[]>([]);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [revName, setRevName] = useState('');
+  const [revLocation, setRevLocation] = useState('Kurukshetra, Haryana');
+  const [revRating, setRevRating] = useState(5);
+  const [revDate, setRevDate] = useState('Recently');
+  const [revTitle, setRevTitle] = useState('');
+  const [revComment, setRevComment] = useState('');
+  const [revSize, setRevSize] = useState('M');
+  const [revVerified, setRevVerified] = useState(true);
+
   // Sizes & Colors
   const [sizes, setSizes] = useState<string[]>([]);
   const [newSizeInput, setNewSizeInput] = useState('');
@@ -90,11 +111,11 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [customColorHex, setCustomColorHex] = useState('#721B29');
 
   // Rating & Reviews
-  const [rating, setRating] = useState<number>(4.9);
-  const [reviewCount, setReviewCount] = useState<number>(34);
+  const [rating, setRating] = useState<number | ''>(5.0);
+  const [reviewCount, setReviewCount] = useState<number | ''>(0);
 
   // Active Tab in Modal
-  const [modalTab, setModalTab] = useState<'details' | 'images' | 'specs' | 'variants'>('details');
+  const [modalTab, setModalTab] = useState<'details' | 'images' | 'specs' | 'variants' | 'reviews'>('details');
 
   useEffect(() => {
     if (product) {
@@ -103,70 +124,89 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       setBudgetTier(product.budgetTier || 'under_1499');
       setIsBestSeller(!!product.isBestSeller);
       setIsNew(!!product.isNew);
-      setPrice(product.price || 999);
-      setOriginalPrice(product.originalPrice || product.price || 1499);
+      setPrice(product.price ?? '');
+      setOriginalPrice(product.originalPrice ?? '');
       setOnSale(!!product.onSale);
-      setSaleDiscount(product.saleDiscount || '-20%');
-      setInStockCount(product.inStockCount !== undefined ? product.inStockCount : 15);
+      setSaleDiscount(product.saleDiscount || '');
+      setInStockCount(product.inStockCount !== undefined ? product.inStockCount : 1);
       setIsSoldOut(!!product.isSoldOut);
       setImages(product.images || []);
       setDescription(product.description || '');
-      setFabric(product.fabricCare?.fabric || 'Pure Silk & Zari');
-      setWashCare(product.fabricCare?.washCare || 'Dry Clean Only');
-      setFit(product.fabricCare?.fit || 'Ready to Wear');
-      setOccasion(product.fabricCare?.occasion || 'Festive & Weddings');
-      setSizes(product.sizes || ['Free Size', 'S', 'M', 'L', 'XL']);
-      setColors(product.colors || [{ name: 'Deep Maroon', hex: '#721B29' }]);
-      setRating(product.rating || 4.9);
-      setReviewCount(product.reviewCount || 28);
+      setFabric(product.fabricCare?.fabric || '');
+      setWashCare(product.fabricCare?.washCare || '');
+      setFit(product.fabricCare?.fit || '');
+      setOccasion(product.fabricCare?.occasion || '');
+      setCustomReturnPolicy(product.customReturnPolicy || '');
+      setCustomWashCareNotesText(product.customWashCareNotes ? product.customWashCareNotes.join('\n') : '');
+      setHaryanaDelivery(product.customDeliveryTimeline?.haryanaDelhi || '');
+      setRestOfIndiaDelivery(product.customDeliveryTimeline?.restOfIndia || '');
+      setInternationalDelivery(product.customDeliveryTimeline?.international || '');
+      setCustomReviews(product.customReviews ? [...product.customReviews] : []);
+      setShowReviewForm(false);
+      setEditingReviewId(null);
+      setSizes(product.sizes || []);
+      setColors(product.colors || []);
+      setRating(product.rating ?? 5.0);
+      setReviewCount(product.reviewCount ?? 0);
     } else {
-      // Default initial state for new product
+      // Default initial state for new product: COMPLETELY BLANK
       setTitle('');
       setCategory(categories[0]?.name || 'Ethnic Wear');
       setBudgetTier('under_1499');
       setIsBestSeller(false);
-      setIsNew(true);
-      setPrice(1499);
-      setOriginalPrice(1999);
-      setOnSale(true);
-      setSaleDiscount('-25%');
-      setInStockCount(15);
+      setIsNew(false);
+      setPrice('');
+      setOriginalPrice('');
+      setOnSale(false);
+      setSaleDiscount('');
+      setInStockCount(1);
       setIsSoldOut(false);
       setImages([]);
-      setDescription('Exquisite handcrafted garment crafted with premium stitching and fine detailing, available exclusively at The Western Store Kurukshetra.');
-      setFabric('Pure Georgette & Heavy Zari Work');
-      setWashCare('Dry Clean Only');
-      setFit('Tailored Regular Fit');
-      setOccasion('Festive, Sangeet & Reception');
-      setSizes(['Free Size', 'S', 'M', 'L', 'XL']);
-      setColors([
-        { name: 'Deep Maroon', hex: '#721B29' },
-        { name: 'Champagne Gold', hex: '#C5A059' },
-      ]);
-      setRating(4.9);
-      setReviewCount(18);
+      setDescription('');
+      setFabric('');
+      setWashCare('');
+      setFit('');
+      setOccasion('');
+      setCustomReturnPolicy('');
+      setCustomWashCareNotesText('');
+      setHaryanaDelivery('');
+      setRestOfIndiaDelivery('');
+      setInternationalDelivery('');
+      setCustomReviews([]);
+      setShowReviewForm(false);
+      setEditingReviewId(null);
+      setSizes([]);
+      setColors([]);
+      setRating(5.0);
+      setReviewCount(0);
     }
   }, [product, isOpen, categories]);
 
   // Auto-calculate discount and budget tier when price / originalPrice changes
-  const handlePriceChange = (newPrice: number) => {
-    setPrice(newPrice);
-    if (originalPrice > newPrice) {
-      const pct = Math.round(((originalPrice - newPrice) / originalPrice) * 100);
+  const handlePriceChange = (newPriceVal: number | '') => {
+    setPrice(newPriceVal);
+    const newPrice = Number(newPriceVal) || 0;
+    const orig = Number(originalPrice) || 0;
+    if (orig > newPrice && newPrice > 0) {
+      const pct = Math.round(((orig - newPrice) / orig) * 100);
       setSaleDiscount(`-${pct}%`);
       setOnSale(true);
     }
     // Auto suggest budget tier
-    if (newPrice <= 999) setBudgetTier('under_999');
-    else if (newPrice <= 1499) setBudgetTier('under_1499');
-    else if (newPrice <= 1999) setBudgetTier('under_1999');
-    else setBudgetTier('premium');
+    if (newPrice > 0) {
+      if (newPrice <= 999) setBudgetTier('under_999');
+      else if (newPrice <= 1499) setBudgetTier('under_1499');
+      else if (newPrice <= 1999) setBudgetTier('under_1999');
+      else setBudgetTier('premium');
+    }
   };
 
-  const handleOriginalPriceChange = (newOrig: number) => {
-    setOriginalPrice(newOrig);
-    if (newOrig > price) {
-      const pct = Math.round(((newOrig - price) / newOrig) * 100);
+  const handleOriginalPriceChange = (newOrigVal: number | '') => {
+    setOriginalPrice(newOrigVal);
+    const newOrig = Number(newOrigVal) || 0;
+    const prc = Number(price) || 0;
+    if (newOrig > prc && prc > 0) {
+      const pct = Math.round(((newOrig - prc) / newOrig) * 100);
       setSaleDiscount(`-${pct}%`);
       setOnSale(true);
     }
@@ -242,6 +282,90 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
     setColors(colors.filter((_, i) => i !== index));
   };
 
+  // Custom Product Reviews Handlers
+  const handleOpenNewReviewForm = () => {
+    setEditingReviewId(null);
+    setRevName('');
+    setRevLocation('Kurukshetra, Haryana');
+    setRevRating(5);
+    setRevDate('Recently');
+    setRevTitle('');
+    setRevComment('');
+    setRevSize(sizes[0] || 'M');
+    setRevVerified(true);
+    setShowReviewForm(true);
+  };
+
+  const handleEditReview = (rev: ReviewItem) => {
+    setEditingReviewId(rev.id);
+    setRevName(rev.name);
+    setRevLocation(rev.location);
+    setRevRating(rev.rating);
+    setRevDate(rev.date);
+    setRevTitle(rev.title);
+    setRevComment(rev.comment);
+    setRevSize(rev.size || 'M');
+    setRevVerified(rev.verified);
+    setShowReviewForm(true);
+  };
+
+  const handleDeleteReview = (revId: string) => {
+    const updated = customReviews.filter((r) => r.id !== revId);
+    setCustomReviews(updated);
+    if (updated.length > 0) {
+      setReviewCount(updated.length);
+      const avg = (updated.reduce((acc, r) => acc + r.rating, 0) / updated.length).toFixed(1);
+      setRating(Number(avg));
+    } else {
+      setReviewCount(0);
+      setRating(5.0);
+    }
+  };
+
+  const handleSaveReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revName.trim() || !revComment.trim()) return;
+
+    let updated: ReviewItem[];
+    if (editingReviewId) {
+      updated = customReviews.map((r) =>
+        r.id === editingReviewId
+          ? {
+              ...r,
+              name: revName.trim(),
+              location: revLocation.trim() || 'Kurukshetra, Haryana',
+              rating: Number(revRating),
+              date: revDate.trim() || 'Recently',
+              title: revTitle.trim(),
+              comment: revComment.trim(),
+              size: revSize,
+              verified: revVerified,
+            }
+          : r
+      );
+    } else {
+      const newRev: ReviewItem = {
+        id: `rev-${Date.now()}`,
+        name: revName.trim(),
+        location: revLocation.trim() || 'Kurukshetra, Haryana',
+        rating: Number(revRating),
+        date: revDate.trim() || 'Recently',
+        title: revTitle.trim(),
+        comment: revComment.trim(),
+        size: revSize,
+        verified: revVerified,
+        helpfulCount: Math.floor(Math.random() * 15) + 3,
+      };
+      updated = [newRev, ...customReviews];
+    }
+
+    setCustomReviews(updated);
+    setReviewCount(updated.length);
+    const avg = (updated.reduce((acc, r) => acc + r.rating, 0) / updated.length).toFixed(1);
+    setRating(Number(avg));
+    setShowReviewForm(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -263,16 +387,30 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       budgetTier,
       description: description.trim(),
       images: images,
-      sizes: sizes.length > 0 ? sizes : ['Free Size'],
-      colors: colors.length > 0 ? colors : [{ name: 'Deep Maroon', hex: '#721B29' }],
+      sizes: sizes,
+      colors: colors,
       fabricCare: {
-        fabric: fabric.trim() || 'Pure Silk',
-        washCare: washCare.trim() || 'Dry Clean Only',
-        fit: fit.trim() || 'Regular Fit',
-        occasion: occasion.trim() || 'Festive & Party',
+        fabric: fabric.trim(),
+        washCare: washCare.trim(),
+        fit: fit.trim(),
+        occasion: occasion.trim(),
       },
-      rating: Number(rating) || 4.9,
-      reviewCount: Number(reviewCount) || 24,
+      customReturnPolicy: customReturnPolicy.trim() || undefined,
+      customWashCareNotes: customWashCareNotesText.trim()
+        ? customWashCareNotesText.split('\n').map((s) => s.trim()).filter(Boolean)
+        : undefined,
+      customDeliveryTimeline: (haryanaDelivery.trim() || restOfIndiaDelivery.trim() || internationalDelivery.trim())
+        ? {
+            haryanaDelhi: haryanaDelivery.trim() || undefined,
+            restOfIndia: restOfIndiaDelivery.trim() || undefined,
+            international: internationalDelivery.trim() || undefined,
+          }
+        : undefined,
+      customReviews: customReviews.length > 0 ? customReviews : undefined,
+      rating: customReviews.length > 0
+        ? Number((customReviews.reduce((acc, r) => acc + r.rating, 0) / customReviews.length).toFixed(1))
+        : (Number(rating) || 5.0),
+      reviewCount: customReviews.length > 0 ? customReviews.length : (Number(reviewCount) || 0),
     };
 
     onSave(finalProductData);
@@ -319,6 +457,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
             { id: 'images', label: `2. Gallery Images (${images.length})`, icon: ImageIcon },
             { id: 'specs', label: '3. Fabric & Fit Story', icon: Layers },
             { id: 'variants', label: '4. Sizes & Colors', icon: Palette },
+            { id: 'reviews', label: `5. Customer Reviews (${customReviews.length})`, icon: MessageSquare },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = modalTab === tab.id;
@@ -742,6 +881,86 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   </div>
                 </div>
 
+                {/* Custom Product Accordions & Policy Settings */}
+                <div className="p-4 bg-white rounded-xl border border-[#EAE4D9] space-y-4 shadow-2xs">
+                  <div className="border-b border-[#F4EFE6] pb-2">
+                    <span className="font-serif font-bold text-sm text-[#721B29] flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-[#721B29]" />
+                      <span>Custom Product Details Accordions (Optional Settings)</span>
+                    </span>
+                    <p className="text-[11px] text-[#736B63] mt-0.5">
+                      Customize individual accordion content for this specific garment. If left empty, default store policies will be displayed.
+                    </p>
+                  </div>
+
+                  {/* Custom Return & Exchange Policy */}
+                  <div>
+                    <label className="block font-semibold text-[#242120] mb-1">
+                      Custom Return & Exchange Policy Notes
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Final Sale: No exchange on customized stitched items. Standard 3-point check applied."
+                      value={customReturnPolicy}
+                      onChange={(e) => setCustomReturnPolicy(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                    />
+                  </div>
+
+                  {/* Custom Wash Care Notes */}
+                  <div>
+                    <label className="block font-semibold text-[#242120] mb-1">
+                      Additional Wash Care Bullet Points (1 per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. Store folded in a cool dry place or breathable muslin cover&#10;Iron on reverse or use garment steamer on delicate silk"
+                      value={customWashCareNotesText}
+                      onChange={(e) => setCustomWashCareNotesText(e.target.value)}
+                      className="w-full px-3 py-2 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                    />
+                  </div>
+
+                  {/* Custom Delivery Timelines */}
+                  <div>
+                    <label className="block font-semibold text-[#242120] mb-1">
+                      Custom Delivery Timelines (per region)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-[11px] text-[#736B63] font-medium block mb-1">Haryana & Delhi NCR</span>
+                        <input
+                          type="text"
+                          placeholder="Default: 1-2 business days"
+                          value={haryanaDelivery}
+                          onChange={(e) => setHaryanaDelivery(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-[#736B63] font-medium block mb-1">Rest of India</span>
+                        <input
+                          type="text"
+                          placeholder="Default: 3-5 business days"
+                          value={restOfIndiaDelivery}
+                          onChange={(e) => setRestOfIndiaDelivery(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-[#736B63] font-medium block mb-1">International</span>
+                        <input
+                          type="text"
+                          placeholder="Default: 7-10 business days"
+                          value={internationalDelivery}
+                          onChange={(e) => setInternationalDelivery(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Reviews & Social proof */}
                 <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#EAE4D9] grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -940,6 +1159,252 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       + Add Shade
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: CUSTOMER REVIEWS */}
+            {modalTab === 'reviews' && (
+              <div className="space-y-5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-[#EAE4D9]">
+                  <div>
+                    <h4 className="font-serif font-bold text-sm text-[#242120] flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-[#721B29]" />
+                      <span>Product Customer Reviews ({customReviews.length})</span>
+                    </h4>
+                    <p className="text-xs text-[#736B63] mt-0.5">
+                      Upload and manage authentic reviews for this product. If left empty, default boutique reviews will be displayed.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewReviewForm}
+                    className="px-3.5 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add Review</span>
+                  </button>
+                </div>
+
+                {/* Add / Edit Review Form */}
+                {showReviewForm && (
+                  <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#721B29]/30 space-y-4 shadow-sm animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between border-b border-[#EAE4D9] pb-2">
+                      <span className="font-bold text-xs text-[#721B29]">
+                        {editingReviewId ? 'Edit Product Review' : 'Upload New Buyer Review'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowReviewForm(false)}
+                        className="text-[#736B63] hover:text-[#242120]"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                          Reviewer Name <span className="text-rose-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Pooja Sharma"
+                          value={revName}
+                          onChange={(e) => setRevName(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                          Customer Location
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Kurukshetra, Haryana"
+                          value={revLocation}
+                          onChange={(e) => setRevLocation(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                          Star Rating (1 to 5)
+                        </label>
+                        <div className="flex items-center gap-1 pt-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setRevRating(star)}
+                              className="cursor-pointer p-0.5"
+                            >
+                              <Star
+                                className={`w-5 h-5 ${
+                                  star <= revRating ? 'text-amber-500 fill-amber-500' : 'text-gray-300'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          <span className="text-xs font-bold ml-2 text-[#242120]">{revRating}.0</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                          Purchased Garment Size
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. M, Free Size, L"
+                          value={revSize}
+                          onChange={(e) => setRevSize(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                          Review Date / Tag
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 2 days ago or 14 Sep 2026"
+                          value={revDate}
+                          onChange={(e) => setRevDate(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#242120]">
+                          <input
+                            type="checkbox"
+                            checked={revVerified}
+                            onChange={(e) => setRevVerified(e.target.checked)}
+                            className="w-4 h-4 accent-emerald-700"
+                          />
+                          <span>Show "Verified Kurukshetra Buyer" Badge</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                        Review Title / Headline
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Stunning boutique quality! Fabric is super soft & elegant"
+                        value={revTitle}
+                        onChange={(e) => setRevTitle(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#242120] mb-1">
+                        Review Description / Comment <span className="text-rose-600">*</span>
+                      </label>
+                      <textarea
+                        rows={3}
+                        required
+                        placeholder="Write buyer feedback, fit experience, fabric quality commentary..."
+                        value={revComment}
+                        onChange={(e) => setRevComment(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#EAE4D9]">
+                      <button
+                        type="button"
+                        onClick={() => setShowReviewForm(false)}
+                        className="px-3.5 py-1.5 border border-[#D9CEBF] bg-white text-[#242120] rounded-sm text-xs font-medium cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveReview}
+                        className="px-4 py-1.5 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] cursor-pointer"
+                      >
+                        {editingReviewId ? 'Update Review' : 'Save Review'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* List of Custom Reviews */}
+                <div className="space-y-3">
+                  {customReviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-3.5 bg-white rounded-xl border border-[#EAE4D9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs hover:border-[#721B29]/30 transition-colors"
+                    >
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#242120]">{rev.name}</span>
+                          <span className="text-[11px] text-[#736B63]">({rev.location})</span>
+                          {rev.verified && (
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                              ✓ Verified Buyer
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`w-3.5 h-3.5 ${
+                                  s <= rev.rating ? 'text-amber-500 fill-amber-500' : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-[#736B63]">• Size: {rev.size || 'M'}</span>
+                          <span className="text-[11px] text-[#736B63]">• {rev.date}</span>
+                        </div>
+
+                        {rev.title && <p className="font-bold text-xs text-[#242120] pt-1">{rev.title}</p>}
+                        <p className="text-xs text-[#5C544B] leading-relaxed">{rev.comment}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleEditReview(rev)}
+                          className="p-1.5 text-[#736B63] hover:text-[#721B29] hover:bg-[#FAF8F3] rounded-md transition-colors cursor-pointer"
+                          title="Edit Review"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(rev.id)}
+                          className="p-1.5 text-[#736B63] hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                          title="Delete Review"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {customReviews.length === 0 && !showReviewForm && (
+                    <div className="p-8 border-2 border-dashed border-[#D9CEBF] bg-[#FAF8F3] rounded-xl text-center space-y-2">
+                      <MessageSquare className="w-8 h-8 mx-auto text-[#8C8276]" />
+                      <p className="text-xs font-bold text-[#242120]">No custom reviews uploaded for this product yet</p>
+                      <p className="text-[11px] text-[#736B63]">
+                        Click <strong>"+ Add Review"</strong> above to upload customer feedback. If left empty, default store reviews will be shown on the product detail page.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

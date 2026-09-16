@@ -22,6 +22,20 @@ export interface Category {
   navbarOrder?: number;
 }
 
+export interface ReviewItem {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  date: string;
+  title: string;
+  comment: string;
+  size: string;
+  verified: boolean;
+  helpfulCount: number;
+  userLiked?: boolean;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -45,6 +59,14 @@ export interface Product {
     fit: string;
     occasion: string;
   };
+  customReturnPolicy?: string;
+  customWashCareNotes?: string[];
+  customDeliveryTimeline?: {
+    haryanaDelhi?: string;
+    restOfIndia?: string;
+    international?: string;
+  };
+  customReviews?: ReviewItem[];
   inStockCount?: number;
   rating?: number;
   reviewCount?: number;

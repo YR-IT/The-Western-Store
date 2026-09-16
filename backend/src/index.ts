@@ -10,10 +10,9 @@ const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // ─── Supabase Backend Client ──────────────────────────────────────────────
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 // ─── Rate Limiter Setup ────────────────────────────────────────────────────
 const loginLimiter = rateLimit({
@@ -127,6 +126,9 @@ app.post('/api/orders', async (req, res) => {
   }
 
   try {
+    if (!supabase) {
+      return res.status(503).json({ error: 'Supabase is not configured on the backend server.' });
+    }
     // 1. Fetch latest product details from Supabase to validate prices
     const productIds = items.map((i: any) => i.productId);
     const { data: products, error: productError } = await supabase
