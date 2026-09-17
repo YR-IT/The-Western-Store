@@ -18,8 +18,8 @@ export const EditorialLookbook: React.FC = () => {
     'From regal farewell soirées to easy Sunday brunching on Railway Road. Designed for real comfort, drape-tested for confidence.';
 
   // Look items
-  const featuredSaree = products.find((p) => p.id === 'prod-1') || products[0];
-  const featuredCordSet = products.find((p) => p.id === 'prod-4') || products[3];
+  const featuredSaree = products.find((p) => p.id === 'prod-1') || products[0] || null;
+  const featuredCordSet = products.find((p) => p.id === 'prod-4') || products[1] || products[0] || null;
 
   const hotspots = [
     {
@@ -38,7 +38,7 @@ export const EditorialLookbook: React.FC = () => {
     },
   ];
 
-  const activeProduct = hotspots[activeHotspot].product;
+  const activeProduct = hotspots[activeHotspot]?.product;
 
   return (
     <motion.section
@@ -127,60 +127,62 @@ export const EditorialLookbook: React.FC = () => {
             </div>
 
             {/* Floating Product Callout Card */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeHotspot}
-                initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -12, scale: 0.96 }}
-                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full sm:w-80 bg-white/95 backdrop-blur-md text-[#242120] rounded-xl p-3.5 sm:p-4 shadow-xl border border-white/30 flex items-center gap-3"
-              >
-                <img
-                  src={activeProduct.images[0]}
-                  alt={activeProduct.title}
-                  className="w-16 h-20 sm:w-18 sm:h-22 object-cover object-top rounded-md border border-[#EAE4D9] flex-shrink-0"
-                />
+            {activeProduct && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeHotspot}
+                  initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -12, scale: 0.96 }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-full sm:w-80 bg-white/95 backdrop-blur-md text-[#242120] rounded-xl p-3.5 sm:p-4 shadow-xl border border-white/30 flex items-center gap-3"
+                >
+                  <img
+                    src={activeProduct.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'}
+                    alt={activeProduct.title}
+                    className="w-16 h-20 sm:w-18 sm:h-22 object-cover object-top rounded-md border border-[#EAE4D9] flex-shrink-0"
+                  />
 
-                <div className="flex-1 min-w-0">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#721B29] block">
-                    Shop The Look
-                  </span>
-                  <h4 className="font-serif text-xs sm:text-sm font-bold text-[#242120] truncate mt-0.5">
-                    {activeProduct.title}
-                  </h4>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="font-sans font-bold text-xs sm:text-sm text-[#721B29]">
-                      ₹{activeProduct.price.toLocaleString('en-IN')}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#721B29] block">
+                      Shop The Look
                     </span>
-                    {activeProduct.onSale && (
-                      <span className="text-[10px] sm:text-[11px] text-[#8C8276] line-through">
-                        ₹{activeProduct.originalPrice.toLocaleString('en-IN')}
+                    <h4 className="font-serif text-xs sm:text-sm font-bold text-[#242120] truncate mt-0.5">
+                      {activeProduct.title}
+                    </h4>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="font-sans font-bold text-xs sm:text-sm text-[#721B29]">
+                        ₹{activeProduct.price.toLocaleString('en-IN')}
                       </span>
-                    )}
-                  </div>
+                      {activeProduct.onSale && (
+                        <span className="text-[10px] sm:text-[11px] text-[#8C8276] line-through">
+                          ₹{activeProduct.originalPrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => navigateToProduct(activeProduct.id)}
-                      className="flex-1 py-1.5 px-2 bg-[#721B29] text-white text-[10px] sm:text-[11px] font-semibold rounded-xs hover:bg-[#852031] transition-colors flex items-center justify-center gap-1"
-                    >
-                      <span>View Detail</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setQuickViewProduct(activeProduct)}
-                      className="p-1.5 border border-[#D9CEBF] text-[#4A453E] hover:text-[#721B29] rounded-xs hover:bg-[#F3EFE6] transition-colors"
-                      title="Quick View"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigateToProduct(activeProduct.id)}
+                        className="flex-1 py-1.5 px-2 bg-[#721B29] text-white text-[10px] sm:text-[11px] font-semibold rounded-xs hover:bg-[#852031] transition-colors flex items-center justify-center gap-1"
+                      >
+                        <span>View Detail</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickViewProduct(activeProduct)}
+                        className="p-1.5 border border-[#D9CEBF] text-[#4A453E] hover:text-[#721B29] rounded-xs hover:bg-[#F3EFE6] transition-colors"
+                        title="Quick View"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            )}
           </div>
         </div>
       </div>

@@ -1,10 +1,10 @@
 # The Western Store Kurukshetra 🛍️✨
 
-A high-performance, live-ready e-commerce platform built for **The Western Store Kurukshetra**, combining catalog discovery with seamless **WhatsApp Order Placement**, **ImageKit CDN photo uploads**, **Supabase PostgreSQL database with Realtime subscriptions**, and a built-in **Boutique Admin Panel**.
+A high-performance, boutique e-commerce web platform built for **The Western Store Kurukshetra**, featuring direct **WhatsApp Order Placement**, **ImageKit CDN photo uploads**, **Supabase PostgreSQL database with Realtime subscriptions**, and a dedicated **Boutique Admin Panel**.
 
 ---
 
-## 🌟 Architecture Overview
+## 🌟 System Architecture
 
 ```
  ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -17,7 +17,7 @@ A high-performance, live-ready e-commerce platform built for **The Western Store
  │                  SUPABASE                    │  │         IMAGEKIT CDN         │
  │     (PostgreSQL Database & Realtime WS)      │  │   (Image Storage & Delivery) │
  ├──────────────────────────────────────────────┤  ├──────────────────────────────┤
- │ • Live Product Catalog & Categories          │  │ • Product Photo Gallery CDN  │
+ │ • Live Product Catalog & Categories          │  │ • High-res Garment Media CDN │
  │ • Customer Account & Auth Profiles           │  │ • Category Cover Images      │
  │ • Saved Shopping Cart & Wishlist Sync        │  │ • Automatic WebP Conversion  │
  │ • Customer Orders & Tracking History         │  │ • Real-time Image Resizing   │
@@ -26,9 +26,10 @@ A high-performance, live-ready e-commerce platform built for **The Western Store
                                                                    │ (HMAC Signature)
                                                     ┌──────────────┴───────────────┐
                                                     │    EXPRESS BACKEND (RENDER)  │
+                                                    │ • Admin Authentication       │
                                                     │ • ImageKit Upload Tokens     │
-                                                    │ • Secure Order Validation    │
-                                                    │ • Keeps Private Key Secure   │
+                                                    │ • Order Total Verification   │
+                                                    │ • Keeps Secret Keys Private  │
                                                     └──────────────────────────────┘
 ```
 
@@ -37,109 +38,176 @@ A high-performance, live-ready e-commerce platform built for **The Western Store
 ## 🛠️ Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, `motion/react`, `lucide-react`.
-- **Backend Service**: Node.js, Express.js, TypeScript, `@imagekit/nodejs` SDK.
-- **Database & Security**: Supabase (PostgreSQL, Realtime Pub/Sub, RLS Security Policies).
-- **Media CDN**: ImageKit global CDN with automatic WebP optimization.
+- **Backend Service**: Node.js, Express.js, TypeScript, `@imagekit/nodejs` SDK, `express-rate-limit`.
+- **Database & Realtime**: Supabase (PostgreSQL 15, Realtime Pub/Sub, Row-Level Security).
+- **Media CDN**: ImageKit global CDN with dynamic format conversion & WebP compression.
 
 ---
 
-## 📂 Repository Structure
+## 📂 Repository File Structure
 
 ```text
-Western-Store/
-├── backend/                  # Express API server (ImageKit auth, order validation)
-│   ├── src/index.ts          # Server entry point & Order API
-│   ├── render.yaml           # Render blueprint deployment file
-│   ├── package.json
-│   └── .env.example
-├── frontend/                 # React + Vite storefront application
-│   ├── public/
-│   │   └── _redirects        # Netlify SPA redirect rule
+The Western Store/
+├── backend/                  # Express API server (Admin Auth, ImageKit tokens, Orders)
 │   ├── src/
-│   │   ├── components/       # Storefront & Admin UI components
-│   │   ├── context/          # React Context (StoreContext)
-│   │   ├── lib/              # Supabase & ImageKit helper services
-│   │   └── types.ts          # TypeScript interfaces
-│   ├── vercel.json           # Vercel SPA rewrite rule
+│   │   └── index.ts          # Express entry point & secure endpoints
+│   ├── .env.example          # Backend environment variables template
 │   ├── package.json
-│   └── .env.example
-├── supabase_schema.sql       # Production PostgreSQL DB Schema
-├── update_rls_policies.sql   # Security policy enforcement script
-├── seed_supabase.sql         # Production Seed Data
-└── README.md
+│   ├── render.yaml           # Render deployment blueprint
+│   └── tsconfig.json
+├── frontend/                 # React storefront & admin portal
+│   ├── public/
+│   │   └── _redirects        # Netlify SPA router rewrite
+│   ├── src/
+│   │   ├── components/       # UI components (Storefront, PDP, PLP, AdminPanel, Lookbook)
+│   │   ├── context/          # StoreContext (Catalog, Cart, Wishlist, Local Storage, Realtime)
+│   │   ├── data/             # Initial metadata & store configurations
+│   │   ├── lib/              # Supabase & ImageKit service wrappers
+│   │   └── types.ts          # TypeScript type definitions
+│   ├── .env.example          # Frontend public variables template
+│   ├── vercel.json           # Vercel SPA router rewrite
+│   ├── package.json
+│   └── vite.config.ts
+├── supabase_schema.sql       # Complete database schema (tables, triggers, RLS, realtime)
+├── rls_polices_fix.sql       # 1-click script to truncate demo data & grant CRUD permissions
+├── update_rls_policies.sql   # Standalone RLS security update script
+├── seed_supabase.sql         # Optional sample demo catalog seed data
+└── README.md                 # System documentation & deployment guide
 ```
 
 ---
 
-## 🚀 Complete Step-by-Step Production Deployment Guide
+## 🚀 Systemized Implementation & Setup Guide
 
-Follow this guide to deploy all parts of the application to production:
+To set up and run the entire platform from scratch, execute the following phases in sequence:
 
-### Step 1: Set Up Database on Supabase
+```
+Step 1: Supabase DB ──► Step 2: ImageKit CDN ──► Step 3: Backend Server ──► Step 4: Frontend App
+```
 
-1. **Create Supabase Project**:
+---
+
+### Phase 1: Database Setup (Supabase)
+
+1. **Create a Supabase Project**:
    - Go to [Supabase Console](https://supabase.com) and create a new project.
-   - Note down your **Project URL** and **Anon API Key** from **Project Settings → API**.
+   - Go to **Project Settings → API** and copy:
+     - `Project URL` (e.g. `https://xxxx.supabase.co`)
+     - `anon / public key`
+     - `service_role key` (keep this secret; only used in backend).
 
-2. **Execute Database Schema**:
-   - In Supabase Dashboard, go to **SQL Editor** → Click **New Query**.
-   - Execute [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql).
+2. **Run the Database Schema**:
+   - Go to **SQL Editor** in Supabase Dashboard.
+   - Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql), paste its contents into the SQL Editor, and click **Run**.
+   - This creates all necessary tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`), sets up realtime broadcast channels, and applies Row Level Security (RLS).
 
-3. **Seed Initial Categories & Products**:
-   - Execute [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql) in a new SQL query tab.
-
-4. **Enforce Security Policies**:
-   - **CRITICAL:** Execute [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) in a new SQL query tab to secure your database against unauthorized modifications.
-
----
-
-### Step 2: Set Up Media CDN on ImageKit
-
-1. Register at [ImageKit.io](https://imagekit.io).
-2. Retrieve your **Public Key**, **Private Key**, and **URL Endpoint** from **Developer Options**.
+3. **Catalogue Initialization / Clean Slate**:
+   - **For a 100% clean catalog (Enter your own store items):**
+     Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) in SQL Editor. This ensures any old demo items are wiped and full `INSERT`/`UPDATE`/`DELETE` permissions are enabled.
+   - **For demo items (Optional test catalog):**
+     Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
 
 ---
 
-### Step 3: Deploy Backend API Service (Render)
+### Phase 2: Media CDN Setup (ImageKit)
 
-The Express backend now handles secure, server-side order processing and validation.
-
-1. Create a new Web Service on Render.
-2. **Environment Variables**:
-   Add the following variables under **Environment**:
-
-   | Key | Value / Example | Notes |
-   |---|---|---|
-   | `PORT` | `10000` | Port for Render |
-   | `IMAGEKIT_PUBLIC_KEY` | `public_...` | From ImageKit Dashboard |
-   | `IMAGEKIT_PRIVATE_KEY` | `private_...` | From ImageKit Dashboard |
-   | `IMAGEKIT_URL_ENDPOINT` | `https://ik.imagekit.io/your_id` | From ImageKit Dashboard |
-   | `SUPABASE_URL` | `https://your-project-id.supabase.co` | |
-   | `SUPABASE_SERVICE_ROLE_KEY` | `ey...` | **SECRET** Supabase Service Role Key |
-   | `ADMIN_EMAIL` | `admin@thewesternstore.com` | |
-   | `ADMIN_PASSWORD` | `your_secure_password_2026` | |
-   | `ADMIN_SECRET` | `your_secure_admin_secret` | Custom secret for admin routes |
-   | `FRONTEND_URL` | `https://your-store.vercel.app` | Production frontend domain for CORS |
+1. Sign up for a free account at [ImageKit.io](https://imagekit.io).
+2. Go to **Developer Options** in the ImageKit dashboard and copy:
+   - **URL-endpoint** (e.g. `https://ik.imagekit.io/your_id`)
+   - **Public Key** (`public_...`)
+   - **Private Key** (`private_...`)
 
 ---
 
-### Step 4: Deploy Storefront Web App
+### Phase 3: Backend API Setup (Node/Express)
 
-Add the following environment variables to your deployment platform (Vercel/Netlify):
-
-| Key | Value / Example |
-|---|---|
-| `VITE_BACKEND_URL` | `https://your-backend.onrender.com` |
-| `VITE_SUPABASE_URL` | `https://your-project-id.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+1. **Local Setup**:
+   ```bash
+   cd backend
+   npm install
+   cp .env.example .env
+   ```
+2. **Configure `backend/.env`**:
+   ```env
+   PORT=4000
+   FRONTEND_URL=http://localhost:5173
+   IMAGEKIT_PUBLIC_KEY=public_your_key_here
+   IMAGEKIT_PRIVATE_KEY=private_your_key_here
+   IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_endpoint_here
+   SUPABASE_URL=https://your_project_id.supabase.co
+   SUPABASE_KEY=your_supabase_anon_or_service_key
+   ADMIN_EMAIL=admin@thewesternstore.com
+   ADMIN_PASSWORD=admin123
+   ADMIN_SECRET=westernstore_admin_2026
+   ```
+3. **Run Backend Locally**:
+   ```bash
+   npm run dev
+   # API running on http://localhost:4000
+   # Health check: http://localhost:4000/api/health
+   ```
+4. **Deploy Backend to Render**:
+   - Create a **Web Service** on Render pointing to the `/backend` folder.
+   - Add the environment variables listed in `backend/.env` under **Render Environment**.
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
 
 ---
 
-## 🔒 Security Best Practices Implemented
+### Phase 4: Frontend Web App Setup (React + Vite)
 
-- **Server-Side Order Processing**: Prices and totals are validated on the backend via the `POST /api/orders` endpoint, preventing client-side manipulation.
-- **Strict RLS Policies**: Database modification (INSERT/UPDATE/DELETE) is restricted to authenticated administrators.
-- **Admin Login Rate Limiting**: The `/api/admin/login` endpoint is protected against brute-force attacks via `express-rate-limit`.
-- **Isolated Credentials**: Administrative keys (Service Role Key, ImageKit Private Key) are never exposed to the frontend.
+1. **Local Setup**:
+   ```bash
+   cd frontend
+   npm install
+   cp .env.example .env
+   ```
+2. **Configure `frontend/.env`**:
+   ```env
+   VITE_BACKEND_URL=http://localhost:4000
+   VITE_SUPABASE_URL=https://your_project_id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+   ```
+3. **Run Frontend Locally**:
+   ```bash
+   npm run dev
+   # App running at http://localhost:5173
+   ```
+4. **Deploy Frontend to Vercel / Netlify**:
+   - Import repository root or `/frontend` into Vercel/Netlify.
+   - Set Environment Variables:
+     - `VITE_BACKEND_URL`: `https://your-backend.onrender.com`
+     - `VITE_SUPABASE_URL`: `https://your_project_id.supabase.co`
+     - `VITE_SUPABASE_ANON_KEY`: `your_supabase_anon_key_here`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
 
-*Built for **The Western Store Kurukshetra**.*
+---
+
+## 👑 Boutique Admin Panel Guide
+
+To access the boutique administrative portal:
+
+1. Open the storefront in your browser.
+2. Click the **Account / Login** button in the header and switch to **Admin Login**.
+3. Default credentials (configurable in `backend/.env`):
+   - **Email:** `admin@thewesternstore.com`
+   - **Password:** `admin123`
+4. Once authenticated, the Admin Dashboard allows you to:
+   - **Product Management:** Add, edit, or delete garments, manage variants (sizes & colors), upload multi-angle photos directly to ImageKit CDN, and toggle live stock availability.
+   - **Category Management:** Reorder store navigation tabs, create custom edits, and upload category banners.
+   - **Live Order Tracking:** Manage incoming WhatsApp customer orders, assign Delhivery / Blue Dart AWB tracking numbers, generate instant WhatsApp customer dispatch messages, and update statuses.
+   - **Homepage Layout Customizer:** Customize hero carousel slides, banner announcements, editorial lookbooks, trust badges, and boutique reviews.
+
+---
+
+## 🔐 Security & Architecture Safeguards
+
+- **Persistent Deletion Safeguard:** Product and category deletions made in the admin portal are tracked with persistent identifiers, preventing deleted items from reappearing upon page reload.
+- **Server-Side Validation:** Prices, garment options, and final bill totals are computed and verified server-side before orders are dispatched.
+- **Admin Brute-Force Rate Limiting:** Login attempts are rate-limited via IP window protection.
+- **Strict Key Isolation:** `IMAGEKIT_PRIVATE_KEY`, `ADMIN_PASSWORD`, and `ADMIN_SECRET` are never bundled in client-side code.
+
+---
+
+*Handcrafted for **The Western Store Kurukshetra**.*

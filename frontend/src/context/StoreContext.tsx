@@ -237,29 +237,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Products
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('tws_products_v4');
-    if (saved) {
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('tws_deleted_product_ids') || '[]'));
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((p) => p && !deletedIds.has(p.id));
         }
       } catch {}
     }
-    return INITIAL_PRODUCTS;
+    return INITIAL_PRODUCTS.filter((p) => p && !deletedIds.has(p.id));
   });
 
   // Categories
   const [categories, setCategories] = useState<Category[]>(() => {
     const saved = localStorage.getItem('tws_categories_v4');
-    if (saved) {
+    const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('tws_deleted_category_ids') || '[]'));
+    if (saved !== null) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c) => c && !deletedIds.has(c.id));
         }
       } catch {}
     }
-    return INITIAL_CATEGORIES;
+    return INITIAL_CATEGORIES.filter((c) => c && !deletedIds.has(c.id));
   });
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
     const saved = localStorage.getItem('tws_hero_slides');
@@ -389,10 +391,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('tws_home_sections', JSON.stringify(homeSections));
   }, [homeSections]);
-
-  useEffect(() => {
-    localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
-  }, [collectionFilters]);
 
   useEffect(() => {
     localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
@@ -605,13 +603,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     fetchProductsFromSupabase().then((remoteProducts) => {
       if (remoteProducts !== null) {
-        setProducts(remoteProducts);
+        const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('tws_deleted_product_ids') || '[]'));
+        setProducts(remoteProducts.filter((p) => p && !deletedIds.has(p.id)));
       }
     });
 
     fetchCategoriesFromSupabase().then((remoteCategories) => {
       if (remoteCategories !== null) {
-        setCategories(remoteCategories);
+        const deletedIds = new Set<string>(JSON.parse(localStorage.getItem('tws_deleted_category_ids') || '[]'));
+        setCategories(remoteCategories.filter((c) => c && !deletedIds.has(c.id)));
       }
     });
 
@@ -655,6 +655,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('tws_products_v4', JSON.stringify(products));
   }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('tws_categories_v4', JSON.stringify(categories));
+  }, [categories]);
 
   useEffect(() => {
     localStorage.setItem('tws_orders', JSON.stringify(orders));
@@ -1030,6 +1034,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...productData,
       id: `prod-${Date.now()}`,
     };
+    try {
+      const deleted: string[] = JSON.parse(localStorage.getItem('tws_deleted_product_ids') || '[]');
+      if (deleted.includes(newProduct.id)) {
+        localStorage.setItem('tws_deleted_product_ids', JSON.stringify(deleted.filter((id) => id !== newProduct.id)));
+      }
+    } catch {}
+
     setProducts((prev) => [newProduct, ...prev]);
     upsertProductToSupabase(newProduct).catch((err) => console.warn('[Supabase] Product sync notice:', err));
   };
@@ -1053,6 +1064,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteProduct = (id: string) => {
+    try {
+      const deleted: string[] = JSON.parse(localStorage.getItem('tws_deleted_product_ids') || '[]');
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        localStorage.setItem('tws_deleted_product_ids', JSON.stringify(deleted));
+      }
+    } catch {}
+
     setProducts((prev) => {
       const updatedProducts = prev.filter((prod) => prod.id !== id);
       localStorage.setItem('tws_products_v4', JSON.stringify(updatedProducts));
@@ -1097,6 +1116,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       slug,
       itemCount: categoryData.itemCount || 0,
     };
+    try {
+      const deleted: string[] = JSON.parse(localStorage.getItem('tws_deleted_category_ids') || '[]');
+      if (deleted.includes(newCategory.id)) {
+        localStorage.setItem('tws_deleted_category_ids', JSON.stringify(deleted.filter((id) => id !== newCategory.id)));
+      }
+    } catch {}
+
     setCategories((prev) => [...prev, newCategory]);
     upsertCategoryToSupabase(newCategory).catch((err) => console.warn('[Supabase] Category add notice:', err));
   };
@@ -1138,11 +1164,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteCategory = (id: string) => {
+    try {
+      const deleted: string[] = JSON.parse(localStorage.getItem('tws_deleted_category_ids') || '[]');
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        localStorage.setItem('tws_deleted_category_ids', JSON.stringify(deleted));
+      }
+    } catch {}
+
     const target = categories.find((c) => c.id === id);
     if (target && selectedCategory === target.name) {
       setSelectedCategory('All');
     }
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    setCategories((prev) => {
+      const updated = prev.filter((cat) => cat.id !== id);
+      localStorage.setItem('tws_categories_v4', JSON.stringify(updated));
+      return updated;
+    });
     deleteCategoryFromSupabase(id).catch((err) => console.warn('[Supabase] Delete category notice:', err));
   };
 

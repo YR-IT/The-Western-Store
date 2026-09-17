@@ -11,7 +11,7 @@ export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
       console.warn('[Supabase] Failed to fetch products:', error.message);
       return null;
     }
-    if (!data || data.length === 0) return null;
+    if (!data) return [];
 
     return data.map((item: any) => ({
       id: item.id,
@@ -27,16 +27,16 @@ export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
       inStockCount: item.in_stock_count,
       budgetTier: item.budget_tier || 'under_1499',
       description: item.description || '',
-      fabricCare: item.fabric_care || { fabric: 'Pure Silk', washCare: 'Dry Clean Only', fit: 'Regular', occasion: 'Festive' },
+      fabricCare: item.fabric_care || { fabric: '', washCare: '', fit: '', occasion: '' },
       customReturnPolicy: item.custom_return_policy || undefined,
       customWashCareNotes: item.custom_wash_care_notes || undefined,
       customDeliveryTimeline: item.custom_delivery_timeline || undefined,
       customReviews: item.custom_reviews || undefined,
-      sizes: item.sizes || ['Free Size'],
-      colors: item.colors || [{ name: 'Deep Maroon', hex: '#721B29' }],
+      sizes: item.sizes || [],
+      colors: item.colors || [],
       images: item.images || [],
-      rating: Number(item.rating || 4.9),
-      reviewCount: Number(item.review_count || 24),
+      rating: Number(item.rating || 5.0),
+      reviewCount: Number(item.review_count || 0),
     }));
   } catch (err) {
     console.error('[Supabase] Products query error:', err);
@@ -54,7 +54,7 @@ export async function fetchCategoriesFromSupabase(): Promise<Category[] | null> 
       console.warn('[Supabase] Failed to fetch categories:', error.message);
       return null;
     }
-    if (!data || data.length === 0) return null;
+    if (!data) return [];
 
     return data.map((item: any) => ({
       id: item.id,
