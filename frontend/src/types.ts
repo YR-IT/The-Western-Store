@@ -51,7 +51,7 @@ export interface Product {
   budgetTier: BudgetTier;
   images: string[];
   sizes: string[];
-  colors: { name: string; hex: string }[];
+  colors: { name: string }[];
   description: string;
   fabricCare: {
     fabric: string;
@@ -231,7 +231,7 @@ export interface CollectionFilterConfig {
   fabrics: FilterOption[];
   occasions: FilterOption[];
   sizes: FilterOption[];
-  colors: { id: string; name: string; hex: string; enabled: boolean }[];
+  colors: { id: string; name: string; enabled: boolean }[];
   budgetTiers: { id: string; label: string; minPrice: number; maxPrice: number; enabled: boolean }[];
   sortOptions: FilterOption[];
 }

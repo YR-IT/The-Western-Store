@@ -421,7 +421,7 @@ export const AdminPanel: React.FC = () => {
         budgetTier: data.budgetTier || 'under_1499',
         images: data.images && data.images.length > 0 ? data.images : ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'],
         sizes: data.sizes || ['Free Size'],
-        colors: data.colors || [{ name: 'Deep Maroon', hex: '#721B29' }],
+        colors: data.colors || [{ name: 'Deep Maroon' }],
         description: data.description || 'Exclusive boutique garment crafted for The Western Store.',
         fabricCare: data.fabricCare || {
           fabric: 'Pure Silk & Georgette',
@@ -1371,14 +1371,15 @@ export const AdminPanel: React.FC = () => {
                                   <p className="text-[11px] font-medium truncate max-w-[120px]">
                                     {p.sizes.join(', ')}
                                   </p>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex flex-wrap items-center gap-1">
                                     {p.colors.slice(0, 3).map((c, i) => (
                                       <span
                                         key={i}
-                                        className="w-3 h-3 rounded-full border border-black/20"
-                                        style={{ backgroundColor: c.hex }}
+                                        className="text-[10px] font-medium px-1.5 py-0.5 bg-[#F4EFE6] border border-[#D9CEBF] rounded text-[#4A453E] truncate max-w-[80px]"
                                         title={c.name}
-                                      />
+                                      >
+                                        {c.name}
+                                      </span>
                                     ))}
                                     {p.colors.length > 3 && (
                                       <span className="text-[9px] text-[#8C8276]">

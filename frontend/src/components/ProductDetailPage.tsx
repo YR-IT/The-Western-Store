@@ -665,23 +665,19 @@ export const ProductDetailPage: React.FC = () => {
                           Color: <span className="font-normal text-[#736B63]">{selectedColor}</span>
                         </span>
                       </div>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         {product.colors.map((c) => (
                           <button
                             key={c.name}
                             type="button"
                             onClick={() => setSelectedColor(c.name)}
-                            className={`group relative w-8 h-8 rounded-full border-2 transition-all p-0.5 ${
+                            className={`px-3 py-1.5 text-xs rounded-xs border transition-all ${
                               selectedColor === c.name
-                                ? 'border-[#721B29] ring-2 ring-[#721B29]/20'
-                                : 'border-[#D9CEBF] hover:border-[#721B29]'
+                                ? 'bg-[#721B29] text-white border-[#721B29]'
+                                : 'border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
                             }`}
-                            title={c.name}
                           >
-                            <span
-                              className="w-full h-full rounded-full block"
-                              style={{ backgroundColor: c.hex }}
-                            />
+                            {c.name}
                           </button>
                         ))}
                       </div>

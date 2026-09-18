@@ -16,7 +16,6 @@ export const CollectionFiltersManager: React.FC = () => {
   const [newOccasionLabel, setNewOccasionLabel] = useState('');
   const [newSizeLabel, setNewSizeLabel] = useState('');
   const [newColorName, setNewColorName] = useState('');
-  const [newColorHex, setNewColorHex] = useState('#721B29');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -153,12 +152,11 @@ export const CollectionFiltersManager: React.FC = () => {
     const newCol = {
       id: `col_${Date.now()}`,
       name: newColorName.trim(),
-      hex: newColorHex,
       enabled: true,
     };
     updateCollectionFilters({ colors: [...collectionFilters.colors, newCol] });
     setNewColorName('');
-    showToast(`Added color filter swatch "${newCol.name}"`);
+    showToast(`Added color "${newCol.name}"`);
   };
 
   const handleDeleteColor = (id: string) => {
@@ -214,7 +212,7 @@ export const CollectionFiltersManager: React.FC = () => {
           { id: 'fabric', label: 'Fabric Types' },
           { id: 'occasion', label: 'Occasions' },
           { id: 'size', label: 'Size Chips' },
-          { id: 'color', label: 'Color Swatches' },
+          { id: 'color', label: 'Color Options' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -512,41 +510,35 @@ export const CollectionFiltersManager: React.FC = () => {
       {activeTab === 'color' && (
         <div className="space-y-4">
           <div className="bg-white p-5 rounded-xl border border-[#EAE4D9] space-y-4">
-            <h3 className="font-serif font-bold text-base text-[#242120]">Color Swatches</h3>
+            <h3 className="font-serif font-bold text-base text-[#242120]">Color Options</h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="flex flex-wrap gap-2">
               {(collectionFilters.colors || []).map((col) => (
                 <div
                   key={col.id}
-                  className={`p-3 rounded-lg border flex items-center justify-between gap-2.5 ${
-                    col.enabled ? 'border-[#EAE4D9] bg-[#FAF8F3]' : 'border-gray-200 bg-gray-50 opacity-60'
+                  className={`px-3 py-1.5 rounded-full border flex items-center gap-2 ${
+                    col.enabled ? 'border-[#721B29] bg-[#721B29]/5 text-[#242120]' : 'border-gray-300 bg-gray-50 text-gray-400 opacity-60'
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span
-                      className="w-5 h-5 rounded-full border border-gray-300 shadow-2xs shrink-0"
-                      style={{ backgroundColor: col.hex }}
-                    />
-                    <span className="font-bold text-xs text-[#242120] truncate">{col.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="font-bold text-xs">{col.name}</span>
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleToggleColor(col.id)}
-                      className={`p-1.5 rounded-md text-xs font-bold transition-colors flex items-center justify-center ${
+                      className={`p-1 rounded-md text-xs font-bold transition-colors flex items-center justify-center ${
                         col.enabled ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                       title={col.enabled ? 'Hide Color' : 'Show Color'}
                     >
-                      {col.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      {col.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDeleteColor(col.id)}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md transition-colors flex items-center justify-center"
+                      className="p-1 text-rose-600 hover:bg-rose-50 rounded-md transition-colors flex items-center justify-center"
                       title="Delete Color"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
@@ -555,45 +547,23 @@ export const CollectionFiltersManager: React.FC = () => {
           </div>
 
           <form onSubmit={handleAddColor} className="bg-white p-5 rounded-xl border border-[#EAE4D9] space-y-3">
-            <h4 className="font-serif font-bold text-sm text-[#242120]">Add New Color Swatch</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg">
-              <div>
-                <label className="block text-[11px] font-bold text-[#4A453E] uppercase mb-1">Color Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Deep Maroon"
-                  value={newColorName}
-                  onChange={(e) => setNewColorName(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-[#D9CEBF] rounded-md text-xs focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-[#4A453E] uppercase mb-1">Hex Code</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value)}
-                    className="w-8 h-8 rounded-md border border-[#D9CEBF] cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value)}
-                    className="w-20 px-2 py-1.5 border border-[#D9CEBF] rounded-md text-xs focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#57141F] flex items-center justify-center gap-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Color</span>
-                </button>
-              </div>
+            <h4 className="font-serif font-bold text-sm text-[#242120]">Add New Color</h4>
+            <div className="flex items-center gap-3 max-w-md">
+              <input
+                type="text"
+                required
+                placeholder="e.g. Deep Maroon, Ivory, Navy Blue"
+                value={newColorName}
+                onChange={(e) => setNewColorName(e.target.value)}
+                className="flex-1 px-3 py-1.5 border border-[#D9CEBF] rounded-md text-xs focus:outline-none focus:border-[#721B29]"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#57141F] flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Color</span>
+              </button>
             </div>
           </form>
         </div>

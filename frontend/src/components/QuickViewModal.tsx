@@ -137,18 +137,19 @@ export const QuickViewModal: React.FC = () => {
                   <p className="text-xs text-[#5C544B] mb-1.5">
                     Color: <strong>{selectedColor}</strong>
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {quickViewProduct.colors.map((c) => (
                       <button
                         key={c.name}
                         type="button"
                         onClick={() => setSelectedColor(c.name)}
-                        className={`w-6 h-6 rounded-full border-2 p-0.5 ${
-                          selectedColor === c.name ? 'border-[#721B29] scale-110' : 'border-[#D9CEBF]'
+                        className={`px-3 py-1 text-xs rounded-xs border transition-all ${
+                          selectedColor === c.name
+                            ? 'bg-[#721B29] text-white border-[#721B29]'
+                            : 'border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
                         }`}
-                        title={c.name}
                       >
-                        <span className="w-full h-full rounded-full block" style={{ backgroundColor: c.hex }} />
+                        {c.name}
                       </button>
                     ))}
                   </div>

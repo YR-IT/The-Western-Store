@@ -31,21 +31,6 @@ interface ProductEditorModalProps {
   onSave: (productData: Partial<Product>) => void;
 }
 
-const LUXURY_COLOR_PALETTE = [
-  { name: 'Deep Maroon', hex: '#721B29' },
-  { name: 'Champagne Gold', hex: '#C5A059' },
-  { name: 'Rani Pink', hex: '#B82855' },
-  { name: 'Emerald Green', hex: '#1B4D3E' },
-  { name: 'Royal Indigo', hex: '#2B3A42' },
-  { name: 'Sage Green', hex: '#8F9779' },
-  { name: 'Warm Ivory', hex: '#F7F3E8' },
-  { name: 'Rust Terracotta', hex: '#B2533E' },
-  { name: 'Midnight Black', hex: '#1A1A1A' },
-  { name: 'Mustard Ochre', hex: '#D49B28' },
-  { name: 'Powder Blue', hex: '#9BB5C4' },
-  { name: 'Wine Plum', hex: '#581845' },
-];
-
 export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   product,
   categories,
@@ -110,9 +95,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const [sizes, setSizes] = useState<string[]>([]);
   const [newSizeInput, setNewSizeInput] = useState('');
 
-  const [colors, setColors] = useState<{ name: string; hex: string }[]>([]);
+  const [colors, setColors] = useState<{ name: string }[]>([]);
   const [customColorName, setCustomColorName] = useState('');
-  const [customColorHex, setCustomColorHex] = useState('#721B29');
 
   // Rating & Reviews
   const [rating, setRating] = useState<number | ''>(5.0);
@@ -274,13 +258,9 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   // Color helpers
   const handleAddCustomColor = () => {
     if (!customColorName.trim()) return;
-    setColors([...colors, { name: customColorName.trim(), hex: customColorHex }]);
+    if (colors.some((item) => item.name.toLowerCase() === customColorName.trim().toLowerCase())) return;
+    setColors([...colors, { name: customColorName.trim() }]);
     setCustomColorName('');
-  };
-
-  const handleAddPaletteColor = (c: { name: string; hex: string }) => {
-    if (colors.some((item) => item.name.toLowerCase() === c.name.toLowerCase())) return;
-    setColors([...colors, c]);
   };
 
   const handleRemoveColor = (index: number) => {
@@ -1098,76 +1078,42 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   </div>
                 </div>
 
-                {/* Colors Management */}
+                  {/* Colors Management */}
                 <div className="p-4 bg-white rounded-xl border border-[#EAE4D9] space-y-4">
                   <div className="flex items-center gap-2 pb-2 border-b border-[#F4EFE6]">
                     <Palette className="w-4 h-4 text-[#721B29]" />
                     <span className="font-serif font-bold text-sm text-[#242120]">
-                      Garment Colors & Shades ({colors.length})
+                      Garment Colors ({colors.length})
                     </span>
                   </div>
 
                   {/* Current Color Chips */}
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-2">
                     {colors.map((col, idx) => (
                       <div
                         key={`${col.name}-${idx}`}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-full text-xs font-medium text-[#242120] shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-full text-xs font-medium text-[#242120] shadow-2xs"
                       >
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-black/20"
-                          style={{ backgroundColor: col.hex }}
-                        />
                         <span>{col.name}</span>
-                        {colors.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveColor(idx)}
-                            className="text-[#8C8276] hover:text-rose-700 cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveColor(idx)}
+                          className="text-[#8C8276] hover:text-rose-700 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
 
-                  {/* Curated Luxury Palette quick add */}
-                  <div>
-                    <p className="text-[11px] font-semibold text-[#736B63] mb-2">
-                      Click to add from Boutique Palette:
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {LUXURY_COLOR_PALETTE.map((pal) => (
-                        <button
-                          key={pal.name}
-                          type="button"
-                          onClick={() => handleAddPaletteColor(pal)}
-                          className="p-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-md text-left flex items-center gap-2 transition-colors cursor-pointer"
-                        >
-                          <span
-                            className="w-4 h-4 rounded-full border border-black/20 flex-shrink-0"
-                            style={{ backgroundColor: pal.hex }}
-                          />
-                          <span className="text-[11px] text-[#242120] truncate">{pal.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Custom color input */}
+                  {/* Color name input */}
                   <div className="pt-2 border-t border-[#F4EFE6] flex items-center gap-2">
                     <input
-                      type="color"
-                      value={customColorHex}
-                      onChange={(e) => setCustomColorHex(e.target.value)}
-                      className="w-9 h-8 p-0.5 rounded border border-[#D9CEBF] cursor-pointer bg-white"
-                    />
-                    <input
                       type="text"
-                      placeholder="Custom Shade Name (e.g. Dusty Rose)"
+                      placeholder="Color name (e.g. Dusty Rose, Maroon, Yellow)"
                       value={customColorName}
                       onChange={(e) => setCustomColorName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomColor(); } }}
                       className="flex-1 px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
                     />
                     <button
@@ -1175,7 +1121,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       onClick={handleAddCustomColor}
                       className="px-3.5 py-1.5 bg-[#242120] text-white rounded-sm text-xs font-medium hover:bg-[#3D3334] cursor-pointer"
                     >
-                      + Add Shade
+                      + Add Color
                     </button>
                   </div>
                 </div>

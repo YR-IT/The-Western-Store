@@ -761,12 +761,14 @@ export const ProductListingPage: React.FC = () => {
                             key={c.id}
                             type="button"
                             onClick={() => setSelectedColor(selectedColor === c.name ? 'all' : c.name)}
-                            className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                              selectedColor === c.name ? 'scale-125 border-[#721B29]' : 'border-white shadow-xs'
+                            className={`px-2.5 py-1 text-xs rounded-xs border transition-all ${
+                              selectedColor === c.name
+                                ? 'bg-[#721B29] text-white border-[#721B29]'
+                                : 'border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
                             }`}
-                            style={{ backgroundColor: c.hex }}
-                            title={c.name}
-                          />
+                          >
+                            {c.name}
+                          </button>
                         ))}
                       </div>
                     </motion.div>
@@ -1154,12 +1156,14 @@ export const ProductListingPage: React.FC = () => {
                                 key={c.id}
                                 type="button"
                                 onClick={() => setSelectedColor(selectedColor === c.name ? 'all' : c.name)}
-                                className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                                  selectedColor === c.name ? 'scale-125 border-[#721B29]' : 'border-white shadow-xs'
+                                className={`px-2.5 py-1 text-xs rounded-xs border transition-all ${
+                                  selectedColor === c.name
+                                    ? 'bg-[#721B29] text-white border-[#721B29]'
+                                    : 'border-[#D9CEBF] text-[#4A453E] hover:border-[#721B29]'
                                 }`}
-                                style={{ backgroundColor: c.hex }}
-                                title={c.name}
-                              />
+                              >
+                                {c.name}
+                              </button>
                             ))}
                           </div>
                         </motion.div>
