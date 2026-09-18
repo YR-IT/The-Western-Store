@@ -61,3 +61,35 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.store_settings;
   END IF;
 END $$;
+
+-- 5. Supabase Storage 'videos' Bucket & Policies
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'videos',
+  'videos',
+  true,
+  52428800, -- 50MB per video limit
+  ARRAY['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg']
+)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public Read Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Public Upload Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Public Update Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Public Delete Videos" ON storage.objects;
+
+CREATE POLICY "Public Read Videos"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'videos');
+
+CREATE POLICY "Public Upload Videos"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'videos');
+
+CREATE POLICY "Public Update Videos"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'videos');
+
+CREATE POLICY "Public Delete Videos"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'videos');

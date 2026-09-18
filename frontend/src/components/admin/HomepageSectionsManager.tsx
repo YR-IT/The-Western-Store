@@ -3,6 +3,7 @@ import { useStore } from '../../context/StoreContext';
 import { HomeSectionConfig, HomeSectionType, HeroSlide, Testimonial, InstagramPost, BudgetTier } from '../../types';
 import { ImageKitUploader } from './ImageKitUploader';
 import { ImageKitMediaLibraryModal } from './ImageKitMediaLibraryModal';
+import { SupabaseVideoLibraryModal } from './SupabaseVideoLibraryModal';
 import {
   Plus,
   Trash2,
@@ -35,6 +36,7 @@ import {
   Video,
   Play,
   Folder,
+  Film,
 } from 'lucide-react';
 
 
@@ -131,6 +133,20 @@ export const HomepageSectionsManager: React.FC = () => {
   const [newIgPost, setNewIgPost] = useState({
     reelUrl: '',
   });
+
+  // Supabase Video Storage Modal State
+  const [isSupabaseVideoModalOpen, setIsSupabaseVideoModalOpen] = useState(false);
+  const [supabaseVideoTargetId, setSupabaseVideoTargetId] = useState<string | null>(null);
+
+  const handleSelectSupabaseVideo = (url: string) => {
+    if (supabaseVideoTargetId) {
+      updateInstagramPost(supabaseVideoTargetId, { reelUrl: url });
+      showToast('Video attached from Supabase Storage!');
+    } else {
+      setNewIgPost((prev) => ({ ...prev, reelUrl: url }));
+      showToast('Video attached to new reel!');
+    }
+  };
 
   const handleSelectIgVideo = (urls: string[]) => {
     if (urls.length > 0) {
@@ -1054,13 +1070,24 @@ export const HomepageSectionsManager: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
+                      setSupabaseVideoTargetId(null);
+                      setIsSupabaseVideoModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Film className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Supabase Video Storage</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setIgTargetItemForMedia(null);
                       setIsIgMediaLibraryOpen(true);
                     }}
                     className="px-3 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                    <span>Browse ImageKit Videos</span>
+                    <span>Browse ImageKit</span>
                   </button>
                   <button
                     type="button"
@@ -1202,7 +1229,7 @@ export const HomepageSectionsManager: React.FC = () => {
                       <div className="space-y-2.5 pt-3 border-t border-[#EAE4D9] bg-[#FAF8F3] p-3 rounded-lg">
                         <div>
                           <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">
-                            Video URL (ImageKit / MP4 / WebM) *
+                            Video URL (Supabase / ImageKit / Direct MP4) *
                           </label>
                           <div className="flex items-center gap-1.5">
                             <input
@@ -1210,8 +1237,20 @@ export const HomepageSectionsManager: React.FC = () => {
                               value={post.reelUrl || ''}
                               onChange={(e) => updateInstagramPost(post.id, { reelUrl: e.target.value })}
                               className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs"
-                              placeholder="https://ik.imagekit.io/.../video.mp4"
+                              placeholder="https://...supabase.co/.../video.mp4"
                             />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSupabaseVideoTargetId(post.id);
+                                setIsSupabaseVideoModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 rounded text-[11px] font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+                              title="Select from Supabase Storage"
+                            >
+                              <Film className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Supabase</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -1222,7 +1261,7 @@ export const HomepageSectionsManager: React.FC = () => {
                               title="Select from ImageKit"
                             >
                               <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                              <span>CDN</span>
+                              <span>ImageKit</span>
                             </button>
                           </div>
                         </div>
@@ -1604,32 +1643,35 @@ export const HomepageSectionsManager: React.FC = () => {
               </button>
             </div>
 
-            {/* Direct Upload & CDN Selection Options */}
+            {/* Direct Upload & Storage Selection Options */}
             <div className="space-y-3 bg-[#FAF8F3] p-3.5 rounded-xl border border-[#EAE4D9]">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-[#242120]">Upload Video to ImageKit</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIgTargetItemForMedia(null);
-                    setIsIgMediaLibraryOpen(true);
-                  }}
-                  className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded-md flex items-center gap-1 cursor-pointer"
-                >
-                  <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                  <span>Pick from ImageKit CDN</span>
-                </button>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#242120]">Choose Video Source:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSupabaseVideoTargetId(null);
+                      setIsSupabaseVideoModalOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-xs font-bold rounded-md flex items-center gap-1 cursor-pointer"
+                  >
+                    <Film className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Supabase Storage</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIgTargetItemForMedia(null);
+                      setIsIgMediaLibraryOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded-md flex items-center gap-1 cursor-pointer"
+                  >
+                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                    <span>ImageKit</span>
+                  </button>
+                </div>
               </div>
-
-              <ImageKitUploader
-                folder="/videos"
-                accept="video/*"
-                buttonText="Upload Video File to /videos"
-                onUploadSuccess={(url) => {
-                  setNewIgPost((prev) => ({ ...prev, reelUrl: url }));
-                  showToast('Uploaded to ImageKit /videos!');
-                }}
-              />
             </div>
 
             {/* Video Preview in Modal */}
@@ -1684,6 +1726,14 @@ export const HomepageSectionsManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Supabase Video Library Modal */}
+      <SupabaseVideoLibraryModal
+        isOpen={isSupabaseVideoModalOpen}
+        onClose={() => setIsSupabaseVideoModalOpen(false)}
+        currentVideoUrl={supabaseVideoTargetId ? instagramPosts.find(p => p.id === supabaseVideoTargetId)?.reelUrl : newIgPost.reelUrl}
+        onSelectVideo={handleSelectSupabaseVideo}
+      />
 
       {/* ImageKit Media Library Modal for Video Selection */}
       <ImageKitMediaLibraryModal

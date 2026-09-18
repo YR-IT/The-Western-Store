@@ -87,7 +87,7 @@ Step 1: Supabase DB ──► Step 2: ImageKit CDN ──► Step 3: Backend Ser
 
 ---
 
-### Phase 1: Database Setup (Supabase)
+### Phase 1: Database & Media Storage Setup (Supabase)
 
 1. **Create a Supabase Project**:
    - Go to [Supabase Console](https://supabase.com) and create a new project.
@@ -101,17 +101,23 @@ Step 1: Supabase DB ──► Step 2: ImageKit CDN ──► Step 3: Backend Ser
 
    | Script File | Purpose | When to Run |
    |---|---|---|
-   | [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql) | **Complete Database Schema** — Creates tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`), triggers, Realtime broadcast publication, and base RLS. | **Mandatory on initial setup**. |
-   | [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) | **Clean Slate + RLS Fix** — Truncates existing demo data and enables full Admin CRUD permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) on `products` and `categories`. | **When starting fresh** with your own store inventory. |
-   | [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) | **Standalone RLS Security Script** — Updates and grants full CRUD policies on `categories`, `products`, and `orders` **without** wiping or truncating existing inventory data. | **When fixing permissions** on an active database with existing items. |
+   | [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql) | **Complete Database & Storage Schema** — Creates tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`, `store_settings`), Realtime publication, and initializes the public `videos` Supabase Storage bucket with streaming & CRUD policies. | **Mandatory on initial new setup**. |
+   | [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) | **Clean Slate + RLS & Storage Fix** — Truncates existing demo catalog data and ensures full Admin CRUD permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) on all tables and creates the `videos` storage bucket. | **When starting fresh** with your own store inventory. |
+   | [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) | **Standalone RLS & Storage Update Script** — Updates and grants full CRUD policies on `categories`, `products`, `orders`, and `store_settings` + `videos` storage bucket **without** wiping or truncating existing inventory data. | **When fixing permissions / adding storage** on an active database with existing items. |
    | [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql) | **Demo Catalog Seed** — Inserts sample categories and curated boutique garments with tags, sizes, colors, and prices. | **Optional** (for development / demo testing). |
 
-3. **Step-by-Step Initial Setup**:
-   - **Step 2a (Required):** Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql), paste its content into the Supabase SQL Editor, and click **Run**.
-   - **Step 2b (Choose one):**
-     - **For a fresh store (your own products):** Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql).
-     - **To preserve existing items & update permissions:** Run [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql).
-     - **To load sample demo items:** Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
+3. **Step-by-Step Guide for a Brand New Setup**:
+   - **Step 1 (Schema & Storage Creation):**
+     1. Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql).
+     2. Copy and paste its entire contents into **Supabase Dashboard → SQL Editor** and click **Run**.
+     3. *This automatically creates all database tables, real-time sync channels, and the public `videos` storage bucket with public streaming and admin upload permissions.*
+   - **Step 2 (Choose Catalog State):**
+     - **For your own boutique products (Clean slate):** Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) in SQL Editor.
+     - **To populate test demo products:** Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
+   - **Step 3 (Verify Storage Bucket):**
+     1. In Supabase Dashboard, click **Storage** in the left sidebar.
+     2. Verify that the `videos` bucket is listed with the **Public** tag.
+     3. You can now upload vertical `.mp4` video reels directly from the Boutique Admin Panel under **Homepage Customizer → Autoplay Video Reels**!
 
 ---
 

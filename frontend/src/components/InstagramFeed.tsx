@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import {
@@ -19,20 +19,51 @@ interface VideoReelCardProps {
 }
 
 const VideoReelCard: React.FC<VideoReelCardProps> = ({ post, index }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   // Video source - prefer videoUrl or reelUrl (if direct file)
   const videoSrc = post.videoUrl || post.reelUrl || '';
+
+  // Smart Bandwidth & Performance: Only play and load video when in viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            const vid = videoRef.current;
+            if (vid) {
+              vid.play().catch(() => {});
+            }
+          } else {
+            const vid = videoRef.current;
+            if (vid && !vid.paused) {
+              vid.pause();
+            }
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [videoSrc]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     const vid = videoRef.current;
     if (!vid) return;
     if (vid.paused) {
-      vid.play();
+      vid.play().catch(() => {});
       setIsPlaying(true);
     } else {
       vid.pause();
@@ -51,6 +82,7 @@ const VideoReelCard: React.FC<VideoReelCardProps> = ({ post, index }) => {
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -63,7 +95,7 @@ const VideoReelCard: React.FC<VideoReelCardProps> = ({ post, index }) => {
         {videoSrc && !hasError ? (
           <video
             ref={videoRef}
-            src={videoSrc}
+            src={isVisible ? videoSrc : undefined}
             autoPlay
             loop
             muted={isMuted}
