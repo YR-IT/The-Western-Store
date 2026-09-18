@@ -13,31 +13,40 @@ export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
     }
     if (!data) return [];
 
-    return data.map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      category: item.category,
-      price: Number(item.price),
-      originalPrice: item.original_price ? Number(item.original_price) : Number(item.price),
-      saleDiscount: item.sale_discount || undefined,
-      onSale: !!item.on_sale,
-      isBestSeller: !!item.is_bestseller,
-      isNew: !!item.is_new,
-      isSoldOut: !!item.is_sold_out,
-      inStockCount: item.in_stock_count,
-      budgetTier: item.budget_tier || 'under_1499',
-      description: item.description || '',
-      fabricCare: item.fabric_care || { fabric: '', washCare: '', fit: '', occasion: '' },
-      customReturnPolicy: item.custom_return_policy || undefined,
-      customWashCareNotes: item.custom_wash_care_notes || undefined,
-      customDeliveryTimeline: item.custom_delivery_timeline || undefined,
-      customReviews: item.custom_reviews || undefined,
-      sizes: item.sizes || [],
-      colors: item.colors || [],
-      images: item.images || [],
-      rating: Number(item.rating || 5.0),
-      reviewCount: Number(item.review_count || 0),
-    }));
+    return data.map((item: any) => {
+      const fc = (typeof item.fabric_care === 'object' && item.fabric_care) ? item.fabric_care : {};
+      return {
+        id: item.id,
+        title: item.title,
+        slug: item.slug || item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        category: item.category,
+        price: Number(item.price),
+        originalPrice: item.original_price ? Number(item.original_price) : Number(item.price),
+        saleDiscount: item.sale_discount || undefined,
+        onSale: !!item.on_sale,
+        isBestSeller: !!item.is_bestseller,
+        isNew: !!item.is_new,
+        isSoldOut: !!item.is_sold_out,
+        inStockCount: item.in_stock_count !== undefined ? Number(item.in_stock_count) : 15,
+        budgetTier: item.budget_tier || 'under_1499',
+        description: item.description || '',
+        fabricCare: {
+          fabric: fc.fabric || '',
+          washCare: fc.washCare || '',
+          fit: fc.fit || '',
+          occasion: fc.occasion || '',
+        },
+        customReturnPolicy: item.custom_return_policy || fc.custom_return_policy || undefined,
+        customWashCareNotes: item.custom_wash_care_notes || fc.custom_wash_care_notes || undefined,
+        customDeliveryTimeline: item.custom_delivery_timeline || fc.custom_delivery_timeline || undefined,
+        customReviews: item.custom_reviews || fc.custom_reviews || undefined,
+        sizes: Array.isArray(item.sizes) ? item.sizes : [],
+        colors: Array.isArray(item.colors) ? item.colors : [],
+        images: Array.isArray(item.images) ? item.images : [],
+        rating: Number(item.rating || 5.0),
+        reviewCount: Number(item.review_count || 0),
+      };
+    });
   } catch (err) {
     console.error('[Supabase] Products query error:', err);
     return null;
@@ -227,31 +236,36 @@ export async function upsertProductToSupabase(product: Product): Promise<boolean
       title: product.title,
       slug: product.slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       category: product.category,
-      price: product.price,
-      original_price: product.originalPrice,
+      price: Number(product.price) || 0,
+      original_price: Number(product.originalPrice) || Number(product.price) || 0,
       sale_discount: product.saleDiscount || null,
-      on_sale: product.onSale,
-      is_bestseller: product.isBestSeller,
-      is_new: product.isNew,
-      is_sold_out: product.isSoldOut,
-      in_stock_count: product.inStockCount,
-      budget_tier: product.budgetTier,
-      description: product.description,
-      fabric_care: product.fabricCare,
-      custom_return_policy: product.customReturnPolicy || null,
-      custom_wash_care_notes: product.customWashCareNotes || null,
-      custom_delivery_timeline: product.customDeliveryTimeline || null,
-      custom_reviews: product.customReviews || null,
-      sizes: product.sizes,
-      colors: product.colors,
-      images: product.images,
-      rating: product.rating || 4.9,
-      review_count: product.reviewCount || 24,
+      on_sale: !!product.onSale,
+      is_bestseller: !!product.isBestSeller,
+      is_new: !!product.isNew,
+      is_sold_out: !!product.isSoldOut,
+      in_stock_count: product.inStockCount !== undefined ? Number(product.inStockCount) : 15,
+      budget_tier: product.budgetTier || 'under_1499',
+      description: product.description || '',
+      fabric_care: {
+        ...(product.fabricCare || {}),
+        custom_return_policy: product.customReturnPolicy || null,
+        custom_wash_care_notes: product.customWashCareNotes || null,
+        custom_delivery_timeline: product.customDeliveryTimeline || null,
+        custom_reviews: product.customReviews || null,
+      },
+      sizes: product.sizes || [],
+      colors: product.colors || [],
+      images: product.images || [],
+      rating: Number(product.rating) || 5.0,
+      review_count: Number(product.reviewCount) || 0,
     };
 
     const { error } = await supabase.from('products').upsert(row);
-    if (error) console.warn('[Supabase] Product upsert error:', error.message);
-    return !error;
+    if (error) {
+      console.warn('[Supabase] Product upsert error:', error.message, error.details);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error('[Supabase] Product upsert exception:', err);
     return false;
