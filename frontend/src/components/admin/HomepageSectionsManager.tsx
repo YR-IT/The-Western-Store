@@ -218,16 +218,34 @@ export const HomepageSectionsManager: React.FC = () => {
 
   const handleCreateSlide = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImg = newSlide.desktopImage || newSlide.image || newSlide.mobileImage;
-    if (!finalImg) {
-      showToast('Please upload or provide at least one banner image.');
+    const td = newSlide.targetDevice || 'all';
+
+    // Validate: need at least the right image for the targeted device
+    if (td === 'desktop' && !newSlide.desktopImage) {
+      showToast('Please upload a Desktop Banner image.');
       return;
     }
+    if (td === 'mobile' && !newSlide.mobileImage) {
+      showToast('Please upload a Mobile Banner image.');
+      return;
+    }
+    if (td === 'all' && !newSlide.desktopImage && !newSlide.mobileImage) {
+      showToast('Please upload at least one banner image.');
+      return;
+    }
+
+    // Set fallback image correctly per device target
+    const primaryImg =
+      td === 'mobile'
+        ? newSlide.mobileImage
+        : newSlide.desktopImage || newSlide.mobileImage;
+
     addHeroSlide({
-      image: finalImg,
-      desktopImage: newSlide.desktopImage || finalImg,
-      mobileImage: newSlide.mobileImage || finalImg,
-      targetDevice: newSlide.targetDevice || 'all',
+      image: primaryImg,
+      // For desktop-only, don't fill mobile with desktop image (and vice-versa)
+      desktopImage: td === 'mobile' ? '' : (newSlide.desktopImage || primaryImg),
+      mobileImage: td === 'desktop' ? '' : (newSlide.mobileImage || primaryImg),
+      targetDevice: td,
       title: newSlide.title || '',
       tagline: newSlide.tagline || '',
       subtitle: newSlide.subtitle || '',
@@ -730,18 +748,20 @@ export const HomepageSectionsManager: React.FC = () => {
           {/* Slide Cards Grid matching Hero Carousel */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {heroSlides
-              .filter((slide) => {
+              .map((slide, globalIdx) => ({ slide, globalIdx }))
+              .filter(({ slide }) => {
                 const target = slide.targetDevice || 'all';
                 if (heroFilterDevice === 'desktop') return target === 'desktop' || target === 'all';
                 if (heroFilterDevice === 'mobile') return target === 'mobile' || target === 'all';
                 return true;
               })
-              .map((slide, idx) => {
+              .map(({ slide, globalIdx }) => {
+              const idx = globalIdx;
               const isEditing = editingSlideId === slide.id;
               const targetDevice = slide.targetDevice || 'all';
               const currentMode = targetDevice === 'mobile' ? 'mobile' : (targetDevice === 'desktop' ? 'desktop' : (heroPreviewMode[slide.id] || 'desktop'));
               const activePreviewImg = currentMode === 'mobile' 
-                ? (slide.mobileImage || slide.desktopImage || slide.image)
+                ? (slide.mobileImage || slide.image)
                 : (slide.desktopImage || slide.image);
 
               return (
@@ -809,11 +829,21 @@ export const HomepageSectionsManager: React.FC = () => {
                       currentMode === 'mobile' ? 'h-72 aspect-[9/14] mx-auto w-48 rounded-lg my-3 border border-white/20 shadow-md' : 'h-60 w-full'
                     }`}
                   >
-                    <img
-                      src={activePreviewImg}
-                      alt={slide.title || 'Store Banner'}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
+                    {activePreviewImg ? (
+                      <img
+                        src={activePreviewImg}
+                        alt={slide.title || 'Store Banner'}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center text-white/40 text-xs">
+                          <div className="text-3xl mb-2">{currentMode === 'mobile' ? '📱' : '🖥️'}</div>
+                          <div>No {currentMode === 'mobile' ? 'mobile' : 'desktop'} image yet</div>
+                          <div className="text-[10px] mt-1">Upload below to preview</div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Optional Text Overlay Preview if enabled */}
                     {slide.showTextOverlay && (

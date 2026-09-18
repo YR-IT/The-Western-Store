@@ -108,8 +108,9 @@ export const HeroCarousel: React.FC = () => {
       {/* Responsive Slide Banners */}
       {activeSlides.map((slide, index) => {
         const isCurrent = index === currentSlide;
+        // Resolve correct images per device target
         const desktopImg = slide.desktopImage || slide.image;
-        const mobileImg = slide.mobileImage || slide.desktopImage || slide.image;
+        const mobileImg = slide.mobileImage || slide.image || slide.desktopImage;
 
         return (
           <div
@@ -118,7 +119,7 @@ export const HeroCarousel: React.FC = () => {
               isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {/* If slide is specifically targeted, render direct image, otherwise responsive picture */}
+            {/* Render the right image(s) per targetDevice */}
             {slide.targetDevice === 'desktop' ? (
               <img
                 src={desktopImg}
@@ -138,10 +139,9 @@ export const HeroCarousel: React.FC = () => {
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
             ) : (
+              /* 'all' — use <picture> to serve widescreen on desktop, portrait on mobile */
               <picture className="w-full h-full block">
-                {desktopImg && (
-                  <source media="(min-width: 768px)" srcSet={desktopImg} />
-                )}
+                {desktopImg && <source media="(min-width: 768px)" srcSet={desktopImg} />}
                 <img
                   src={mobileImg}
                   alt={slide.title || 'The Western Store Banner'}
