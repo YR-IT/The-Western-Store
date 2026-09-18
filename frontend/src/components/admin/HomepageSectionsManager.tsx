@@ -96,23 +96,57 @@ export const HomepageSectionsManager: React.FC = () => {
   const [editingIgId, setEditingIgId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Hero Slide Preview Mode per slide: 'desktop' | 'mobile'
+  const [heroPreviewMode, setHeroPreviewMode] = useState<Record<string, 'desktop' | 'mobile'>>({});
+  const [heroTargetMedia, setHeroTargetMedia] = useState<{ slideId: string | null; field: 'desktopImage' | 'mobileImage' } | null>(null);
+  const [isHeroMediaModalOpen, setIsHeroMediaModalOpen] = useState(false);
+
   // New Slide State
   const [isAddSlideModalOpen, setIsAddSlideModalOpen] = useState(false);
   const [newSlide, setNewSlide] = useState<{
+    desktopImage: string;
+    mobileImage: string;
+    image: string;
     title: string;
     tagline: string;
     subtitle: string;
-    image: string;
     category: string;
     ctaText: string;
+    showTextOverlay: boolean;
   }>({
-    title: 'The Festive Grace 2026',
-    tagline: 'Autumn Royal Edit',
-    subtitle: 'Pre-draped sarees, regal lehengas & embroidered ethnic suits.',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1800&q=85',
-    category: 'Ethnic Wear',
-    ctaText: 'Explore Ethnic Collection',
+    desktopImage: '',
+    mobileImage: '',
+    image: '',
+    title: '',
+    tagline: '',
+    subtitle: '',
+    category: 'All',
+    ctaText: 'Explore Collection',
+    showTextOverlay: false,
   });
+
+  const handleSelectHeroMedia = (urls: string[]) => {
+    if (urls.length > 0 && heroTargetMedia) {
+      const chosenUrl = urls[0];
+      if (heroTargetMedia.slideId) {
+        if (heroTargetMedia.field === 'mobileImage') {
+          updateHeroSlide(heroTargetMedia.slideId, { mobileImage: chosenUrl });
+          showToast('Updated Mobile banner!');
+        } else {
+          updateHeroSlide(heroTargetMedia.slideId, { desktopImage: chosenUrl, image: chosenUrl });
+          showToast('Updated Desktop banner!');
+        }
+      } else {
+        if (heroTargetMedia.field === 'mobileImage') {
+          setNewSlide((prev) => ({ ...prev, mobileImage: chosenUrl }));
+          showToast('Attached Mobile banner!');
+        } else {
+          setNewSlide((prev) => ({ ...prev, desktopImage: chosenUrl, image: chosenUrl }));
+          showToast('Attached Desktop banner!');
+        }
+      }
+    }
+  };
 
   // New Testimonial State
   const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
@@ -181,17 +215,35 @@ export const HomepageSectionsManager: React.FC = () => {
 
   const handleCreateSlide = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSlide.title.trim() || !newSlide.image.trim()) return;
+    const finalImg = newSlide.desktopImage || newSlide.image || newSlide.mobileImage;
+    if (!finalImg) {
+      showToast('Please upload or provide at least one banner image.');
+      return;
+    }
     addHeroSlide({
-      title: newSlide.title.trim(),
-      tagline: newSlide.tagline.trim(),
-      subtitle: newSlide.subtitle.trim(),
-      image: newSlide.image.trim(),
-      category: newSlide.category,
-      ctaText: newSlide.ctaText.trim(),
+      image: finalImg,
+      desktopImage: newSlide.desktopImage || finalImg,
+      mobileImage: newSlide.mobileImage || finalImg,
+      title: newSlide.title || '',
+      tagline: newSlide.tagline || '',
+      subtitle: newSlide.subtitle || '',
+      category: newSlide.category || 'All',
+      ctaText: newSlide.ctaText || 'Shop Collection',
+      showTextOverlay: !!newSlide.showTextOverlay,
+    });
+    setNewSlide({
+      desktopImage: '',
+      mobileImage: '',
+      image: '',
+      title: '',
+      tagline: '',
+      subtitle: '',
+      category: 'All',
+      ctaText: 'Explore Collection',
+      showTextOverlay: false,
     });
     setIsAddSlideModalOpen(false);
-    showToast('Added new Hero Carousel slide!');
+    showToast('Added New Hero Slide!');
   };
 
   const handleCreateReview = (e: React.FormEvent) => {
@@ -610,18 +662,23 @@ export const HomepageSectionsManager: React.FC = () => {
 
       {/* TAB 3: HERO CAROUSEL SLIDES */}
       {activeTab === 'hero' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#EAE4D9]">
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#EAE4D9]">
             <div>
-              <h2 className="font-serif text-lg font-bold text-[#242120]">Hero Carousel Banners</h2>
+              <h2 className="font-serif text-lg font-bold text-[#242120] flex items-center gap-2">
+                <span>Hero Carousel Banners</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Dual Desktop & Mobile Banners
+                </span>
+              </h2>
               <p className="text-xs text-[#736B63]">
-                Manage main homepage slider images, titles, taglines, and call-to-action buttons.
+                Upload widescreen banners for PC/Laptops and vertical/normal images for Mobile. Text overlays are optional.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsAddSlideModalOpen(true)}
-              className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
+              className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Hero Slide</span>
@@ -632,39 +689,92 @@ export const HomepageSectionsManager: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {heroSlides.map((slide, idx) => {
               const isEditing = editingSlideId === slide.id;
+              const currentMode = heroPreviewMode[slide.id] || 'desktop';
+              const activePreviewImg = currentMode === 'mobile' 
+                ? (slide.mobileImage || slide.desktopImage || slide.image)
+                : (slide.desktopImage || slide.image);
+
               return (
                 <div
                   key={slide.id}
                   className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col"
                 >
-                  {/* Live Hero Banner Preview Card */}
-                  <div className="relative h-60 bg-[#241B1A] overflow-hidden p-6 flex flex-col justify-end text-white">
-                    <img
-                      src={slide.image}
-                      alt={slide.title}
-                      className="absolute inset-0 w-full h-full object-cover opacity-60"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-
-                    <div className="relative z-10 space-y-1">
-                      <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-[#E6C280] bg-black/40 px-2.5 py-0.5 rounded border border-[#E6C280]/30">
-                        {slide.tagline}
-                      </span>
-                      <h3 className="font-serif text-xl font-bold text-white line-clamp-1">{slide.title}</h3>
-                      <p className="text-xs text-white/80 font-light line-clamp-1">{slide.subtitle}</p>
-
-                      <div className="pt-2 flex items-center gap-2">
-                        <span className="px-3 py-1 bg-[#721B29] text-white text-[11px] font-bold rounded-xs inline-flex items-center gap-1">
-                          <span>{slide.ctaText}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </span>
-                        <span className="text-[10px] text-gray-300 font-medium">({slide.category})</span>
-                      </div>
-                    </div>
-
-                    <span className="absolute top-3 left-3 z-10 px-2.5 py-0.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold rounded">
-                      Slide #{idx + 1}
+                  {/* Preview Mode Switcher Header */}
+                  <div className="px-4 py-2 bg-[#FAF8F3] border-b border-[#EAE4D9] flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#242120] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#721B29]" />
+                      <span>Slide #{idx + 1}</span>
                     </span>
+
+                    <div className="flex items-center bg-white rounded-lg border border-[#D9CEBF] p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'desktop' }))}
+                        className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                          currentMode === 'desktop'
+                            ? 'bg-[#721B29] text-white shadow-2xs'
+                            : 'text-[#736B63] hover:text-[#242120]'
+                        }`}
+                      >
+                        <span>🖥️ PC / Laptop View</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'mobile' }))}
+                        className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                          currentMode === 'mobile'
+                            ? 'bg-[#721B29] text-white shadow-2xs'
+                            : 'text-[#736B63] hover:text-[#242120]'
+                        }`}
+                      >
+                        <span>📱 Mobile View</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Live Hero Banner Preview Card */}
+                  <div
+                    className={`relative bg-[#1A1415] overflow-hidden flex flex-col justify-end text-white transition-all ${
+                      currentMode === 'mobile' ? 'h-72 aspect-[9/14] mx-auto w-48 rounded-lg my-3 border border-white/20 shadow-md' : 'h-60 w-full'
+                    }`}
+                  >
+                    <img
+                      src={activePreviewImg}
+                      alt={slide.title || 'Store Banner'}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    {/* Optional Text Overlay Preview if enabled */}
+                    {slide.showTextOverlay && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                        <div className="relative z-10 p-4 space-y-1">
+                          {slide.tagline && (
+                            <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-[#E6C280] bg-black/40 px-2 py-0.5 rounded border border-[#E6C280]/30">
+                              {slide.tagline}
+                            </span>
+                          )}
+                          {slide.title && (
+                            <h3 className="font-serif text-base font-bold text-white line-clamp-1">{slide.title}</h3>
+                          )}
+                          {slide.subtitle && (
+                            <p className="text-[11px] text-white/80 font-light line-clamp-1">{slide.subtitle}</p>
+                          )}
+                          <div className="pt-1 flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 bg-[#721B29] text-white text-[10px] font-bold rounded inline-flex items-center gap-1">
+                              <span>{slide.ctaText || 'Shop Now'}</span>
+                              <ArrowRight className="w-2.5 h-2.5" />
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {!slide.showTextOverlay && (
+                      <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-black/70 backdrop-blur-xs text-[#E6C280] text-[9px] font-bold rounded border border-white/10">
+                        Pure Banner (No Text Overlay)
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions & Editable Form */}
@@ -677,7 +787,7 @@ export const HomepageSectionsManager: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setEditingSlideId(isEditing ? null : slide.id)}
-                          className="px-3 py-1.5 bg-white border border-[#D9CEBF] hover:bg-gray-50 text-xs font-medium text-[#242120] rounded-md flex items-center gap-1"
+                          className="px-3 py-1.5 bg-white border border-[#D9CEBF] hover:bg-gray-50 text-xs font-medium text-[#242120] rounded-md flex items-center gap-1 cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5 text-[#721B29]" />
                           <span>{isEditing ? 'Done' : 'Edit Slide'}</span>
@@ -686,12 +796,12 @@ export const HomepageSectionsManager: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            if (confirm(`Delete slide "${slide.title}"?`)) {
+                            if (confirm(`Delete slide #${idx + 1}?`)) {
                               deleteHeroSlide(slide.id);
                               showToast('Slide deleted');
                             }
                           }}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md"
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md cursor-pointer"
                           title="Delete Slide"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -700,84 +810,88 @@ export const HomepageSectionsManager: React.FC = () => {
                     </div>
 
                     {isEditing && (
-                      <div className="space-y-3 pt-2 text-xs">
-                        <div>
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Slide Title
+                      <div className="space-y-4 pt-2 text-xs">
+                        {/* 1. Desktop Banner Upload */}
+                        <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
+                          <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
+                            🖥️ PC / Laptop Banner Image (Widescreen) *
                           </label>
-                          <input
-                            type="text"
-                            value={slide.title}
-                            onChange={(e) => updateHeroSlide(slide.id, { title: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md focus:outline-none focus:border-[#721B29]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                              Tagline / Badge
-                            </label>
-                            <input
-                              type="text"
-                              value={slide.tagline}
-                              onChange={(e) => updateHeroSlide(slide.id, { tagline: e.target.value })}
-                              className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md focus:outline-none focus:border-[#721B29]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                              CTA Button Text
-                            </label>
-                            <input
-                              type="text"
-                              value={slide.ctaText}
-                              onChange={(e) => updateHeroSlide(slide.id, { ctaText: e.target.value })}
-                              className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md focus:outline-none focus:border-[#721B29]"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Subtitle
-                          </label>
-                          <input
-                            type="text"
-                            value={slide.subtitle}
-                            onChange={(e) => updateHeroSlide(slide.id, { subtitle: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md focus:outline-none focus:border-[#721B29]"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Hero Banner Image *
-                          </label>
-                          <div className="space-y-2">
-                            <ImageKitUploader
-                              folder="/hero-slides"
-                              buttonText="Upload Slide Photo to ImageKit"
-                              onUploadSuccess={(url) => updateHeroSlide(slide.id, { image: url })}
-                            />
+                          <div className="flex items-center gap-2">
                             <input
                               type="url"
-                              placeholder="Or paste image URL (https://...)"
-                              value={slide.image}
-                              onChange={(e) => updateHeroSlide(slide.id, { image: e.target.value })}
-                              className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md text-xs font-mono focus:outline-none focus:border-[#721B29]"
+                              placeholder="https://... (Desktop Banner URL)"
+                              value={slide.desktopImage || slide.image}
+                              onChange={(e) => updateHeroSlide(slide.id, { desktopImage: e.target.value, image: e.target.value })}
+                              className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
                             />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHeroTargetMedia({ slideId: slide.id, field: 'desktopImage' });
+                                setIsHeroMediaModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Pick from ImageKit CDN"
+                            >
+                              <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                              <span>CDN</span>
+                            </button>
                           </div>
+                          <ImageKitUploader
+                            folder="/hero-slides"
+                            buttonText="Upload Desktop Banner to ImageKit"
+                            onUploadSuccess={(url) => {
+                              updateHeroSlide(slide.id, { desktopImage: url, image: url });
+                              showToast('Desktop Banner uploaded!');
+                            }}
+                          />
                         </div>
 
+                        {/* 2. Mobile Banner Upload */}
+                        <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
+                          <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
+                            📱 Mobile Phone Image (Vertical / Normal) *
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="url"
+                              placeholder="https://... (Mobile Image URL)"
+                              value={slide.mobileImage || ''}
+                              onChange={(e) => updateHeroSlide(slide.id, { mobileImage: e.target.value })}
+                              className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHeroTargetMedia({ slideId: slide.id, field: 'mobileImage' });
+                                setIsHeroMediaModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Pick from ImageKit CDN"
+                            >
+                              <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                              <span>CDN</span>
+                            </button>
+                          </div>
+                          <ImageKitUploader
+                            folder="/hero-slides"
+                            buttonText="Upload Mobile Image to ImageKit"
+                            onUploadSuccess={(url) => {
+                              updateHeroSlide(slide.id, { mobileImage: url });
+                              showToast('Mobile Image uploaded!');
+                            }}
+                          />
+                        </div>
+
+                        {/* 3. Destination Category Link */}
                         <div>
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Target Category Link
+                          <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                            Destination Click Target / Category
                           </label>
                           <select
                             value={slide.category}
                             onChange={(e) => updateHeroSlide(slide.id, { category: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded-md font-medium focus:outline-none focus:border-[#721B29]"
+                            className="w-full px-3 py-1.5 bg-white border border-[#D9CEBF] rounded font-medium focus:outline-none focus:border-[#721B29]"
                           >
                             <option value="All">All Collections (Full Catalog)</option>
                             <option value="New Arrivals">New Arrivals</option>
@@ -791,6 +905,74 @@ export const HomepageSectionsManager: React.FC = () => {
                                 <option value={slide.category}>{slide.category}</option>
                               )}
                           </select>
+                        </div>
+
+                        {/* 4. Text Overlay Toggle & Optional Text Fields */}
+                        <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-3">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={!!slide.showTextOverlay}
+                              onChange={(e) => updateHeroSlide(slide.id, { showTextOverlay: e.target.checked })}
+                              className="w-4 h-4 text-[#721B29] rounded border-[#D9CEBF] focus:ring-[#721B29]"
+                            />
+                            <span className="font-bold text-[#242120] text-xs">
+                              Enable Text Overlay (Headings & Buttons over Banner)
+                            </span>
+                          </label>
+
+                          {slide.showTextOverlay && (
+                            <div className="space-y-2.5 pt-2 border-t border-[#F2ECE0]">
+                              <div>
+                                <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                                  Slide Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.title || ''}
+                                  onChange={(e) => updateHeroSlide(slide.id, { title: e.target.value })}
+                                  className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded focus:outline-none focus:border-[#721B29]"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                                    Tagline / Badge
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slide.tagline || ''}
+                                    onChange={(e) => updateHeroSlide(slide.id, { tagline: e.target.value })}
+                                    className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded focus:outline-none focus:border-[#721B29]"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                                    CTA Button Text
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slide.ctaText || ''}
+                                    onChange={(e) => updateHeroSlide(slide.id, { ctaText: e.target.value })}
+                                    className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded focus:outline-none focus:border-[#721B29]"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                                  Subtitle
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.subtitle || ''}
+                                  onChange={(e) => updateHeroSlide(slide.id, { subtitle: e.target.value })}
+                                  className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded focus:outline-none focus:border-[#721B29]"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1407,102 +1589,179 @@ export const HomepageSectionsManager: React.FC = () => {
       {/* MODAL: ADD HERO SLIDE */}
       {isAddSlideModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#EAE4D9] max-w-lg w-full p-6 space-y-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#EAE4D9] max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-serif font-bold text-lg text-[#242120]">Add New Hero Slide</h3>
-              <button type="button" onClick={() => setIsAddSlideModalOpen(false)} className="p-1 text-gray-400">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#242120]">Add New Hero Slide Banner</h3>
+                <p className="text-xs text-[#736B63]">Upload PC and Mobile banners directly</p>
+              </div>
+              <button type="button" onClick={() => setIsAddSlideModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSlide} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold uppercase text-[11px] mb-1">Slide Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={newSlide.title}
-                  onChange={(e) => setNewSlide({ ...newSlide, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block font-bold uppercase text-[11px] mb-1">Tagline / Badge</label>
-                <input
-                  type="text"
-                  value={newSlide.tagline}
-                  onChange={(e) => setNewSlide({ ...newSlide, tagline: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block font-bold uppercase text-[11px] mb-1">Subtitle</label>
-                <input
-                  type="text"
-                  value={newSlide.subtitle}
-                  onChange={(e) => setNewSlide({ ...newSlide, subtitle: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block font-bold uppercase text-[11px] mb-1">Hero Banner Image *</label>
-                <div className="space-y-2">
-                  <ImageKitUploader
-                    folder="/hero-slides"
-                    buttonText="Upload Slide Photo to ImageKit"
-                    onUploadSuccess={(url) => setNewSlide({ ...newSlide, image: url })}
-                  />
+            <form onSubmit={handleCreateSlide} className="space-y-4 text-xs">
+              {/* 1. Desktop Banner */}
+              <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
+                <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
+                  🖥️ PC / Laptop Banner Image (Widescreen) *
+                </label>
+                <div className="flex items-center gap-2">
                   <input
                     type="url"
-                    required
-                    placeholder="Or paste image URL (https://...)"
-                    value={newSlide.image}
-                    onChange={(e) => setNewSlide({ ...newSlide, image: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
+                    placeholder="https://... (Desktop Banner URL)"
+                    value={newSlide.desktopImage}
+                    onChange={(e) => setNewSlide({ ...newSlide, desktopImage: e.target.value, image: e.target.value })}
+                    className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
                   />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold uppercase text-[11px] mb-1">CTA Button Text</label>
-                  <input
-                    type="text"
-                    value={newSlide.ctaText}
-                    onChange={(e) => setNewSlide({ ...newSlide, ctaText: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-[11px] mb-1">Category Target</label>
-                  <select
-                    value={newSlide.category}
-                    onChange={(e) => setNewSlide({ ...newSlide, category: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg font-medium focus:outline-none focus:border-[#721B29]"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroTargetMedia({ slideId: null, field: 'desktopImage' });
+                      setIsHeroMediaModalOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
                   >
-                    <option value="All">All Collections (Full Catalog)</option>
-                    <option value="New Arrivals">New Arrivals</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                    <span>CDN</span>
+                  </button>
                 </div>
+                <ImageKitUploader
+                  folder="/hero-slides"
+                  buttonText="Upload Desktop Banner to ImageKit"
+                  onUploadSuccess={(url) => {
+                    setNewSlide((prev) => ({ ...prev, desktopImage: url, image: url }));
+                    showToast('Desktop Banner uploaded!');
+                  }}
+                />
+              </div>
+
+              {/* 2. Mobile Banner */}
+              <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
+                <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
+                  📱 Mobile Phone Image (Vertical / Normal)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://... (Mobile Banner URL - optional fallback to Desktop)"
+                    value={newSlide.mobileImage}
+                    onChange={(e) => setNewSlide({ ...newSlide, mobileImage: e.target.value })}
+                    className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroTargetMedia({ slideId: null, field: 'mobileImage' });
+                      setIsHeroMediaModalOpen(true);
+                    }}
+                    className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                  >
+                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                    <span>CDN</span>
+                  </button>
+                </div>
+                <ImageKitUploader
+                  folder="/hero-slides"
+                  buttonText="Upload Mobile Banner to ImageKit"
+                  onUploadSuccess={(url) => {
+                    setNewSlide((prev) => ({ ...prev, mobileImage: url }));
+                    showToast('Mobile Banner uploaded!');
+                  }}
+                />
+              </div>
+
+              {/* 3. Category Target */}
+              <div>
+                <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">
+                  Destination Target Category Link
+                </label>
+                <select
+                  value={newSlide.category}
+                  onChange={(e) => setNewSlide({ ...newSlide, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded font-medium focus:outline-none focus:border-[#721B29]"
+                >
+                  <option value="All">All Collections (Full Catalog)</option>
+                  <option value="New Arrivals">New Arrivals</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 4. Text Overlay Toggle */}
+              <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newSlide.showTextOverlay}
+                    onChange={(e) => setNewSlide({ ...newSlide, showTextOverlay: e.target.checked })}
+                    className="w-4 h-4 text-[#721B29] rounded border-[#D9CEBF] focus:ring-[#721B29]"
+                  />
+                  <span className="font-bold text-[#242120] text-xs">
+                    Enable Text Overlay (Headings & Buttons over Banner)
+                  </span>
+                </label>
+
+                {newSlide.showTextOverlay && (
+                  <div className="space-y-2 pt-2 border-t border-[#EAE4D9]">
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] mb-1">Slide Title</label>
+                      <input
+                        type="text"
+                        value={newSlide.title}
+                        onChange={(e) => setNewSlide({ ...newSlide, title: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-white border rounded"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block font-bold uppercase text-[10px] mb-1">Tagline / Badge</label>
+                        <input
+                          type="text"
+                          value={newSlide.tagline}
+                          onChange={(e) => setNewSlide({ ...newSlide, tagline: e.target.value })}
+                          className="w-full px-3 py-1.5 bg-white border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold uppercase text-[10px] mb-1">CTA Button Text</label>
+                        <input
+                          type="text"
+                          value={newSlide.ctaText}
+                          onChange={(e) => setNewSlide({ ...newSlide, ctaText: e.target.value })}
+                          className="w-full px-3 py-1.5 bg-white border rounded"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] mb-1">Subtitle</label>
+                      <input
+                        type="text"
+                        value={newSlide.subtitle}
+                        onChange={(e) => setNewSlide({ ...newSlide, subtitle: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-white border rounded"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-3 flex items-center justify-end gap-2 border-t">
                 <button
                   type="button"
                   onClick={() => setIsAddSlideModalOpen(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#721B29] text-white font-bold rounded-lg shadow-sm"
+                  className="px-5 py-2 bg-[#721B29] hover:bg-[#57141F] text-white font-bold rounded-lg shadow-sm cursor-pointer"
                 >
-                  Save Slide
+                  Save Hero Slide
                 </button>
               </div>
             </form>
@@ -1726,6 +1985,16 @@ export const HomepageSectionsManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ImageKit Media Library Modal for Hero Slide Image Selection */}
+      <ImageKitMediaLibraryModal
+        isOpen={isHeroMediaModalOpen}
+        onClose={() => setIsHeroMediaModalOpen(false)}
+        currentProductFolder="/hero-slides"
+        mediaType="image"
+        multiple={false}
+        onSelectImages={handleSelectHeroMedia}
+      />
 
       {/* Supabase Video Library Modal */}
       <SupabaseVideoLibraryModal

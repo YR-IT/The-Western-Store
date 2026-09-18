@@ -141,12 +141,16 @@ export interface OrderTrackingUpdate {
 
 export interface HeroSlide {
   id: string;
-  title: string;
-  tagline: string;
-  subtitle: string;
-  image: string;
-  category: ProductCategory;
-  ctaText: string;
+  image: string; // fallback / default image
+  desktopImage?: string; // High-res widescreen banner for PC / laptops
+  mobileImage?: string; // Vertical/portrait optimized image for mobile phones
+  title?: string;
+  tagline?: string;
+  subtitle?: string;
+  category?: ProductCategory | string;
+  ctaText?: string;
+  linkUrl?: string; // Custom navigation link (e.g. /plp or category)
+  showTextOverlay?: boolean; // If false (default), shows pure image banner without text
 }
 
 export interface Testimonial {
