@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const OrderHistoryPage: React.FC = () => {
   const {
@@ -320,8 +321,11 @@ export const OrderHistoryPage: React.FC = () => {
                           {order.items.map((item, idx) => (
                             <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-center gap-3 sm:gap-4">
                               <img
-                                src={item.image}
+                                src={getOptimizedImageUrl(item.image, 180, 80)}
                                 alt={item.title}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                                }}
                                 className="w-14 h-18 sm:w-16 sm:h-20 object-cover rounded-md border border-[#EAE4D9] shrink-0"
                               />
                               <div className="flex-1 min-w-0">

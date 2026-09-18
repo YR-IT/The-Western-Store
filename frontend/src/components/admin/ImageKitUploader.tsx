@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { compressAndResizeImage, getOptimizedImageUrl } from '../../utils/imageUtils';
 
 interface ImageKitUploaderProps {
   onUploadSuccess: (url: string) => void;
@@ -9,7 +10,6 @@ interface ImageKitUploaderProps {
 }
 
 const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-const ADMIN_SECRET = ((import.meta as any).env?.VITE_ADMIN_SECRET) || '';
 
 export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   onUploadSuccess,
@@ -24,16 +24,20 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
 
     // Reset feedback states
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsUploading(true);
-    setProgress(10);
+    setProgress(15);
 
     try {
+      // Step 0: Compress & downscale ultra-large photoshoot/DSLR photos client-side
+      const file = await compressAndResizeImage(rawFile, 2048, 2048, 0.88);
+      setProgress(30);
+
       const adminSecretToUse =
         sessionStorage.getItem('tws_admin_secret') ||
         ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
@@ -57,7 +61,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       const authData = await authRes.json();
       const { token, expire, signature, publicKey } = authData;
 
-      setProgress(40);
+      setProgress(50);
 
       // Step 2: Prepare FormData for ImageKit Upload API
       const formData = new FormData();
@@ -69,10 +73,9 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       formData.append('folder', folder);
       if (publicKey) formData.append('publicKey', publicKey);
 
-      setProgress(60);
+      setProgress(75);
 
-      // Step 4: Upload directly to ImageKit upload endpoint
-      // ImageKit upload API uses the publicKey provided or token signature
+      // Step 3: Upload directly to ImageKit upload endpoint
       const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
         method: 'POST',
         body: formData,
@@ -88,7 +91,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       const uploadData = await uploadRes.json();
       setProgress(100);
 
-      const finalUrl = uploadData.url;
+      const finalUrl = uploadData.url || '';
       setSuccessMsg('Uploaded to ImageKit successfully!');
       onUploadSuccess(finalUrl);
 

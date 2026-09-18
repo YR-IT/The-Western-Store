@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Search, X, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const SearchModal: React.FC = () => {
   const { isSearchOpen, setIsSearchOpen, products, navigateToProduct, setSelectedCategory, setView } = useStore();
@@ -163,8 +164,11 @@ export const SearchModal: React.FC = () => {
                       className="py-3 flex items-center gap-3.5 hover:bg-[#F4EFE6] px-2 rounded-md transition-colors cursor-pointer"
                     >
                       <img
-                        src={p.images[0]}
+                        src={getOptimizedImageUrl(p.images[0], 150, 75)}
                         alt={p.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                        }}
                         className="w-12 h-16 object-cover object-top rounded-xs border border-[#EAE4D9]"
                       />
                       <div className="flex-1 min-w-0">

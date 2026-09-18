@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, ShoppingBag, Heart, ArrowRight, Check, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const QuickViewModal: React.FC = () => {
   const {
@@ -76,8 +77,11 @@ export const QuickViewModal: React.FC = () => {
           {/* Image */}
           <div className="relative aspect-[3/4] bg-[#F4EFE6]">
             <img
-              src={quickViewProduct.images[0]}
+              src={getOptimizedImageUrl(quickViewProduct.images[0], 800, 85)}
               alt={quickViewProduct.title}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+              }}
               className="w-full h-full object-cover object-top"
             />
             {quickViewProduct.onSale && (

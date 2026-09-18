@@ -3,6 +3,7 @@ import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
 import { Heart, ShoppingBag, Eye, Flame } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 interface ProductCardProps {
   product: Product;
@@ -13,8 +14,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   const inWishlist = isInWishlist(product.id);
 
-  const primaryImage = product.images[0];
-  const secondaryImage = product.images[1] || product.images[0];
+  const rawPrimary = (product.images && product.images[0]) || '';
+  const rawSecondary = (product.images && product.images[1]) || rawPrimary;
+
+  const primaryImage = getOptimizedImageUrl(rawPrimary, 800, 85);
+  const secondaryImage = rawSecondary !== rawPrimary ? getOptimizedImageUrl(rawSecondary, 800, 85) : null;
 
   return (
     <motion.div
@@ -37,6 +41,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img
           src={primaryImage}
           alt={product.title}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+          }}
           className={`w-full h-full object-cover object-top transition-all duration-700 ease-out ${
             isHovered && secondaryImage ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
           }`}
@@ -48,6 +55,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <img
             src={secondaryImage}
             alt={`${product.title} view 2`}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+            }}
             className={`absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 ease-out ${
               isHovered ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
             }`}

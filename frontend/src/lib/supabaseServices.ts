@@ -281,7 +281,7 @@ export async function upsertCategoryToSupabase(category: Category): Promise<bool
       name: category.name,
       slug: category.slug,
       subtitle: category.subtitle || null,
-      image: category.image,
+      image: category.image || null,
     };
 
     const { error } = await supabase.from('categories').upsert(row);

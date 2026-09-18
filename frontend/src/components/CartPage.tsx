@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Sparkles,
 } from 'lucide-react';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const CartPage: React.FC = () => {
   const {
@@ -97,8 +98,11 @@ export const CartPage: React.FC = () => {
                     className="py-6 first:pt-0 last:pb-0 flex flex-col sm:flex-row gap-5"
                   >
                   <img
-                    src={item.product.images[0]}
+                    src={getOptimizedImageUrl(item.product.images[0], 300, 80)}
                     alt={item.product.title}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                    }}
                     onClick={() => navigateToProduct(item.product.id)}
                     className="w-24 sm:w-28 aspect-[3/4] object-cover object-top rounded-sm border border-[#EAE4D9] bg-[#F4EFE6] cursor-pointer"
                   />

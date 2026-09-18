@@ -15,8 +15,8 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  image: string;
-  subtitle: string;
+  image?: string;
+  subtitle?: string;
   itemCount?: number;
   showOnNavbar?: boolean;
   navbarOrder?: number;

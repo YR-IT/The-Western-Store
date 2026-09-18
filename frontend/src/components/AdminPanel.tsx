@@ -7,6 +7,7 @@ import { CategoryEditorModal } from './admin/CategoryEditorModal';
 import { ProductEditorModal } from './admin/ProductEditorModal';
 import { HomepageSectionsManager } from './admin/HomepageSectionsManager';
 import { CollectionFiltersManager } from './admin/CollectionFiltersManager';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE, FALLBACK_CATEGORY_IMAGE } from '../utils/imageUtils';
 import {
   LayoutDashboard,
   Package,
@@ -1246,8 +1247,11 @@ export const AdminPanel: React.FC = () => {
                                 <div className="flex items-start gap-3">
                                   <div className="relative w-12 h-16 rounded-md overflow-hidden border border-[#EAE4D9] bg-[#FAF8F3] flex-shrink-0 shadow-2xs group-hover:border-[#721B29] transition-colors">
                                     <img
-                                      src={p.images[0]}
+                                      src={getOptimizedImageUrl(p.images[0], 150, 75)}
                                       alt={p.title}
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                                      }}
                                       className="w-full h-full object-cover object-top"
                                     />
                                     {p.images.length > 1 && (
@@ -1513,24 +1517,19 @@ export const AdminPanel: React.FC = () => {
                           </div>
 
                           <div className="flex items-start gap-3.5">
-                            <div className="relative w-16 h-16 rounded-full border-2 border-[#721B29]/30 group-hover:border-[#721B29] overflow-hidden flex-shrink-0 bg-[#FAF8F3] shadow-xs transition-colors">
-                              <img
-                                src={c.image}
-                                alt={c.name}
-                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80';
-                                }}
-                              />
+                            <div className="w-12 h-12 rounded-xl bg-[#721B29]/10 border border-[#721B29]/20 flex items-center justify-center text-[#721B29] group-hover:bg-[#721B29] group-hover:text-white flex-shrink-0 transition-colors shadow-2xs">
+                              <Layers className="w-5 h-5" />
                             </div>
 
                             <div className="flex-1 min-w-0">
                               <h4 className="font-serif font-bold text-sm text-[#242120] group-hover:text-[#721B29] transition-colors line-clamp-1">
                                 {c.name}
                               </h4>
+                              <p className="text-[10px] font-mono text-[#8C8276] truncate mt-0.5">
+                                slug: {c.slug}
+                              </p>
                               {c.subtitle && (
-                                <p className="text-[11px] text-[#8C8276] line-clamp-1 mt-0.5">
+                                <p className="text-[11px] text-[#736B63] line-clamp-1 mt-0.5">
                                   {c.subtitle}
                                 </p>
                               )}

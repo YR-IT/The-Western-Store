@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { X, ShoppingBag, Trash2, Send, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -111,8 +112,11 @@ export const CartDrawer: React.FC = () => {
                       className="py-4 flex gap-4 first:pt-0 last:pb-0"
                     >
                       <img
-                        src={item.product.images[0]}
+                        src={getOptimizedImageUrl(item.product.images[0], 200, 80)}
                         alt={item.product.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                        }}
                         className="w-20 h-26 object-cover object-top rounded-sm border border-[#EAE4D9] bg-[#F4EFE6] flex-shrink-0"
                       />
 

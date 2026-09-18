@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getOptimizedImageUrl, FALLBACK_CATEGORY_IMAGE } from '../utils/imageUtils';
 
 export const ShopByCategory: React.FC = () => {
   const { categories, products, navigateToCategory } = useStore();
@@ -125,15 +126,12 @@ export const ShopByCategory: React.FC = () => {
                     <div className="relative w-32 h-32 xs:w-36 xs:h-36 sm:w-44 sm:h-44 rounded-full p-1.5 border-2 border-[#D9CEBF] group-hover:border-[#721B29] transition-all duration-300 shadow-sm group-hover:shadow-lg bg-white">
                       <div className="w-full h-full rounded-full overflow-hidden relative bg-[#F4EFE6]">
                         <img
-                          src={category.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=700&q=80'}
+                          src={getOptimizedImageUrl(category.image, 600, 85) || FALLBACK_CATEGORY_IMAGE}
                           alt={category.name}
                           className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500 ease-out"
                           loading="lazy"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              category.name.toLowerCase().includes('ethnic')
-                                ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=700&q=80'
-                                : 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=700&q=80';
+                            (e.target as HTMLImageElement).src = FALLBACK_CATEGORY_IMAGE;
                           }}
                         />
                         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -179,15 +177,12 @@ export const ShopByCategory: React.FC = () => {
                   <div className="relative w-32 h-32 xs:w-36 xs:h-36 sm:w-44 sm:h-44 rounded-full p-1.5 border-2 border-[#D9CEBF] group-hover:border-[#721B29] transition-all duration-300 shadow-sm group-hover:shadow-lg bg-white">
                       <div className="w-full h-full rounded-full overflow-hidden relative bg-[#F4EFE6]">
                         <img
-                          src={category.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=700&q=80'}
+                          src={getOptimizedImageUrl(category.image, 600, 85) || FALLBACK_CATEGORY_IMAGE}
                           alt={category.name}
                           className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500 ease-out"
                           loading="lazy"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              category.name.toLowerCase().includes('ethnic')
-                                ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=700&q=80'
-                                : 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=700&q=80';
+                            (e.target as HTMLImageElement).src = FALLBACK_CATEGORY_IMAGE;
                           }}
                         />
                         <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ImageKitUploader } from './ImageKitUploader';
 import { Product, BudgetTier, Category, ReviewItem } from '../../types';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../../utils/imageUtils';
 import {
   X,
   Plus,
@@ -718,8 +719,11 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     >
                       <div className="aspect-[3/4] w-full overflow-hidden bg-[#FAF8F3]">
                         <img
-                          src={img}
+                          src={getOptimizedImageUrl(img, 300, 80)}
                           alt={`Product ${idx + 1}`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                          }}
                           className="w-full h-full object-cover object-top"
                         />
                       </div>

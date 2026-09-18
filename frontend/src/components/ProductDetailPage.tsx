@@ -4,6 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { ProductCard } from './ProductCard';
 import { PDPSkeleton } from './Skeletons';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 import {
   Heart,
   ShoppingBag,
@@ -374,8 +375,11 @@ export const ProductDetailPage: React.FC = () => {
                         }`}
                       >
                         <img
-                          src={img}
+                          src={getOptimizedImageUrl(img, 200, 80)}
                           alt={`${product.title} thumbnail ${idx + 1}`}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                          }}
                           className="w-full h-full object-cover object-top"
                         />
                       </button>
@@ -385,8 +389,11 @@ export const ProductDetailPage: React.FC = () => {
                   {/* Main Stage Image */}
                   <div className="flex-1 relative aspect-[3/4] w-full max-w-[440px] rounded-xl overflow-hidden bg-[#F4EFE6] border border-[#EAE4D9] shadow-sm">
                     <img
-                      src={product.images[selectedImageIdx] || product.images[0]}
+                      src={getOptimizedImageUrl(product.images[selectedImageIdx] || product.images[0], 1200, 85)}
                       alt={product.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                      }}
                       className="w-full h-full object-cover object-top"
                     />
 

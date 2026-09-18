@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
+import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 import {
   Search,
   Package,
@@ -603,8 +604,11 @@ export const OrderTrackingPage: React.FC = () => {
                   {matchedOrder.items.map((item, idx) => (
                     <div key={idx} className="py-3.5 flex gap-3.5 items-center">
                       <img
-                        src={item.image}
+                        src={getOptimizedImageUrl(item.image, 180, 80)}
                         alt={item.title}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
+                        }}
                         className="w-16 h-20 object-cover object-top rounded-md border border-[#EAE4D9] bg-[#F4EFE6] shrink-0"
                       />
                       <div className="flex-1 min-w-0">
