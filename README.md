@@ -96,16 +96,22 @@ Step 1: Supabase DB ──► Step 2: ImageKit CDN ──► Step 3: Backend Ser
      - `anon / public key`
      - `service_role key` (keep this secret; only used in backend).
 
-2. **Run the Database Schema**:
-   - Go to **SQL Editor** in Supabase Dashboard.
-   - Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql), paste its contents into the SQL Editor, and click **Run**.
-   - This creates all necessary tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`), sets up realtime broadcast channels, and applies Row Level Security (RLS).
+2. **Database SQL Scripts & Execution Guide**:
+   Navigate to the **SQL Editor** in your Supabase Dashboard and run the appropriate scripts according to your workflow:
 
-3. **Catalogue Initialization / Clean Slate**:
-   - **For a 100% clean catalog (Enter your own store items):**
-     Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) in SQL Editor. This ensures any old demo items are wiped and full `INSERT`/`UPDATE`/`DELETE` permissions are enabled.
-   - **For demo items (Optional test catalog):**
-     Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
+   | Script File | Purpose | When to Run |
+   |---|---|---|
+   | [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql) | **Complete Database Schema** — Creates tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`), triggers, Realtime broadcast publication, and base RLS. | **Mandatory on initial setup**. |
+   | [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) | **Clean Slate + RLS Fix** — Truncates existing demo data and enables full Admin CRUD permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) on `products` and `categories`. | **When starting fresh** with your own store inventory. |
+   | [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) | **Standalone RLS Security Script** — Updates and grants full CRUD policies on `categories`, `products`, and `orders` **without** wiping or truncating existing inventory data. | **When fixing permissions** on an active database with existing items. |
+   | [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql) | **Demo Catalog Seed** — Inserts sample categories and curated boutique garments with tags, sizes, colors, and prices. | **Optional** (for development / demo testing). |
+
+3. **Step-by-Step Initial Setup**:
+   - **Step 2a (Required):** Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql), paste its content into the Supabase SQL Editor, and click **Run**.
+   - **Step 2b (Choose one):**
+     - **For a fresh store (your own products):** Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql).
+     - **To preserve existing items & update permissions:** Run [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql).
+     - **To load sample demo items:** Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
 
 ---
 
