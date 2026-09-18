@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Testimonial } from '../types';
 import { useStore } from '../context/StoreContext';
 import {
@@ -46,7 +46,7 @@ export const Testimonials: React.FC = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Filtered reviews based on tag
   const filteredReviews = useMemo(() => {
@@ -59,10 +59,21 @@ export const Testimonials: React.FC = () => {
   const checkScrollPosition = () => {
     const el = scrollContainerRef.current;
     if (el) {
-      setCanScrollLeft(el.scrollLeft > 20);
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 20);
+      setCanScrollLeft(el.scrollLeft > 10);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
     }
   };
+
+  useEffect(() => {
+    checkScrollPosition();
+    const handleResize = () => checkScrollPosition();
+    window.addEventListener('resize', handleResize);
+    const timer = setTimeout(checkScrollPosition, 100);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [filteredReviews]);
 
   const scroll = (direction: 'left' | 'right') => {
     const el = scrollContainerRef.current;
@@ -225,7 +236,7 @@ export const Testimonials: React.FC = () => {
                 <div
                   key={review.id || idx}
                   data-card
-                  className="w-[85vw] sm:w-[380px] lg:w-[400px] shrink-0 snap-start flex flex-col justify-between bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E0D2] shadow-xs hover:shadow-xl hover:border-[#CBB799] transition-all duration-300 relative group overflow-hidden"
+                  className="w-[85vw] sm:w-[calc(50%-12px)] lg:w-[calc((100%-48px)/3)] shrink-0 snap-start flex flex-col justify-between bg-white rounded-2xl p-6 sm:p-7 border border-[#E8E0D2] shadow-xs hover:shadow-xl hover:border-[#CBB799] transition-all duration-300 relative group overflow-hidden"
                 >
                   {/* Top Gold Shimmer Border Accent */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#721B29]/30 via-[#B8860B] to-[#721B29]/30 opacity-70 group-hover:opacity-100 transition-opacity" />
