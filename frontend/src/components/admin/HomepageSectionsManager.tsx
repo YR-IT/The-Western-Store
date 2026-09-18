@@ -130,11 +130,6 @@ export const HomepageSectionsManager: React.FC = () => {
   const [igTargetItemForMedia, setIgTargetItemForMedia] = useState<string | null>(null);
   const [newIgPost, setNewIgPost] = useState({
     reelUrl: '',
-    title: '',
-    caption: '',
-    likes: 1200,
-    comments: 48,
-    productTag: '',
   });
 
   const handleSelectIgVideo = (urls: string[]) => {
@@ -204,22 +199,15 @@ export const HomepageSectionsManager: React.FC = () => {
     if (!newIgPost.reelUrl.trim()) return;
     addInstagramPost({
       reelUrl: newIgPost.reelUrl.trim(),
-      title: newIgPost.title.trim() || 'Kurukshetra Boutique Reel',
-      caption: newIgPost.caption.trim(),
-      likes: Number(newIgPost.likes) || 1200,
-      comments: Number(newIgPost.comments) || 48,
-      productTag: newIgPost.productTag.trim(),
-    });
-    setIsAddIgModalOpen(false);
-    setNewIgPost({
-      reelUrl: '',
       title: '',
       caption: '',
-      likes: 1200,
-      comments: 48,
+      likes: 0,
+      comments: 0,
       productTag: '',
     });
-    showToast('Added Instagram Reel!');
+    setIsAddIgModalOpen(false);
+    setNewIgPost({ reelUrl: '' });
+    showToast('Added Video Reel!');
   };
 
   const handleCreateCustomBanner = (e: React.FormEvent) => {
@@ -1085,31 +1073,7 @@ export const HomepageSectionsManager: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick ImageKit Direct Video Uploader */}
-              <div className="bg-[#FAF8F3] p-3.5 rounded-lg border border-[#EAE4D9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-bold text-[#242120] block">Direct Video Upload to ImageKit</span>
-                  <span className="text-[11px] text-[#736B63]">
-                    Upload an MP4, WebM, or MOV video directly to <code className="text-[#721B29] font-bold">/videos</code> on ImageKit CDN.
-                  </span>
-                </div>
-                <ImageKitUploader
-                  folder="/videos"
-                  accept="video/*"
-                  buttonText="Upload New Video (/videos)"
-                  onUploadSuccess={(url) => {
-                    addInstagramPost({
-                      reelUrl: url,
-                      title: 'New Kurukshetra Boutique Video',
-                      caption: 'Exclusive photoshoot & real boutique drape trial ✨',
-                      likes: 1200,
-                      comments: 48,
-                      productTag: 'Festive Collection',
-                    });
-                    showToast('Uploaded to ImageKit and added to video showcase!');
-                  }}
-                />
-              </div>
+
 
               {/* Section Details Editing */}
               {igSec && (
@@ -1178,21 +1142,9 @@ export const HomepageSectionsManager: React.FC = () => {
                 return (
                   <div key={post.id} className="bg-white rounded-xl border border-[#EAE4D9] p-4 shadow-xs space-y-3 text-xs flex flex-col justify-between">
                     <div>
-                      {/* Header info */}
-                      <div className="flex items-center justify-between pb-2 border-b border-[#F4EFE6]">
-                        <span className="font-serif font-bold text-xs text-[#242120] truncate max-w-[180px]">
-                          {post.title || `Video Reel #${idx + 1}`}
-                        </span>
-                        {post.productTag && (
-                          <span className="text-[10px] font-semibold text-[#721B29] bg-[#721B29]/10 px-2 py-0.5 rounded-full truncate max-w-[120px]">
-                            {post.productTag}
-                          </span>
-                        )}
-                      </div>
-
                       {/* Video Player Preview */}
                       {videoSrc ? (
-                        <div className="relative aspect-[9/14] max-h-48 w-full rounded-lg overflow-hidden bg-black mt-2 mb-2 flex items-center justify-center group/vid border border-[#EAE4D9]">
+                        <div className="relative aspect-[9/14] max-h-48 w-full rounded-lg overflow-hidden bg-black mb-2 flex items-center justify-center group/vid border border-[#EAE4D9]">
                           <video
                             src={videoSrc}
                             muted
@@ -1204,7 +1156,7 @@ export const HomepageSectionsManager: React.FC = () => {
                           />
                           <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-xs text-[9px] font-bold text-white rounded flex items-center gap-1">
                             <Play className="w-2.5 h-2.5 fill-white" />
-                            <span>Preview</span>
+                            <span>Reel #{idx + 1}</span>
                           </div>
                           <a
                             href={videoSrc}
@@ -1217,16 +1169,15 @@ export const HomepageSectionsManager: React.FC = () => {
                           </a>
                         </div>
                       ) : (
-                        <div className="aspect-[9/10] max-h-36 w-full rounded-lg bg-[#FAF8F3] border-2 border-dashed border-[#D9CEBF] mt-2 mb-2 flex flex-col items-center justify-center text-center p-3 text-[#736B63]">
+                        <div className="aspect-[9/10] max-h-36 w-full rounded-lg bg-[#FAF8F3] border-2 border-dashed border-[#D9CEBF] mb-2 flex flex-col items-center justify-center text-center p-3 text-[#736B63]">
                           <Video className="w-6 h-6 text-[#721B29] mb-1 opacity-70" />
                           <span className="text-[11px] font-semibold text-[#242120]">No Video Attached</span>
-                          <span className="text-[10px]">Upload or select from ImageKit</span>
+                          <span className="text-[10px]">Upload or paste a URL below</span>
                         </div>
                       )}
 
                       {/* Video URL display */}
                       <div className="py-1">
-                        <span className="text-[10px] uppercase font-bold text-[#8C8276] block mb-1">Video Link:</span>
                         <div className="flex items-center gap-1.5">
                           <p className="text-[11px] font-mono text-blue-700 truncate bg-[#FAF8F3] p-1.5 rounded border border-[#EAE4D9] flex-1">
                             {videoSrc || 'No video link set'}
@@ -1243,13 +1194,6 @@ export const HomepageSectionsManager: React.FC = () => {
                             </a>
                           )}
                         </div>
-                      </div>
-
-                      <p className="text-xs text-[#4A453E] line-clamp-2 italic mb-1">"{post.caption}"</p>
-
-                      <div className="flex items-center justify-between text-[11px] font-bold text-[#721B29] pt-2 border-t border-[#F4EFE6]">
-                        <span>❤️ {post.likes} likes</span>
-                        <span>💬 {post.comments} comments</span>
                       </div>
                     </div>
 
@@ -1296,54 +1240,6 @@ export const HomepageSectionsManager: React.FC = () => {
                               updateInstagramPost(post.id, { reelUrl: url });
                               showToast('Video replaced successfully!');
                             }}
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Video Title</label>
-                          <input
-                            type="text"
-                            value={post.title || ''}
-                            onChange={(e) => updateInstagramPost(post.id, { title: e.target.value })}
-                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Caption</label>
-                          <textarea
-                            rows={2}
-                            value={post.caption}
-                            onChange={(e) => updateInstagramPost(post.id, { caption: e.target.value })}
-                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Likes Count</label>
-                            <input
-                              type="number"
-                              value={post.likes}
-                              onChange={(e) => updateInstagramPost(post.id, { likes: Number(e.target.value) })}
-                              className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Comments</label>
-                            <input
-                              type="number"
-                              value={post.comments}
-                              onChange={(e) => updateInstagramPost(post.id, { comments: Number(e.target.value) })}
-                              className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Tagged Outfit Name</label>
-                          <input
-                            type="text"
-                            value={post.productTag || ''}
-                            onChange={(e) => updateInstagramPost(post.id, { productTag: e.target.value })}
-                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
                           />
                         </div>
                       </div>
@@ -1765,70 +1661,6 @@ export const HomepageSectionsManager: React.FC = () => {
                   placeholder="https://ik.imagekit.io/.../video.mp4"
                   value={newIgPost.reelUrl}
                   onChange={(e) => setNewIgPost({ ...newIgPost, reelUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Video Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Royal Ruby Drape Trial"
-                  value={newIgPost.title}
-                  onChange={(e) => setNewIgPost({ ...newIgPost, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Caption / Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. Wedding guest goals in Kurukshetra 💖 Pre-stitched drape perfection."
-                  value={newIgPost.caption}
-                  onChange={(e) => setNewIgPost({ ...newIgPost, caption: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                    Likes Count
-                  </label>
-                  <input
-                    type="number"
-                    value={newIgPost.likes}
-                    onChange={(e) => setNewIgPost({ ...newIgPost, likes: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                    Comments Count
-                  </label>
-                  <input
-                    type="number"
-                    value={newIgPost.comments}
-                    onChange={(e) => setNewIgPost({ ...newIgPost, comments: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Tagged Outfit Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Pre-Stitched Royal Ruby Saree"
-                  value={newIgPost.productTag}
-                  onChange={(e) => setNewIgPost({ ...newIgPost, productTag: e.target.value })}
                   className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
                 />
               </div>
