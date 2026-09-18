@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ImageKitUploader } from './ImageKitUploader';
 import { Product, BudgetTier, Category, ReviewItem } from '../../types';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../../utils/imageUtils';
+import { ImageKitMediaLibraryModal } from './ImageKitMediaLibraryModal';
 import {
   X,
   Plus,
@@ -19,6 +20,7 @@ import {
   MessageSquare,
   Edit2,
   User,
+  HardDrive,
 } from 'lucide-react';
 
 interface ProductEditorModalProps {
@@ -73,6 +75,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   // Images
   const [images, setImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
   // Description
   const [description, setDescription] = useState('');
@@ -768,20 +771,30 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                   </div>
                 )}
 
-                {/* Upload Image via ImageKit or Add by URL */}
+                {/* Upload Image via ImageKit or Select from Media Library */}
                 <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#EAE4D9] space-y-4">
                   <div>
                     <label className="block font-semibold text-[#242120] mb-1">
-                      Upload High-Res Garment Photo (ImageKit CDN)
+                      Add High-Res Garment Imagery
                     </label>
-                    <p className="text-[11px] text-[#736B63] mb-2.5">
-                      Upload directly from your phone or PC. ImageKit will compress, optimize webp format, and generate CDN link automatically.
+                    <p className="text-[11px] text-[#736B63] mb-3">
+                      Upload fresh photos from your device, or select photos already uploaded to your ImageKit cloud repository.
                     </p>
-                    <ImageKitUploader
-                      folder="/products"
-                      buttonText="Choose Photo & Upload to ImageKit"
-                      onUploadSuccess={(url) => handleAddImage(url)}
-                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <ImageKitUploader
+                        folder="/products"
+                        buttonText="Upload New Photo"
+                        onUploadSuccess={(url) => handleAddImage(url)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsMediaLibraryOpen(true)}
+                        className="px-3.5 py-2 bg-white border border-[#721B29] text-[#721B29] hover:bg-[#721B29] hover:text-white rounded-sm text-xs font-semibold flex items-center gap-2 transition-colors shadow-2xs cursor-pointer"
+                      >
+                        <HardDrive className="w-4 h-4" />
+                        <span>Browse ImageKit Media Library</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative flex py-1 items-center">
@@ -1440,6 +1453,17 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ImageKit Cloud Media Library Modal */}
+      <ImageKitMediaLibraryModal
+        isOpen={isMediaLibraryOpen}
+        onClose={() => setIsMediaLibraryOpen(false)}
+        onSelectImages={(newUrls) => {
+          setImages((prev) => [...prev, ...newUrls]);
+        }}
+        currentProductFolder="/products"
+        multiple={true}
+      />
     </div>
   );
 };

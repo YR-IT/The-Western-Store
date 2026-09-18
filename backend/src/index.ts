@@ -231,6 +231,86 @@ app.get('/api/imagekit/auth', (req, res) => {
   }
 });
 
+// ─── ImageKit Media Library: List Files ──────────────────────────────────
+app.get('/api/imagekit/files', async (req, res) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  const expectedSecret = process.env.ADMIN_SECRET || 'westernstore_admin_2026';
+
+  if (!adminSecret || adminSecret !== expectedSecret) {
+    res.status(401).json({ error: 'Unauthorized: Invalid admin secret header.' });
+    return;
+  }
+
+  if (!process.env.IMAGEKIT_PRIVATE_KEY) {
+    res.status(503).json({ error: 'ImageKit private key is not configured on server.' });
+    return;
+  }
+
+  try {
+    const pathFilter = (req.query.path as string) || undefined;
+    const limit = Math.min(Number(req.query.limit) || 60, 100);
+    const searchQuery = (req.query.searchQuery as string) || undefined;
+
+    const options: any = {
+      limit,
+    };
+    if (pathFilter && pathFilter !== 'all' && pathFilter !== '/') {
+      options.path = pathFilter;
+    }
+    if (searchQuery) {
+      options.searchQuery = searchQuery;
+    }
+
+    const rawAssets = await imagekit.assets.list(options);
+    const assetsArray = Array.isArray(rawAssets) ? rawAssets : [];
+
+    const files = assetsArray
+      .filter((item: any) => item && (item.type === 'file' || item.fileType === 'image'))
+      .map((item: any) => ({
+        fileId: item.fileId || item.id,
+        name: item.name,
+        filePath: item.filePath,
+        url: item.url,
+        thumbnailUrl: item.thumbnail || item.thumbnailUrl || item.url,
+        fileType: item.fileType || 'image',
+        size: item.size || 0,
+        height: item.height || null,
+        width: item.width || null,
+        createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
+      }));
+
+    res.json({ success: true, files });
+  } catch (err: any) {
+    console.error('[ImageKit] List files failed:', err);
+    res.status(500).json({ error: err.message || 'Failed to list files from ImageKit.' });
+  }
+});
+
+// ─── ImageKit Media Library: Delete File ─────────────────────────────────
+app.delete('/api/imagekit/files/:fileId', async (req, res) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  const expectedSecret = process.env.ADMIN_SECRET || 'westernstore_admin_2026';
+
+  if (!adminSecret || adminSecret !== expectedSecret) {
+    res.status(401).json({ error: 'Unauthorized: Invalid admin secret header.' });
+    return;
+  }
+
+  const { fileId } = req.params;
+  if (!fileId) {
+    res.status(400).json({ error: 'Missing fileId parameter.' });
+    return;
+  }
+
+  try {
+    await imagekit.files.delete(fileId);
+    res.json({ success: true, message: 'Image deleted from ImageKit successfully.' });
+  } catch (err: any) {
+    console.error('[ImageKit] Delete file failed:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete file from ImageKit.' });
+  }
+});
+
 // ─── Start Server (Bound to 0.0.0.0 for Render) ───────────────────────────
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`\n🟢 The Western Store Backend`);

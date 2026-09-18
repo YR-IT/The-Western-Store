@@ -7,6 +7,7 @@ import { CategoryEditorModal } from './admin/CategoryEditorModal';
 import { ProductEditorModal } from './admin/ProductEditorModal';
 import { HomepageSectionsManager } from './admin/HomepageSectionsManager';
 import { CollectionFiltersManager } from './admin/CollectionFiltersManager';
+import { ImageKitMediaLibraryModal } from './admin/ImageKitMediaLibraryModal';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE, FALLBACK_CATEGORY_IMAGE } from '../utils/imageUtils';
 import {
   LayoutDashboard,
@@ -44,6 +45,7 @@ import {
   Eye,
   Archive,
   AlertTriangle,
+  HardDrive,
   RotateCcw,
   Star,
   ArrowUp,
@@ -151,6 +153,14 @@ export const AdminPanel: React.FC = () => {
 
   // Tracking Modal State
   const [trackingModalOrder, setTrackingModalOrder] = useState<Order | null>(null);
+
+  // Modals state
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+
   const [trackingForm, setTrackingForm] = useState({
     courierName: 'Delhivery Express',
     trackingNumber: '',
@@ -1121,6 +1131,14 @@ export const AdminPanel: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => setIsMediaLibraryOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#D9CEBF] text-[#242120] hover:border-[#721B29] hover:text-[#721B29] rounded-sm text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+                  >
+                    <HardDrive className="w-4 h-4 text-[#721B29]" />
+                    <span>Browse ImageKit Library</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleOpenAddProduct}
                     className="flex items-center gap-1.5 px-4 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] transition-all shadow-xs cursor-pointer"
                   >
@@ -2017,6 +2035,19 @@ export const AdminPanel: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ImageKit Cloud Media Library Modal */}
+      <ImageKitMediaLibraryModal
+        isOpen={isMediaLibraryOpen}
+        onClose={() => setIsMediaLibraryOpen(false)}
+        onSelectImages={(urls) => {
+          if (urls.length > 0) {
+            handleOpenAddProduct();
+          }
+        }}
+        currentProductFolder="/products"
+        multiple={true}
+      />
     </motion.div>
   );
 };
