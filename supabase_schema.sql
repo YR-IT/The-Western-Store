@@ -172,7 +172,24 @@ CREATE POLICY "Public insert orders" ON public.orders FOR INSERT WITH CHECK (tru
 CREATE POLICY "Public select orders" ON public.orders FOR SELECT USING (true);
 CREATE POLICY "Public update orders" ON public.orders FOR UPDATE USING (true);
 
--- Enable Realtime broadcasting for live order tracking & catalog updates
+-- Store Settings Table (Autoplay Reels, Hero Slides, Testimonials, Home Sections)
+CREATE TABLE IF NOT EXISTS public.store_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Store Settings Read" ON public.store_settings;
+DROP POLICY IF EXISTS "Public Store Settings Insert" ON public.store_settings;
+DROP POLICY IF EXISTS "Public Store Settings Update" ON public.store_settings;
+DROP POLICY IF EXISTS "Public Store Settings Delete" ON public.store_settings;
+CREATE POLICY "Public Store Settings Read" ON public.store_settings FOR SELECT USING (true);
+CREATE POLICY "Public Store Settings Insert" ON public.store_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Store Settings Update" ON public.store_settings FOR UPDATE USING (true);
+CREATE POLICY "Public Store Settings Delete" ON public.store_settings FOR DELETE USING (true);
+
+-- Enable Realtime broadcasting for live order tracking & catalog updates & store settings
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -193,4 +210,11 @@ BEGIN
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.categories;
   END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'store_settings'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.store_settings;
+  END IF;
 END $$;
+

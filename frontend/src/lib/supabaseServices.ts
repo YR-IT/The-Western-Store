@@ -319,3 +319,50 @@ export async function deleteCategoryFromSupabase(categoryId: string): Promise<bo
     return false;
   }
 }
+
+// ─── STORE SETTINGS & HOMEPAGE CONFIGS (REELS, HERO, REVIEWS, ETC.) ───────────
+export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, any> | null> {
+  if (!isSupabaseConfigured() || !supabase) return null;
+
+  try {
+    const { data, error } = await supabase.from('store_settings').select('*');
+    if (error) {
+      console.warn('[Supabase] Failed to fetch store settings:', error.message);
+      return null;
+    }
+    if (!data || data.length === 0) return {};
+
+    const settings: Record<string, any> = {};
+    for (const row of data) {
+      if (row.key) {
+        settings[row.key] = row.value;
+      }
+    }
+    return settings;
+  } catch (err) {
+    console.error('[Supabase] Store settings query exception:', err);
+    return null;
+  }
+}
+
+export async function saveStoreSettingToSupabase(key: string, value: any): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) return false;
+
+  try {
+    const row = {
+      key,
+      value,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('store_settings').upsert(row);
+    if (error) {
+      console.warn(`[Supabase] Failed to save store setting '${key}':`, error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[Supabase] Store setting upsert exception for '${key}':`, err);
+    return false;
+  }
+}

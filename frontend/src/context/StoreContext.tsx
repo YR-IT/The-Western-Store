@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   fetchProductsFromSupabase,
   fetchCategoriesFromSupabase,
@@ -11,6 +11,8 @@ import {
   deleteProductFromSupabase,
   upsertCategoryToSupabase,
   deleteCategoryFromSupabase,
+  fetchStoreSettingsFromSupabase,
+  saveStoreSettingToSupabase,
 } from '../lib/supabaseServices';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -362,40 +364,69 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return INITIAL_COLLECTION_FILTERS;
   });
 
+  const isInitialSettingsSyncDone = useRef(false);
+
   useEffect(() => {
     localStorage.setItem('tws_hero_slides', JSON.stringify(heroSlides));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('hero_slides', heroSlides).catch(() => {});
+    }
   }, [heroSlides]);
 
   useEffect(() => {
     localStorage.setItem('tws_announcement', announcementText);
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('announcement_text', announcementText).catch(() => {});
+    }
   }, [announcementText]);
 
   useEffect(() => {
     localStorage.setItem('tws_budget_tiles', JSON.stringify(budgetTiles));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('budget_tiles', budgetTiles).catch(() => {});
+    }
   }, [budgetTiles]);
 
   useEffect(() => {
     localStorage.setItem('tws_trust_features', JSON.stringify(trustFeatures));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('trust_features', trustFeatures).catch(() => {});
+    }
   }, [trustFeatures]);
 
   useEffect(() => {
     localStorage.setItem('tws_customer_reviews', JSON.stringify(testimonials));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('testimonials', testimonials).catch(() => {});
+    }
   }, [testimonials]);
 
   useEffect(() => {
     localStorage.setItem('tws_instagram_posts', JSON.stringify(instagramPosts));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('instagram_posts', instagramPosts).catch(() => {});
+    }
   }, [instagramPosts]);
 
   useEffect(() => {
     localStorage.setItem('tws_instagram_handle', instagramHandle);
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('instagram_handle', instagramHandle).catch(() => {});
+    }
   }, [instagramHandle]);
 
   useEffect(() => {
     localStorage.setItem('tws_home_sections', JSON.stringify(homeSections));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('home_sections', homeSections).catch(() => {});
+    }
   }, [homeSections]);
 
   useEffect(() => {
     localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
+    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('collection_filters', collectionFilters).catch(() => {});
+    }
   }, [collectionFilters]);
 
   const updateHomeSection = (id: string, updates: Partial<HomeSectionConfig>) => {
@@ -648,6 +679,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     });
 
+    fetchStoreSettingsFromSupabase().then((settings) => {
+      if (settings && Object.keys(settings).length > 0) {
+        if (settings.instagram_posts && Array.isArray(settings.instagram_posts) && settings.instagram_posts.length > 0) {
+          setInstagramPosts(settings.instagram_posts);
+          localStorage.setItem('tws_instagram_posts', JSON.stringify(settings.instagram_posts));
+        }
+        if (settings.hero_slides && Array.isArray(settings.hero_slides) && settings.hero_slides.length > 0) {
+          setHeroSlides(settings.hero_slides);
+          localStorage.setItem('tws_hero_slides', JSON.stringify(settings.hero_slides));
+        }
+        if (settings.testimonials && Array.isArray(settings.testimonials) && settings.testimonials.length > 0) {
+          setTestimonials(settings.testimonials);
+          localStorage.setItem('tws_customer_reviews', JSON.stringify(settings.testimonials));
+        }
+        if (settings.home_sections && Array.isArray(settings.home_sections) && settings.home_sections.length > 0) {
+          setHomeSections(settings.home_sections);
+          localStorage.setItem('tws_home_sections', JSON.stringify(settings.home_sections));
+        }
+        if (settings.budget_tiles && Array.isArray(settings.budget_tiles) && settings.budget_tiles.length > 0) {
+          setBudgetTiles(settings.budget_tiles);
+          localStorage.setItem('tws_budget_tiles', JSON.stringify(settings.budget_tiles));
+        }
+        if (settings.trust_features && Array.isArray(settings.trust_features) && settings.trust_features.length > 0) {
+          setTrustFeatures(settings.trust_features);
+          localStorage.setItem('tws_trust_features', JSON.stringify(settings.trust_features));
+        }
+        if (settings.announcement_text !== undefined && typeof settings.announcement_text === 'string') {
+          setAnnouncementText(settings.announcement_text);
+          localStorage.setItem('tws_announcement', settings.announcement_text);
+        }
+        if (settings.instagram_handle && typeof settings.instagram_handle === 'string') {
+          setInstagramHandle(settings.instagram_handle);
+          localStorage.setItem('tws_instagram_handle', settings.instagram_handle);
+        }
+        if (settings.collection_filters && typeof settings.collection_filters === 'object') {
+          setCollectionFilters(settings.collection_filters);
+          localStorage.setItem('tws_collection_filters', JSON.stringify(settings.collection_filters));
+        }
+      }
+      isInitialSettingsSyncDone.current = true;
+    }).catch(() => {
+      isInitialSettingsSyncDone.current = true;
+    });
+
     if (supabase) {
       const ordersChannel = supabase
         .channel('public-orders-changes')
@@ -668,8 +743,51 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         )
         .subscribe();
 
+      const settingsChannel = supabase
+        .channel('public-settings-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'store_settings' },
+          (payload: any) => {
+            const key = payload.new?.key;
+            const val = payload.new?.value;
+            if (!key || val === undefined) return;
+
+            if (key === 'instagram_posts' && Array.isArray(val)) {
+              setInstagramPosts(val);
+              localStorage.setItem('tws_instagram_posts', JSON.stringify(val));
+            } else if (key === 'hero_slides' && Array.isArray(val)) {
+              setHeroSlides(val);
+              localStorage.setItem('tws_hero_slides', JSON.stringify(val));
+            } else if (key === 'testimonials' && Array.isArray(val)) {
+              setTestimonials(val);
+              localStorage.setItem('tws_customer_reviews', JSON.stringify(val));
+            } else if (key === 'home_sections' && Array.isArray(val)) {
+              setHomeSections(val);
+              localStorage.setItem('tws_home_sections', JSON.stringify(val));
+            } else if (key === 'budget_tiles' && Array.isArray(val)) {
+              setBudgetTiles(val);
+              localStorage.setItem('tws_budget_tiles', JSON.stringify(val));
+            } else if (key === 'trust_features' && Array.isArray(val)) {
+              setTrustFeatures(val);
+              localStorage.setItem('tws_trust_features', JSON.stringify(val));
+            } else if (key === 'announcement_text' && typeof val === 'string') {
+              setAnnouncementText(val);
+              localStorage.setItem('tws_announcement', val);
+            } else if (key === 'instagram_handle' && typeof val === 'string') {
+              setInstagramHandle(val);
+              localStorage.setItem('tws_instagram_handle', val);
+            } else if (key === 'collection_filters' && typeof val === 'object') {
+              setCollectionFilters(val);
+              localStorage.setItem('tws_collection_filters', JSON.stringify(val));
+            }
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(ordersChannel);
+        supabase.removeChannel(settingsChannel);
       };
     }
   }, []);
