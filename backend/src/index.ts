@@ -265,19 +265,25 @@ app.get('/api/imagekit/files', async (req, res) => {
     const assetsArray = Array.isArray(rawAssets) ? rawAssets : [];
 
     const files = assetsArray
-      .filter((item: any) => item && (item.type === 'file' || item.fileType === 'image'))
-      .map((item: any) => ({
-        fileId: item.fileId || item.id,
-        name: item.name,
-        filePath: item.filePath,
-        url: item.url,
-        thumbnailUrl: item.thumbnail || item.thumbnailUrl || item.url,
-        fileType: item.fileType || 'image',
-        size: item.size || 0,
-        height: item.height || null,
-        width: item.width || null,
-        createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
-      }));
+      .filter((item: any) => item && (item.type === 'file' || item.fileType === 'image' || item.fileType === 'video' || item.type === 'video'))
+      .map((item: any) => {
+        const isVideo = item.fileType === 'video' || item.type === 'video' || /\.(mp4|webm|mov|ogg|m4v)$/i.test(item.name || item.filePath || '');
+        const fileType = isVideo ? 'video' : (item.fileType || 'image');
+        const thumbnailUrl = item.thumbnail || item.thumbnailUrl || (isVideo ? `${item.url}/ik-thumbnail.jpg` : item.url);
+
+        return {
+          fileId: item.fileId || item.id,
+          name: item.name,
+          filePath: item.filePath,
+          url: item.url,
+          thumbnailUrl,
+          fileType,
+          size: item.size || 0,
+          height: item.height || null,
+          width: item.width || null,
+          createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
+        };
+      });
 
     res.json({ success: true, files });
   } catch (err: any) {

@@ -7,7 +7,6 @@ import { HeroCarousel } from './components/HeroCarousel';
 import { ProductSection } from './components/ProductSection';
 import { ShopByBudget } from './components/ShopByBudget';
 import { EditorialLookbook } from './components/EditorialLookbook';
-import { TrustStrip } from './components/TrustStrip';
 import { Testimonials } from './components/Testimonials';
 import { InstagramFeed } from './components/InstagramFeed';
 import { Footer } from './components/Footer';
@@ -113,12 +112,7 @@ const StorefrontContent: React.FC = () => {
           />
         );
       case 'lookbook':
-        return (
-          <React.Fragment key={sec.id}>
-            <EditorialLookbook />
-            <TrustStrip />
-          </React.Fragment>
-        );
+        return <EditorialLookbook key={sec.id} />;
       case 'testimonials':
         return <Testimonials key={sec.id} />;
       case 'instagram':

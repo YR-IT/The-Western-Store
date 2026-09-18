@@ -167,7 +167,11 @@ export interface Testimonial {
 
 export interface InstagramPost {
   id: string;
-  image: string;
+  reelUrl?: string;
+  videoUrl?: string;
+  thumbnail?: string;
+  image?: string;
+  title?: string;
   caption: string;
   likes: number;
   comments: number;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { HomeSectionConfig, HomeSectionType, HeroSlide, Testimonial, InstagramPost, BudgetTier } from '../../types';
 import { ImageKitUploader } from './ImageKitUploader';
+import { ImageKitMediaLibraryModal } from './ImageKitMediaLibraryModal';
 import {
   Plus,
   Trash2,
@@ -31,6 +32,9 @@ import {
   ExternalLink,
   Save,
   MessageCircle,
+  Video,
+  Play,
+  Folder,
 } from 'lucide-react';
 
 
@@ -75,6 +79,8 @@ export const HomepageSectionsManager: React.FC = () => {
     updateInstagramPost,
     addInstagramPost,
     deleteInstagramPost,
+    reorderInstagramPosts,
+    resetInstagramPosts,
     instagramHandle,
     setInstagramHandle,
     categories,
@@ -118,15 +124,31 @@ export const HomepageSectionsManager: React.FC = () => {
     verified: true,
   });
 
-  // New Instagram Post State
+  // New Instagram / Video Reel State
   const [isAddIgModalOpen, setIsAddIgModalOpen] = useState(false);
+  const [isIgMediaLibraryOpen, setIsIgMediaLibraryOpen] = useState(false);
+  const [igTargetItemForMedia, setIgTargetItemForMedia] = useState<string | null>(null);
   const [newIgPost, setNewIgPost] = useState({
-    image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-    caption: 'Sunday styling with our latest collection! Tap to order 🌸',
-    likes: 850,
-    comments: 42,
-    productTag: 'Western Fusion Edit',
+    reelUrl: '',
+    title: '',
+    caption: '',
+    likes: 1200,
+    comments: 48,
+    productTag: '',
   });
+
+  const handleSelectIgVideo = (urls: string[]) => {
+    if (urls.length > 0) {
+      const chosenUrl = urls[0];
+      if (igTargetItemForMedia) {
+        updateInstagramPost(igTargetItemForMedia, { reelUrl: chosenUrl });
+        showToast('Video attached from ImageKit!');
+      } else {
+        setNewIgPost((prev) => ({ ...prev, reelUrl: chosenUrl }));
+        showToast('Video attached to new reel!');
+      }
+    }
+  };
 
   // New Custom Banner Section State
   const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
@@ -179,16 +201,25 @@ export const HomepageSectionsManager: React.FC = () => {
 
   const handleCreateIgPost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newIgPost.image.trim()) return;
+    if (!newIgPost.reelUrl.trim()) return;
     addInstagramPost({
-      image: newIgPost.image.trim(),
+      reelUrl: newIgPost.reelUrl.trim(),
+      title: newIgPost.title.trim() || 'Kurukshetra Boutique Reel',
       caption: newIgPost.caption.trim(),
-      likes: Number(newIgPost.likes) || 120,
-      comments: Number(newIgPost.comments) || 8,
+      likes: Number(newIgPost.likes) || 1200,
+      comments: Number(newIgPost.comments) || 48,
       productTag: newIgPost.productTag.trim(),
     });
     setIsAddIgModalOpen(false);
-    showToast('Added Instagram grid post!');
+    setNewIgPost({
+      reelUrl: '',
+      title: '',
+      caption: '',
+      likes: 1200,
+      comments: 48,
+      productTag: '',
+    });
+    showToast('Added Instagram Reel!');
   };
 
   const handleCreateCustomBanner = (e: React.FormEvent) => {
@@ -999,68 +1030,378 @@ export const HomepageSectionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 7: INSTAGRAM FEED */}
-      {activeTab === 'instagram' && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-[#EAE4D9] space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-serif text-lg font-bold text-[#242120]">Instagram Style Grid</h2>
-                <p className="text-xs text-[#736B63]">
-                  Update Instagram handle, photos, captions, and liked counts.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddIgModalOpen(true)}
-                className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add IG Grid Photo</span>
-              </button>
-            </div>
+      {/* TAB 7: INSTAGRAM & VIDEO REELS */}
+      {activeTab === 'instagram' && (() => {
+        const igSec = homeSections.find((s) => s.id === 'instagram' || s.type === 'instagram');
 
-            <div className="flex items-center gap-2 max-w-md pt-1">
-              <span className="text-xs font-bold text-[#4A453E]">Instagram Handle:</span>
-              <input
-                type="text"
-                value={instagramHandle}
-                onChange={(e) => setInstagramHandle(e.target.value)}
-                className="flex-1 px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-bold text-[#721B29]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {instagramPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-lg border border-[#EAE4D9] overflow-hidden flex flex-col justify-between">
-                <div className="relative aspect-square bg-[#1A1415]">
-                  <img src={post.image} alt={post.caption} className="w-full h-full object-cover" />
+        return (
+          <div className="space-y-5">
+            {/* Section Header & Global Settings */}
+            <div className="bg-white p-5 rounded-xl border border-[#EAE4D9] space-y-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F4EFE6]">
+                <div>
+                  <h2 className="font-serif text-lg font-bold text-[#242120]">Autoplay Video Reels & Showcase</h2>
+                  <p className="text-xs text-[#736B63]">
+                    Upload and manage boutique videos in ImageKit (<span className="font-mono text-[#721B29]">/videos</span> folder). Videos will play seamlessly in autoplay muted format with audio toggle.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {igSec && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateHomeSection(igSec.id, { enabled: !igSec.enabled });
+                        showToast(igSec.enabled ? 'Video section hidden' : 'Video section visible');
+                      }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        igSec.enabled
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                          : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                      }`}
+                    >
+                      {igSec.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      <span>{igSec.enabled ? 'Section Visible' : 'Section Hidden'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm('Delete Instagram post?')) {
-                        deleteInstagramPost(post.id);
-                        showToast('Post deleted');
-                      }
+                      setIgTargetItemForMedia(null);
+                      setIsIgMediaLibraryOpen(true);
                     }}
-                    className="absolute top-1 right-1 p-1 bg-rose-600 text-white rounded-full opacity-80 hover:opacity-100"
+                    className="px-3 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded-lg shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
-                    <X className="w-3 h-3" />
+                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                    <span>Browse ImageKit Videos</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddIgModalOpen(true)}
+                    className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Video</span>
                   </button>
                 </div>
-                <div className="p-2 space-y-1 text-[11px]">
-                  <p className="line-clamp-2 text-gray-700 text-[10px]">{post.caption}</p>
-                  <div className="flex items-center justify-between text-[10px] text-[#721B29] font-bold pt-1 border-t">
-                    <span>❤️ {post.likes}</span>
-                    <span>💬 {post.comments}</span>
+              </div>
+
+              {/* Quick ImageKit Direct Video Uploader */}
+              <div className="bg-[#FAF8F3] p-3.5 rounded-lg border border-[#EAE4D9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-bold text-[#242120] block">Direct Video Upload to ImageKit</span>
+                  <span className="text-[11px] text-[#736B63]">
+                    Upload an MP4, WebM, or MOV video directly to <code className="text-[#721B29] font-bold">/videos</code> on ImageKit CDN.
+                  </span>
+                </div>
+                <ImageKitUploader
+                  folder="/videos"
+                  accept="video/*"
+                  buttonText="Upload New Video (/videos)"
+                  onUploadSuccess={(url) => {
+                    addInstagramPost({
+                      reelUrl: url,
+                      title: 'New Kurukshetra Boutique Video',
+                      caption: 'Exclusive photoshoot & real boutique drape trial ✨',
+                      likes: 1200,
+                      comments: 48,
+                      productTag: 'Festive Collection',
+                    });
+                    showToast('Uploaded to ImageKit and added to video showcase!');
+                  }}
+                />
+              </div>
+
+              {/* Section Details Editing */}
+              {igSec && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#4A453E] uppercase mb-1">
+                      Section Tagline
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. @the_western_store_kkr"
+                      value={igSec.tagline || ''}
+                      onChange={(e) => updateHomeSection(igSec.id, { tagline: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#4A453E] uppercase mb-1">
+                      Section Title
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Follow Us On Instagram"
+                      value={igSec.title || ''}
+                      onChange={(e) => updateHomeSection(igSec.id, { title: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-bold text-[#242120] focus:outline-none focus:border-[#721B29]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#4A453E] uppercase mb-1">
+                      Official Handle / Account
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="@the_western_store_kkr"
+                      value={instagramHandle}
+                      onChange={(e) => setInstagramHandle(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-bold text-[#721B29] focus:outline-none focus:border-[#721B29]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="block text-[10px] font-bold text-[#4A453E] uppercase mb-1">
+                      Section Subtitle / Description
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Watch real drape trials, bridal styling sessions, and packaging videos live from our Kurukshetra boutique."
+                      value={igSec.subtitle || ''}
+                      onChange={(e) => updateHomeSection(igSec.id, { subtitle: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs text-[#4A453E] focus:outline-none focus:border-[#721B29]"
+                    />
                   </div>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+
+            {/* Video Reels Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {instagramPosts.map((post, idx) => {
+                const isEditing = editingIgId === post.id;
+                const videoSrc = post.reelUrl || post.videoUrl || '';
+
+                return (
+                  <div key={post.id} className="bg-white rounded-xl border border-[#EAE4D9] p-4 shadow-xs space-y-3 text-xs flex flex-col justify-between">
+                    <div>
+                      {/* Header info */}
+                      <div className="flex items-center justify-between pb-2 border-b border-[#F4EFE6]">
+                        <span className="font-serif font-bold text-xs text-[#242120] truncate max-w-[180px]">
+                          {post.title || `Video Reel #${idx + 1}`}
+                        </span>
+                        {post.productTag && (
+                          <span className="text-[10px] font-semibold text-[#721B29] bg-[#721B29]/10 px-2 py-0.5 rounded-full truncate max-w-[120px]">
+                            {post.productTag}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Video Player Preview */}
+                      {videoSrc ? (
+                        <div className="relative aspect-[9/14] max-h-48 w-full rounded-lg overflow-hidden bg-black mt-2 mb-2 flex items-center justify-center group/vid border border-[#EAE4D9]">
+                          <video
+                            src={videoSrc}
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-cover"
+                            onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                            onMouseLeave={(e) => (e.target as HTMLVideoElement).pause()}
+                          />
+                          <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-xs text-[9px] font-bold text-white rounded flex items-center gap-1">
+                            <Play className="w-2.5 h-2.5 fill-white" />
+                            <span>Preview</span>
+                          </div>
+                          <a
+                            href={videoSrc}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute top-2 right-2 p-1 bg-black/60 hover:bg-black text-white rounded opacity-80 hover:opacity-100"
+                            title="Open video in new tab"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="aspect-[9/10] max-h-36 w-full rounded-lg bg-[#FAF8F3] border-2 border-dashed border-[#D9CEBF] mt-2 mb-2 flex flex-col items-center justify-center text-center p-3 text-[#736B63]">
+                          <Video className="w-6 h-6 text-[#721B29] mb-1 opacity-70" />
+                          <span className="text-[11px] font-semibold text-[#242120]">No Video Attached</span>
+                          <span className="text-[10px]">Upload or select from ImageKit</span>
+                        </div>
+                      )}
+
+                      {/* Video URL display */}
+                      <div className="py-1">
+                        <span className="text-[10px] uppercase font-bold text-[#8C8276] block mb-1">Video Link:</span>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[11px] font-mono text-blue-700 truncate bg-[#FAF8F3] p-1.5 rounded border border-[#EAE4D9] flex-1">
+                            {videoSrc || 'No video link set'}
+                          </p>
+                          {videoSrc && (
+                            <a
+                              href={videoSrc}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-gray-500 hover:text-[#721B29] hover:bg-[#FAF8F3] rounded"
+                              title="Test link in new tab"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[#4A453E] line-clamp-2 italic mb-1">"{post.caption}"</p>
+
+                      <div className="flex items-center justify-between text-[11px] font-bold text-[#721B29] pt-2 border-t border-[#F4EFE6]">
+                        <span>❤️ {post.likes} likes</span>
+                        <span>💬 {post.comments} comments</span>
+                      </div>
+                    </div>
+
+                    {/* Inline Edit Form */}
+                    {isEditing && (
+                      <div className="space-y-2.5 pt-3 border-t border-[#EAE4D9] bg-[#FAF8F3] p-3 rounded-lg">
+                        <div>
+                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">
+                            Video URL (ImageKit / MP4 / WebM) *
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={post.reelUrl || ''}
+                              onChange={(e) => updateInstagramPost(post.id, { reelUrl: e.target.value })}
+                              className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs"
+                              placeholder="https://ik.imagekit.io/.../video.mp4"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIgTargetItemForMedia(post.id);
+                                setIsIgMediaLibraryOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 bg-white border border-[#D9CEBF] text-[#721B29] hover:bg-[#F3EFE6] rounded text-[11px] font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+                              title="Select from ImageKit"
+                            >
+                              <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                              <span>CDN</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Replace Video Uploader */}
+                        <div>
+                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">
+                            Upload Replacement Video
+                          </label>
+                          <ImageKitUploader
+                            folder="/videos"
+                            accept="video/*"
+                            buttonText="Upload to /videos"
+                            onUploadSuccess={(url) => {
+                              updateInstagramPost(post.id, { reelUrl: url });
+                              showToast('Video replaced successfully!');
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Video Title</label>
+                          <input
+                            type="text"
+                            value={post.title || ''}
+                            onChange={(e) => updateInstagramPost(post.id, { title: e.target.value })}
+                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Caption</label>
+                          <textarea
+                            rows={2}
+                            value={post.caption}
+                            onChange={(e) => updateInstagramPost(post.id, { caption: e.target.value })}
+                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Likes Count</label>
+                            <input
+                              type="number"
+                              value={post.likes}
+                              onChange={(e) => updateInstagramPost(post.id, { likes: Number(e.target.value) })}
+                              className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Comments</label>
+                            <input
+                              type="number"
+                              value={post.comments}
+                              onChange={(e) => updateInstagramPost(post.id, { comments: Number(e.target.value) })}
+                              className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block font-bold uppercase text-[10px] text-[#4A453E] mb-1">Tagged Outfit Name</label>
+                          <input
+                            type="text"
+                            value={post.productTag || ''}
+                            onChange={(e) => updateInstagramPost(post.id, { productTag: e.target.value })}
+                            className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="pt-2 border-t border-[#F4EFE6] flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => reorderInstagramPosts(post.id, 'up')}
+                          disabled={idx === 0}
+                          className="p-1 text-gray-500 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-gray-100"
+                          title="Move Left / Earlier"
+                        >
+                          <MoveUp className="w-3.5 h-3.5 -rotate-90" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => reorderInstagramPosts(post.id, 'down')}
+                          disabled={idx === instagramPosts.length - 1}
+                          className="p-1 text-gray-500 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-gray-100"
+                          title="Move Right / Later"
+                        >
+                          <MoveDown className="w-3.5 h-3.5 -rotate-90" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingIgId(isEditing ? null : post.id)}
+                          className="px-2.5 py-1 bg-white border border-[#D9CEBF] text-[11px] font-medium text-[#242120] rounded hover:bg-[#FAF8F3] cursor-pointer"
+                        >
+                          {isEditing ? 'Done Editing' : 'Edit Video'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Delete this Video Reel?')) {
+                              deleteInstagramPost(post.id);
+                              showToast('Video deleted');
+                            }
+                          }}
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                          title="Delete Reel"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 8: CUSTOM BANNERS */}
       {activeTab === 'custom-banners' && (
@@ -1349,6 +1690,178 @@ export const HomepageSectionsManager: React.FC = () => {
           </div>
         </div>
       )}
+      {/* MODAL: ADD VIDEO REEL */}
+      {isAddIgModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#EAE4D9] max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#EAE4D9] pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#242120]">Add New Video Reel</h3>
+                <p className="text-xs text-[#736B63]">Upload to ImageKit (/videos) or pick from media repository</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddIgModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Direct Upload & CDN Selection Options */}
+            <div className="space-y-3 bg-[#FAF8F3] p-3.5 rounded-xl border border-[#EAE4D9]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#242120]">Upload Video to ImageKit</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIgTargetItemForMedia(null);
+                    setIsIgMediaLibraryOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded-md flex items-center gap-1 cursor-pointer"
+                >
+                  <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                  <span>Pick from ImageKit CDN</span>
+                </button>
+              </div>
+
+              <ImageKitUploader
+                folder="/videos"
+                accept="video/*"
+                buttonText="Upload Video File to /videos"
+                onUploadSuccess={(url) => {
+                  setNewIgPost((prev) => ({ ...prev, reelUrl: url }));
+                  showToast('Uploaded to ImageKit /videos!');
+                }}
+              />
+            </div>
+
+            {/* Video Preview in Modal */}
+            {newIgPost.reelUrl && (
+              <div className="relative aspect-[9/10] max-h-48 w-full rounded-xl overflow-hidden bg-black flex items-center justify-center border border-[#EAE4D9]">
+                <video
+                  src={newIgPost.reelUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/75 text-white text-[9px] font-bold rounded flex items-center gap-1">
+                  <Play className="w-2.5 h-2.5 fill-white" />
+                  <span>Autoplay Preview</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateIgPost} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Video URL (ImageKit / MP4 / WebM) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="https://ik.imagekit.io/.../video.mp4"
+                  value={newIgPost.reelUrl}
+                  onChange={(e) => setNewIgPost({ ...newIgPost, reelUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Video Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Royal Ruby Drape Trial"
+                  value={newIgPost.title}
+                  onChange={(e) => setNewIgPost({ ...newIgPost, title: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Caption / Description
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Wedding guest goals in Kurukshetra 💖 Pre-stitched drape perfection."
+                  value={newIgPost.caption}
+                  onChange={(e) => setNewIgPost({ ...newIgPost, caption: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Likes Count
+                  </label>
+                  <input
+                    type="number"
+                    value={newIgPost.likes}
+                    onChange={(e) => setNewIgPost({ ...newIgPost, likes: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Comments Count
+                  </label>
+                  <input
+                    type="number"
+                    value={newIgPost.comments}
+                    onChange={(e) => setNewIgPost({ ...newIgPost, comments: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Tagged Outfit Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Pre-Stitched Royal Ruby Saree"
+                  value={newIgPost.productTag}
+                  onChange={(e) => setNewIgPost({ ...newIgPost, productTag: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-[#EAE4D9]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddIgModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#721B29] hover:bg-[#57141F] text-white font-bold rounded-lg shadow-sm cursor-pointer"
+                >
+                  Save Video Reel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ImageKit Media Library Modal for Video Selection */}
+      <ImageKitMediaLibraryModal
+        isOpen={isIgMediaLibraryOpen}
+        onClose={() => setIsIgMediaLibraryOpen(false)}
+        currentProductFolder="/videos"
+        mediaType="video"
+        multiple={false}
+        onSelectImages={handleSelectIgVideo}
+      />
     </div>
   );
 };

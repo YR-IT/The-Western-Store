@@ -201,6 +201,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
       if (newPrice <= 999) setBudgetTier('under_999');
       else if (newPrice <= 1499) setBudgetTier('under_1499');
       else if (newPrice <= 1999) setBudgetTier('under_1999');
+      else if (newPrice <= 2499) setBudgetTier('under_2499');
       else setBudgetTier('premium');
     }
   };
@@ -535,7 +536,8 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                       <option value="under_999">Budget Edit: Under ₹999</option>
                       <option value="under_1499">Value Edit: Under ₹1,499</option>
                       <option value="under_1999">Festive Edit: Under ₹1,999</option>
-                      <option value="premium">Luxury Bridal & Premium Couture</option>
+                      <option value="under_2499">Celebration Edit: Under ₹2,499</option>
+                      <option value="premium">Luxury & Bridal (₹2,500+)</option>
                     </select>
                   </div>
                 </div>

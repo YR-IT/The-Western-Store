@@ -8,6 +8,15 @@ import { Filter, X, SlidersHorizontal, ArrowUpDown, Sparkles, ChevronDown } from
 
 const SIZES = ['Free Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34'];
 
+const BUDGET_TIER_LABELS: Record<string, string> = {
+  under_999: 'Under ₹999',
+  under_1499: 'Under ₹1,499',
+  under_1999: 'Under ₹1,999',
+  under_2499: 'Under ₹2,499',
+  premium: 'Luxury & Bridal (₹2,500+)',
+  all: 'All Prices',
+};
+
 export const ProductListingPage: React.FC = () => {
   const {
     products,
@@ -86,6 +95,42 @@ export const ProductListingPage: React.FC = () => {
     return (collectionFilters?.sortOptions || []).filter((s) => s.enabled);
   }, [collectionFilters]);
 
+  // Helper to check if a specific tier from enabledBudgetTiers is currently active
+  const isPriceTierActive = (tier: { id: string; label: string; minPrice: number; maxPrice: number }) => {
+    if (selectedBudgetTier !== 'all') {
+      if (selectedBudgetTier === 'under_999' && (tier.id === 'bt-1' || tier.maxPrice === 999 || tier.label.includes('999'))) return true;
+      if (selectedBudgetTier === 'under_1499' && (tier.id === 'bt-2' || tier.maxPrice === 1499 || tier.label.includes('1499') || tier.label.includes('1,499'))) return true;
+      if (selectedBudgetTier === 'under_1999' && (tier.id === 'bt-3' || tier.maxPrice === 1999 || tier.label.includes('1999') || tier.label.includes('1,999'))) return true;
+      if (selectedBudgetTier === 'under_2499' && (tier.id === 'bt-4' || tier.maxPrice === 2499 || tier.label.includes('2499') || tier.label.includes('2,499'))) return true;
+      if (selectedBudgetTier === 'premium' && (tier.id === 'bt-5' || tier.minPrice >= 2500 || tier.label.toLowerCase().includes('premium') || tier.label.toLowerCase().includes('luxury') || tier.label.includes('2500') || tier.label.includes('2,500'))) return true;
+    }
+    return selectedPriceRange === tier.id || selectedPriceRange === tier.label;
+  };
+
+  const isAllPricesActive = selectedBudgetTier === 'all' && (selectedPriceRange === 'all' || !selectedPriceRange);
+
+  const handlePriceRangeSelect = (tier: { id: string; label: string; minPrice: number; maxPrice: number }) => {
+    setSelectedPriceRange(tier.id);
+    if (tier.id === 'bt-1' || tier.maxPrice === 999 || tier.label.includes('999')) {
+      setSelectedBudgetTier('under_999');
+    } else if (tier.id === 'bt-2' || tier.maxPrice === 1499 || tier.label.includes('1499') || tier.label.includes('1,499')) {
+      setSelectedBudgetTier('under_1499');
+    } else if (tier.id === 'bt-3' || tier.maxPrice === 1999 || tier.label.includes('1999') || tier.label.includes('1,999')) {
+      setSelectedBudgetTier('under_1999');
+    } else if (tier.id === 'bt-4' || tier.maxPrice === 2499 || tier.label.includes('2499') || tier.label.includes('2,499')) {
+      setSelectedBudgetTier('under_2499');
+    } else if (tier.id === 'bt-5' || tier.minPrice >= 2500 || tier.label.toLowerCase().includes('premium') || tier.label.toLowerCase().includes('luxury') || tier.label.includes('2500') || tier.label.includes('2,500')) {
+      setSelectedBudgetTier('premium');
+    } else {
+      setSelectedBudgetTier('all');
+    }
+  };
+
+  const handleClearPriceFilter = () => {
+    setSelectedPriceRange('all');
+    setSelectedBudgetTier('all');
+  };
+
   // Filter products
   const filteredProducts = useMemo(() => {
     return products
@@ -97,9 +142,24 @@ export const ProductListingPage: React.FC = () => {
           return false;
         }
 
-        // Budget filter from context
-        if (selectedBudgetTier !== 'all' && p.budgetTier !== selectedBudgetTier) {
-          return false;
+        // Budget & Price Filter
+        if (selectedBudgetTier !== 'all') {
+          if (selectedBudgetTier === 'under_999') {
+            if (p.budgetTier !== 'under_999' && (p.price > 999 || p.price <= 0)) return false;
+          } else if (selectedBudgetTier === 'under_1499') {
+            if (p.budgetTier !== 'under_1499' && (p.price > 1499 || p.price <= 0)) return false;
+          } else if (selectedBudgetTier === 'under_1999') {
+            if (p.budgetTier !== 'under_1999' && (p.price > 1999 || p.price <= 0)) return false;
+          } else if (selectedBudgetTier === 'under_2499') {
+            if (p.budgetTier !== 'under_2499' && (p.price > 2499 || p.price <= 0)) return false;
+          } else if (selectedBudgetTier === 'premium') {
+            if (p.budgetTier !== 'premium' && p.price < 2500) return false;
+          }
+        } else if (selectedPriceRange !== 'all') {
+          const tier = enabledBudgetTiers.find((t) => t.id === selectedPriceRange || t.label === selectedPriceRange);
+          if (tier) {
+            if (p.price < tier.minPrice || p.price > tier.maxPrice) return false;
+          }
         }
 
         // Size filter
@@ -108,14 +168,6 @@ export const ProductListingPage: React.FC = () => {
             selectedSizes.some((s) => sizeStr.toLowerCase().includes(s.toLowerCase()))
           );
           if (!hasSize) return false;
-        }
-
-        // Price range filter
-        if (selectedPriceRange !== 'all') {
-          const tier = enabledBudgetTiers.find((t) => t.id === selectedPriceRange || t.label === selectedPriceRange);
-          if (tier) {
-            if (p.price < tier.minPrice || p.price > tier.maxPrice) return false;
-          }
         }
 
         // Color filter
@@ -271,7 +323,7 @@ export const ProductListingPage: React.FC = () => {
                   </motion.span>
                 )}
 
-                {selectedBudgetTier !== 'all' && (
+                {selectedBudgetTier !== 'all' ? (
                   <motion.span
                     key="budget-chip"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -280,11 +332,31 @@ export const ProductListingPage: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#B8860B]/15 text-[#8F6808] text-xs rounded-full font-medium"
                   >
-                    <span>Budget: {selectedBudgetTier.replace('_', ' ')}</span>
-                    <button type="button" onClick={() => setSelectedBudgetTier('all')}>
+                    <span>Budget: {BUDGET_TIER_LABELS[selectedBudgetTier] || selectedBudgetTier}</span>
+                    <button type="button" onClick={handleClearPriceFilter}>
                       <X className="w-3 h-3" />
                     </button>
                   </motion.span>
+                ) : (
+                  selectedPriceRange !== 'all' && (
+                    <motion.span
+                      key="price-chip"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#B8860B]/15 text-[#8F6808] text-xs rounded-full font-medium"
+                    >
+                      <span>
+                        Budget:{' '}
+                        {enabledBudgetTiers.find((t) => t.id === selectedPriceRange || t.label === selectedPriceRange)?.label ||
+                          selectedPriceRange}
+                      </span>
+                      <button type="button" onClick={handleClearPriceFilter}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </motion.span>
+                  )
                 )}
 
                 {selectedSizes.map((size) => (
@@ -302,22 +374,6 @@ export const ProductListingPage: React.FC = () => {
                     </button>
                   </motion.span>
                 ))}
-
-                {selectedPriceRange !== 'all' && (
-                  <motion.span
-                    key="price-chip"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EAE4D9] text-[#242120] text-xs rounded-full font-medium"
-                  >
-                    <span>Price: {selectedPriceRange}</span>
-                    <button type="button" onClick={() => setSelectedPriceRange('all')}>
-                      <X className="w-3 h-3" />
-                    </button>
-                  </motion.span>
-                )}
 
                 {selectedColor !== 'all' && (
                   <motion.span
@@ -465,8 +521,8 @@ export const ProductListingPage: React.FC = () => {
                           <input
                             type="radio"
                             name="price-range"
-                            checked={selectedPriceRange === 'all'}
-                            onChange={() => setSelectedPriceRange('all')}
+                            checked={isAllPricesActive}
+                            onChange={handleClearPriceFilter}
                             className="accent-[#721B29]"
                           />
                           <span>All Prices</span>
@@ -479,8 +535,8 @@ export const ProductListingPage: React.FC = () => {
                             <input
                               type="radio"
                               name="price-range"
-                              checked={selectedPriceRange === tier.id || selectedPriceRange === tier.label}
-                              onChange={() => setSelectedPriceRange(tier.id)}
+                              checked={isPriceTierActive(tier)}
+                              onChange={() => handlePriceRangeSelect(tier)}
                               className="accent-[#721B29]"
                             />
                             <span>{tier.label}</span>
@@ -873,8 +929,8 @@ export const ProductListingPage: React.FC = () => {
                               <input
                                 type="radio"
                                 name="mobile-price-range"
-                                checked={selectedPriceRange === 'all'}
-                                onChange={() => setSelectedPriceRange('all')}
+                                checked={isAllPricesActive}
+                                onChange={handleClearPriceFilter}
                                 className="accent-[#721B29]"
                               />
                               <span>All Prices</span>
@@ -884,8 +940,8 @@ export const ProductListingPage: React.FC = () => {
                                 <input
                                   type="radio"
                                   name="mobile-price-range"
-                                  checked={selectedPriceRange === tier.id || selectedPriceRange === tier.label}
-                                  onChange={() => setSelectedPriceRange(tier.id)}
+                                  checked={isPriceTierActive(tier)}
+                                  onChange={() => handlePriceRangeSelect(tier)}
                                   className="accent-[#721B29]"
                                 />
                                 <span>{tier.label}</span>

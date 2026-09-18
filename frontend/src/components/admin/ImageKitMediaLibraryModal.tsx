@@ -13,6 +13,8 @@ import {
   ExternalLink,
   PlusCircle,
   HardDrive,
+  Play,
+  Video,
 } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
@@ -35,6 +37,7 @@ interface ImageKitMediaLibraryModalProps {
   onSelectImages: (urls: string[]) => void;
   currentProductFolder?: string;
   multiple?: boolean;
+  mediaType?: 'image' | 'video' | 'all';
 }
 
 const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
@@ -45,12 +48,15 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
   onSelectImages,
   currentProductFolder = '/products',
   multiple = true,
+  mediaType = 'all',
 }) => {
   const [files, setFiles] = useState<ImageKitFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFolder, setSelectedFolder] = useState<string>('all');
+  const [selectedFolder, setSelectedFolder] = useState<string>(
+    currentProductFolder === '/videos' ? '/videos' : 'all'
+  );
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -77,13 +83,14 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
 
       const data = await res.json();
       if (data.success && Array.isArray(data.files)) {
-        // Filter only images
-        const imageFiles = data.files.filter(
-          (f: ImageKitFile) =>
-            f.fileType === 'image' ||
-            /\.(jpg|jpeg|png|webp|avif|gif)$/i.test(f.name || f.filePath)
-        );
-        setFiles(imageFiles);
+        // Filter based on mediaType
+        const mediaFiles = data.files.filter((f: ImageKitFile) => {
+          const isVid = f.fileType === 'video' || /\.(mp4|webm|mov|ogg|m4v)$/i.test(f.name || f.filePath || f.url);
+          if (mediaType === 'video') return isVid;
+          if (mediaType === 'image') return !isVid;
+          return true;
+        });
+        setFiles(mediaFiles);
       }
     } catch (err: any) {
       console.error('[ImageKit Media Library]', err);
@@ -97,6 +104,9 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
     if (isOpen) {
       setSelectedUrls([]);
       setDeleteConfirmId(null);
+      if (currentProductFolder === '/videos') {
+        setSelectedFolder('/videos');
+      }
       fetchMediaLibrary();
     }
   }, [isOpen]);
@@ -150,6 +160,7 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
   const folders = [
     { id: 'all', label: 'All Folders' },
     { id: '/products', label: '/products' },
+    { id: '/videos', label: '/videos' },
     { id: '/hero-slides', label: '/hero-slides' },
   ];
 
@@ -338,14 +349,34 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
                     }`}
                     onClick={() => toggleSelectUrl(file.url)}
                   >
-                    {/* Image Stage */}
+                    {/* Image or Video Stage */}
                     <div className="relative aspect-[3/4] w-full bg-[#FAF8F3] overflow-hidden">
-                      <img
-                        src={optimizedThumbnail}
-                        alt={file.name}
-                        className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      {file.fileType === 'video' || /\.(mp4|webm|mov|ogg|m4v)$/i.test(file.name || file.filePath || file.url) ? (
+                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                          <video
+                            src={file.url}
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover pointer-events-none"
+                          />
+                          <div className="absolute inset-0 bg-black/25 flex items-center justify-center pointer-events-none">
+                            <div className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-xs shadow-sm">
+                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            </div>
+                          </div>
+                          <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/75 backdrop-blur-xs text-[9px] font-bold text-white rounded flex items-center gap-1 border border-white/10">
+                            <Video className="w-2.5 h-2.5 text-[#E6C280]" />
+                            <span>VIDEO</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={optimizedThumbnail}
+                          alt={file.name}
+                          className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      )}
 
                       {/* Selection Checkmark Badge */}
                       <div

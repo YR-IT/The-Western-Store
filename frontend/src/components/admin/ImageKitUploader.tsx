@@ -7,6 +7,7 @@ interface ImageKitUploaderProps {
   folder?: string;
   buttonText?: string;
   className?: string;
+  accept?: string;
 }
 
 const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
@@ -16,12 +17,15 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   folder = '/products',
   buttonText = 'Upload Image to ImageKit CDN',
   className = '',
+  accept,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resolvedAccept = accept || (folder.includes('video') ? 'video/*' : 'image/*');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
@@ -34,8 +38,9 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
     setProgress(15);
 
     try {
-      // Step 0: Compress & downscale ultra-large photoshoot/DSLR photos client-side
-      const file = await compressAndResizeImage(rawFile, 2048, 2048, 0.88);
+      // If it is an image, compress client-side; if it is a video, upload directly
+      const isVideo = rawFile.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v)$/i.test(rawFile.name);
+      const file = isVideo ? rawFile : await compressAndResizeImage(rawFile, 2048, 2048, 0.88);
       setProgress(30);
 
       const adminSecretToUse =
@@ -117,7 +122,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={resolvedAccept}
         onChange={handleFileChange}
         className="hidden"
         id={`imagekit-file-input-${folder.replace(/[^a-zA-Z0-9]/g, '')}`}

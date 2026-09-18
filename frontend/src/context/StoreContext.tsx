@@ -100,6 +100,8 @@ interface StoreContextType {
   updateInstagramPost: (id: string, updates: Partial<InstagramPost>) => void;
   addInstagramPost: (post: Omit<InstagramPost, 'id'>) => void;
   deleteInstagramPost: (id: string) => void;
+  reorderInstagramPosts: (id: string, direction: 'up' | 'down') => void;
+  resetInstagramPosts: () => void;
   instagramHandle: string;
   setInstagramHandle: (handle: string) => void;
 
@@ -517,6 +519,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteInstagramPost = (id: string) => {
     setInstagramPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const reorderInstagramPosts = (id: string, direction: 'up' | 'down') => {
+    setInstagramPosts((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx === -1) return prev;
+      if (direction === 'up' && idx === 0) return prev;
+      if (direction === 'down' && idx === prev.length - 1) return prev;
+
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      const copy = [...prev];
+      const temp = copy[idx];
+      copy[idx] = copy[targetIdx];
+      copy[targetIdx] = temp;
+      return copy;
+    });
+  };
+
+  const resetInstagramPosts = () => {
+    setInstagramPosts(INITIAL_INSTAGRAM_POSTS);
+    localStorage.removeItem('tws_instagram_posts');
   };
 
   // Orders (Starts completely empty for live production use)
@@ -1248,6 +1271,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateInstagramPost,
         addInstagramPost,
         deleteInstagramPost,
+        reorderInstagramPosts,
+        resetInstagramPosts,
         instagramHandle,
         setInstagramHandle,
         homeSections,
