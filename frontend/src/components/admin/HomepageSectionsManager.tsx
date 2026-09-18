@@ -97,6 +97,7 @@ export const HomepageSectionsManager: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Hero Slide Preview Mode per slide: 'desktop' | 'mobile'
+  const [heroFilterDevice, setHeroFilterDevice] = useState<'all' | 'desktop' | 'mobile'>('all');
   const [heroPreviewMode, setHeroPreviewMode] = useState<Record<string, 'desktop' | 'mobile'>>({});
   const [heroTargetMedia, setHeroTargetMedia] = useState<{ slideId: string | null; field: 'desktopImage' | 'mobileImage' } | null>(null);
   const [isHeroMediaModalOpen, setIsHeroMediaModalOpen] = useState(false);
@@ -104,6 +105,7 @@ export const HomepageSectionsManager: React.FC = () => {
   // New Slide State
   const [isAddSlideModalOpen, setIsAddSlideModalOpen] = useState(false);
   const [newSlide, setNewSlide] = useState<{
+    targetDevice: 'all' | 'desktop' | 'mobile';
     desktopImage: string;
     mobileImage: string;
     image: string;
@@ -114,6 +116,7 @@ export const HomepageSectionsManager: React.FC = () => {
     ctaText: string;
     showTextOverlay: boolean;
   }>({
+    targetDevice: 'all',
     desktopImage: '',
     mobileImage: '',
     image: '',
@@ -224,6 +227,7 @@ export const HomepageSectionsManager: React.FC = () => {
       image: finalImg,
       desktopImage: newSlide.desktopImage || finalImg,
       mobileImage: newSlide.mobileImage || finalImg,
+      targetDevice: newSlide.targetDevice || 'all',
       title: newSlide.title || '',
       tagline: newSlide.tagline || '',
       subtitle: newSlide.subtitle || '',
@@ -232,6 +236,7 @@ export const HomepageSectionsManager: React.FC = () => {
       showTextOverlay: !!newSlide.showTextOverlay,
     });
     setNewSlide({
+      targetDevice: 'all',
       desktopImage: '',
       mobileImage: '',
       image: '',
@@ -672,7 +677,7 @@ export const HomepageSectionsManager: React.FC = () => {
                 </span>
               </h2>
               <p className="text-xs text-[#736B63]">
-                Upload widescreen banners for PC/Laptops and vertical/normal images for Mobile. Text overlays are optional.
+                Show different slides or banners on PC/Laptops vs Mobile phones. Upload images and customize destinations.
               </p>
             </div>
             <button
@@ -685,11 +690,56 @@ export const HomepageSectionsManager: React.FC = () => {
             </button>
           </div>
 
+          {/* Filter Bar by Target Device */}
+          <div className="flex items-center gap-2 bg-[#FAF8F3] p-1.5 rounded-xl border border-[#EAE4D9]">
+            <button
+              type="button"
+              onClick={() => setHeroFilterDevice('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                heroFilterDevice === 'all'
+                  ? 'bg-[#721B29] text-white shadow-xs'
+                  : 'text-[#736B63] hover:text-[#242120]'
+              }`}
+            >
+              🌐 All Slides ({heroSlides.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHeroFilterDevice('desktop')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                heroFilterDevice === 'desktop'
+                  ? 'bg-[#721B29] text-white shadow-xs'
+                  : 'text-[#736B63] hover:text-[#242120]'
+              }`}
+            >
+              🖥️ PC / Laptop Slides ({heroSlides.filter(s => (s.targetDevice || 'all') === 'desktop' || (s.targetDevice || 'all') === 'all').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHeroFilterDevice('mobile')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                heroFilterDevice === 'mobile'
+                  ? 'bg-[#721B29] text-white shadow-xs'
+                  : 'text-[#736B63] hover:text-[#242120]'
+              }`}
+            >
+              📱 Mobile Phone Slides ({heroSlides.filter(s => (s.targetDevice || 'all') === 'mobile' || (s.targetDevice || 'all') === 'all').length})
+            </button>
+          </div>
+
           {/* Slide Cards Grid matching Hero Carousel */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {heroSlides.map((slide, idx) => {
+            {heroSlides
+              .filter((slide) => {
+                const target = slide.targetDevice || 'all';
+                if (heroFilterDevice === 'desktop') return target === 'desktop' || target === 'all';
+                if (heroFilterDevice === 'mobile') return target === 'mobile' || target === 'all';
+                return true;
+              })
+              .map((slide, idx) => {
               const isEditing = editingSlideId === slide.id;
-              const currentMode = heroPreviewMode[slide.id] || 'desktop';
+              const targetDevice = slide.targetDevice || 'all';
+              const currentMode = targetDevice === 'mobile' ? 'mobile' : (targetDevice === 'desktop' ? 'desktop' : (heroPreviewMode[slide.id] || 'desktop'));
               const activePreviewImg = currentMode === 'mobile' 
                 ? (slide.mobileImage || slide.desktopImage || slide.image)
                 : (slide.desktopImage || slide.image);
@@ -701,35 +751,56 @@ export const HomepageSectionsManager: React.FC = () => {
                 >
                   {/* Preview Mode Switcher Header */}
                   <div className="px-4 py-2 bg-[#FAF8F3] border-b border-[#EAE4D9] flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#242120] flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#721B29]" />
-                      <span>Slide #{idx + 1}</span>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#242120] flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#721B29]" />
+                        <span>Slide #{idx + 1}</span>
+                      </span>
 
-                    <div className="flex items-center bg-white rounded-lg border border-[#D9CEBF] p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'desktop' }))}
-                        className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                          currentMode === 'desktop'
-                            ? 'bg-[#721B29] text-white shadow-2xs'
-                            : 'text-[#736B63] hover:text-[#242120]'
-                        }`}
-                      >
-                        <span>🖥️ PC / Laptop View</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'mobile' }))}
-                        className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                          currentMode === 'mobile'
-                            ? 'bg-[#721B29] text-white shadow-2xs'
-                            : 'text-[#736B63] hover:text-[#242120]'
-                        }`}
-                      >
-                        <span>📱 Mobile View</span>
-                      </button>
+                      {/* Device Target Badge */}
+                      {targetDevice === 'desktop' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                          🖥️ PC Only
+                        </span>
+                      )}
+                      {targetDevice === 'mobile' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          📱 Mobile Only
+                        </span>
+                      )}
+                      {targetDevice === 'all' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                          🌐 Both Views
+                        </span>
+                      )}
                     </div>
+
+                    {targetDevice === 'all' && (
+                      <div className="flex items-center bg-white rounded-lg border border-[#D9CEBF] p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'desktop' }))}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                            currentMode === 'desktop'
+                              ? 'bg-[#721B29] text-white shadow-2xs'
+                              : 'text-[#736B63] hover:text-[#242120]'
+                          }`}
+                        >
+                          <span>🖥️ PC View</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHeroPreviewMode((p) => ({ ...p, [slide.id]: 'mobile' }))}
+                          className={`px-2.5 py-1 rounded text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                            currentMode === 'mobile'
+                              ? 'bg-[#721B29] text-white shadow-2xs'
+                              : 'text-[#736B63] hover:text-[#242120]'
+                          }`}
+                        >
+                          <span>📱 Mobile View</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Live Hero Banner Preview Card */}
@@ -811,77 +882,123 @@ export const HomepageSectionsManager: React.FC = () => {
 
                     {isEditing && (
                       <div className="space-y-4 pt-2 text-xs">
-                        {/* 1. Desktop Banner Upload */}
+                        {/* Target Device Selector */}
                         <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
                           <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                            🖥️ PC / Laptop Banner Image (Widescreen) *
+                            🎯 Target Device Visibility
                           </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="url"
-                              placeholder="https://... (Desktop Banner URL)"
-                              value={slide.desktopImage || slide.image}
-                              onChange={(e) => updateHeroSlide(slide.id, { desktopImage: e.target.value, image: e.target.value })}
-                              className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
-                            />
+                          <div className="grid grid-cols-3 gap-1.5">
                             <button
                               type="button"
-                              onClick={() => {
-                                setHeroTargetMedia({ slideId: slide.id, field: 'desktopImage' });
-                                setIsHeroMediaModalOpen(true);
-                              }}
-                              className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
-                              title="Pick from ImageKit CDN"
+                              onClick={() => updateHeroSlide(slide.id, { targetDevice: 'all' })}
+                              className={`py-1.5 px-2 rounded text-[11px] font-bold text-center border transition-all cursor-pointer ${
+                                (slide.targetDevice || 'all') === 'all'
+                                  ? 'bg-[#721B29] text-white border-[#721B29]'
+                                  : 'bg-[#FAF8F3] text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                              }`}
                             >
-                              <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                              <span>CDN</span>
+                              🌐 All Devices
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateHeroSlide(slide.id, { targetDevice: 'desktop' })}
+                              className={`py-1.5 px-2 rounded text-[11px] font-bold text-center border transition-all cursor-pointer ${
+                                slide.targetDevice === 'desktop'
+                                  ? 'bg-[#721B29] text-white border-[#721B29]'
+                                  : 'bg-[#FAF8F3] text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                              }`}
+                            >
+                              🖥️ PC / Laptop Only
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateHeroSlide(slide.id, { targetDevice: 'mobile' })}
+                              className={`py-1.5 px-2 rounded text-[11px] font-bold text-center border transition-all cursor-pointer ${
+                                slide.targetDevice === 'mobile'
+                                  ? 'bg-[#721B29] text-white border-[#721B29]'
+                                  : 'bg-[#FAF8F3] text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                              }`}
+                            >
+                              📱 Mobile Only
                             </button>
                           </div>
-                          <ImageKitUploader
-                            folder="/hero-slides"
-                            buttonText="Upload Desktop Banner to ImageKit"
-                            onUploadSuccess={(url) => {
-                              updateHeroSlide(slide.id, { desktopImage: url, image: url });
-                              showToast('Desktop Banner uploaded!');
-                            }}
-                          />
                         </div>
 
-                        {/* 2. Mobile Banner Upload */}
-                        <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
-                          <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                            📱 Mobile Phone Image (Vertical / Normal) *
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="url"
-                              placeholder="https://... (Mobile Image URL)"
-                              value={slide.mobileImage || ''}
-                              onChange={(e) => updateHeroSlide(slide.id, { mobileImage: e.target.value })}
-                              className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setHeroTargetMedia({ slideId: slide.id, field: 'mobileImage' });
-                                setIsHeroMediaModalOpen(true);
+                        {/* 1. Desktop Banner Upload (Shown if 'all' or 'desktop') */}
+                        {(slide.targetDevice === 'all' || slide.targetDevice === 'desktop' || !slide.targetDevice) && (
+                          <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
+                            <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
+                              🖥️ PC / Laptop Banner Image (Widescreen 1920x600) *
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="url"
+                                placeholder="https://... (Desktop Banner URL)"
+                                value={slide.desktopImage || slide.image}
+                                onChange={(e) => updateHeroSlide(slide.id, { desktopImage: e.target.value, image: e.target.value })}
+                                className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHeroTargetMedia({ slideId: slide.id, field: 'desktopImage' });
+                                  setIsHeroMediaModalOpen(true);
+                                }}
+                                className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                                title="Pick from ImageKit CDN"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                                <span>CDN</span>
+                              </button>
+                            </div>
+                            <ImageKitUploader
+                              folder="/hero-slides"
+                              buttonText="Upload Desktop Banner to ImageKit"
+                              onUploadSuccess={(url) => {
+                                updateHeroSlide(slide.id, { desktopImage: url, image: url });
+                                showToast('Desktop Banner uploaded!');
                               }}
-                              className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
-                              title="Pick from ImageKit CDN"
-                            >
-                              <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                              <span>CDN</span>
-                            </button>
+                            />
                           </div>
-                          <ImageKitUploader
-                            folder="/hero-slides"
-                            buttonText="Upload Mobile Image to ImageKit"
-                            onUploadSuccess={(url) => {
-                              updateHeroSlide(slide.id, { mobileImage: url });
-                              showToast('Mobile Image uploaded!');
-                            }}
-                          />
-                        </div>
+                        )}
+
+                        {/* 2. Mobile Banner Upload (Shown if 'all' or 'mobile') */}
+                        {(slide.targetDevice === 'all' || slide.targetDevice === 'mobile' || !slide.targetDevice) && (
+                          <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
+                            <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
+                              📱 Mobile Phone Image (Vertical / Normal) *
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="url"
+                                placeholder="https://... (Mobile Image URL)"
+                                value={slide.mobileImage || ''}
+                                onChange={(e) => updateHeroSlide(slide.id, { mobileImage: e.target.value })}
+                                className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHeroTargetMedia({ slideId: slide.id, field: 'mobileImage' });
+                                  setIsHeroMediaModalOpen(true);
+                                }}
+                                className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                                title="Pick from ImageKit CDN"
+                              >
+                                <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                                <span>CDN</span>
+                              </button>
+                            </div>
+                            <ImageKitUploader
+                              folder="/hero-slides"
+                              buttonText="Upload Mobile Image to ImageKit"
+                              onUploadSuccess={(url) => {
+                                updateHeroSlide(slide.id, { mobileImage: url });
+                                showToast('Mobile Image uploaded!');
+                              }}
+                            />
+                          </div>
+                        )}
 
                         {/* 3. Destination Category Link */}
                         <div>
@@ -1601,75 +1718,121 @@ export const HomepageSectionsManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreateSlide} className="space-y-4 text-xs">
-              {/* 1. Desktop Banner */}
+              {/* Target Device Selector */}
               <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
                 <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
-                  🖥️ PC / Laptop Banner Image (Widescreen) *
+                  🎯 Target Device Display *
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://... (Desktop Banner URL)"
-                    value={newSlide.desktopImage}
-                    onChange={(e) => setNewSlide({ ...newSlide, desktopImage: e.target.value, image: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
-                  />
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setHeroTargetMedia({ slideId: null, field: 'desktopImage' });
-                      setIsHeroMediaModalOpen(true);
-                    }}
-                    className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                    onClick={() => setNewSlide({ ...newSlide, targetDevice: 'all' })}
+                    className={`py-2 px-2 rounded-lg text-xs font-bold text-center border transition-all cursor-pointer ${
+                      newSlide.targetDevice === 'all'
+                        ? 'bg-[#721B29] text-white border-[#721B29] shadow-xs'
+                        : 'bg-white text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                    }`}
                   >
-                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                    <span>CDN</span>
+                    🌐 All Devices
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSlide({ ...newSlide, targetDevice: 'desktop' })}
+                    className={`py-2 px-2 rounded-lg text-xs font-bold text-center border transition-all cursor-pointer ${
+                      newSlide.targetDevice === 'desktop'
+                        ? 'bg-[#721B29] text-white border-[#721B29] shadow-xs'
+                        : 'bg-white text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                    }`}
+                  >
+                    🖥️ PC / Laptop Only
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSlide({ ...newSlide, targetDevice: 'mobile' })}
+                    className={`py-2 px-2 rounded-lg text-xs font-bold text-center border transition-all cursor-pointer ${
+                      newSlide.targetDevice === 'mobile'
+                        ? 'bg-[#721B29] text-white border-[#721B29] shadow-xs'
+                        : 'bg-white text-[#4A453E] border-[#D9CEBF] hover:border-[#721B29]'
+                    }`}
+                  >
+                    📱 Mobile Only
                   </button>
                 </div>
-                <ImageKitUploader
-                  folder="/hero-slides"
-                  buttonText="Upload Desktop Banner to ImageKit"
-                  onUploadSuccess={(url) => {
-                    setNewSlide((prev) => ({ ...prev, desktopImage: url, image: url }));
-                    showToast('Desktop Banner uploaded!');
-                  }}
-                />
               </div>
 
-              {/* 2. Mobile Banner */}
-              <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
-                <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
-                  📱 Mobile Phone Image (Vertical / Normal)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://... (Mobile Banner URL - optional fallback to Desktop)"
-                    value={newSlide.mobileImage}
-                    onChange={(e) => setNewSlide({ ...newSlide, mobileImage: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeroTargetMedia({ slideId: null, field: 'mobileImage' });
-                      setIsHeroMediaModalOpen(true);
+              {/* 1. Desktop Banner (Shown if 'all' or 'desktop') */}
+              {(newSlide.targetDevice === 'all' || newSlide.targetDevice === 'desktop') && (
+                <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
+                  <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
+                    🖥️ PC / Laptop Banner Image (Widescreen 1920x600) *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://... (Desktop Banner URL)"
+                      value={newSlide.desktopImage}
+                      onChange={(e) => setNewSlide({ ...newSlide, desktopImage: e.target.value, image: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeroTargetMedia({ slideId: null, field: 'desktopImage' });
+                        setIsHeroMediaModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                      <span>CDN</span>
+                    </button>
+                  </div>
+                  <ImageKitUploader
+                    folder="/hero-slides"
+                    buttonText="Upload Desktop Banner to ImageKit"
+                    onUploadSuccess={(url) => {
+                      setNewSlide((prev) => ({ ...prev, desktopImage: url, image: url }));
+                      showToast('Desktop Banner uploaded!');
                     }}
-                    className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
-                  >
-                    <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                    <span>CDN</span>
-                  </button>
+                  />
                 </div>
-                <ImageKitUploader
-                  folder="/hero-slides"
-                  buttonText="Upload Mobile Banner to ImageKit"
-                  onUploadSuccess={(url) => {
-                    setNewSlide((prev) => ({ ...prev, mobileImage: url }));
-                    showToast('Mobile Banner uploaded!');
-                  }}
-                />
-              </div>
+              )}
+
+              {/* 2. Mobile Banner (Shown if 'all' or 'mobile') */}
+              {(newSlide.targetDevice === 'all' || newSlide.targetDevice === 'mobile') && (
+                <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
+                  <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
+                    📱 Mobile Phone Image (Vertical / Normal) *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://... (Mobile Banner URL)"
+                      value={newSlide.mobileImage}
+                      onChange={(e) => setNewSlide({ ...newSlide, mobileImage: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeroTargetMedia({ slideId: null, field: 'mobileImage' });
+                        setIsHeroMediaModalOpen(true);
+                      }}
+                      className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <Folder className="w-3.5 h-3.5 text-[#721B29]" />
+                      <span>CDN</span>
+                    </button>
+                  </div>
+                  <ImageKitUploader
+                    folder="/hero-slides"
+                    buttonText="Upload Mobile Banner to ImageKit"
+                    onUploadSuccess={(url) => {
+                      setNewSlide((prev) => ({ ...prev, mobileImage: url }));
+                      showToast('Mobile Banner uploaded!');
+                    }}
+                  />
+                </div>
+              )}
 
               {/* 3. Category Target */}
               <div>

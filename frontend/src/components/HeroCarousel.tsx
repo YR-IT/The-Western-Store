@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -8,30 +8,75 @@ export const HeroCarousel: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Responsive device view detection (Desktop >= 768px, Mobile < 768px)
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Filter slides according to current device view
+  const activeSlides = useMemo(() => {
+    if (!heroSlides || heroSlides.length === 0) return [];
+    const filtered = heroSlides.filter((slide) => {
+      const target = slide.targetDevice || 'all';
+      if (isMobile) {
+        return target === 'mobile' || target === 'all';
+      }
+      return target === 'desktop' || target === 'all';
+    });
+    return filtered.length > 0 ? filtered : heroSlides;
+  }, [heroSlides, isMobile]);
+
+  // Ensure currentSlide is within bounds when slides change
+  useEffect(() => {
+    if (currentSlide >= activeSlides.length) {
+      setCurrentSlide(0);
+    }
+  }, [activeSlides.length, currentSlide]);
+
   const nextSlide = useCallback(() => {
-    if (heroSlides.length === 0) return;
-    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-  }, [heroSlides.length]);
+    if (activeSlides.length === 0) return;
+    setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
+  }, [activeSlides.length]);
 
   const prevSlide = useCallback(() => {
-    if (heroSlides.length === 0) return;
-    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
-  }, [heroSlides.length]);
+    if (activeSlides.length === 0) return;
+    setCurrentSlide((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+  }, [activeSlides.length]);
 
   const goToSlide = (idx: number) => setCurrentSlide(idx);
 
   useEffect(() => {
-    if (isPaused || heroSlides.length <= 1) return;
+    if (isPaused || activeSlides.length <= 1) return;
     const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
-  }, [nextSlide, isPaused, heroSlides.length]);
+  }, [nextSlide, isPaused, activeSlides.length]);
 
-  if (!heroSlides || heroSlides.length === 0) return null;
+  if (!activeSlides || activeSlides.length === 0) return null;
 
-  const active = heroSlides[currentSlide];
+  const active = activeSlides[currentSlide] || activeSlides[0];
 
   const handleSlideClick = () => {
-    if (active.category) {
+    if (!active) return;
+    if (active.linkUrl) {
+      if (active.linkUrl.startsWith('http')) {
+        window.open(active.linkUrl, '_blank');
+      } else {
+        navigateToPlp();
+      }
+      return;
+    }
+    if (active.category && active.category !== 'All') {
       navigateToCategory(active.category);
     } else {
       navigateToPlp();
@@ -48,10 +93,10 @@ export const HeroCarousel: React.FC = () => {
       onClick={handleSlideClick}
     >
       {/* Top Progress Bar */}
-      {heroSlides.length > 1 && (
+      {activeSlides.length > 1 && (
         <div className="absolute top-0 left-0 right-0 z-30 h-[2px] bg-white/10 pointer-events-none">
           <motion.div
-            key={currentSlide}
+            key={`${currentSlide}-${active?.id}`}
             initial={{ width: '0%' }}
             animate={{ width: isPaused ? undefined : '100%' }}
             transition={{ duration: 6, ease: 'linear' }}
@@ -60,8 +105,8 @@ export const HeroCarousel: React.FC = () => {
         </div>
       )}
 
-      {/* Responsive Slide Banners (PC Desktop vs Mobile) */}
-      {heroSlides.map((slide, index) => {
+      {/* Responsive Slide Banners */}
+      {activeSlides.map((slide, index) => {
         const isCurrent = index === currentSlide;
         const desktopImg = slide.desktopImage || slide.image;
         const mobileImg = slide.mobileImage || slide.desktopImage || slide.image;
@@ -73,20 +118,40 @@ export const HeroCarousel: React.FC = () => {
               isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
             }`}
           >
-            {/* HTML5 Picture element for seamless responsive banner delivery */}
-            <picture className="w-full h-full block">
-              {desktopImg && (
-                <source media="(min-width: 768px)" srcSet={desktopImg} />
-              )}
+            {/* If slide is specifically targeted, render direct image, otherwise responsive picture */}
+            {slide.targetDevice === 'desktop' ? (
               <img
-                src={mobileImg}
-                alt={slide.title || 'The Western Store Banner'}
+                src={desktopImg}
+                alt={slide.title || 'The Western Store Desktop Banner'}
                 className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
                   isCurrent ? 'scale-103' : 'scale-100'
                 }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
-            </picture>
+            ) : slide.targetDevice === 'mobile' ? (
+              <img
+                src={mobileImg}
+                alt={slide.title || 'The Western Store Mobile Banner'}
+                className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
+                  isCurrent ? 'scale-103' : 'scale-100'
+                }`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+            ) : (
+              <picture className="w-full h-full block">
+                {desktopImg && (
+                  <source media="(min-width: 768px)" srcSet={desktopImg} />
+                )}
+                <img
+                  src={mobileImg}
+                  alt={slide.title || 'The Western Store Banner'}
+                  className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
+                    isCurrent ? 'scale-103' : 'scale-100'
+                  }`}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                />
+              </picture>
+            )}
 
             {/* Optional Subtle Shadow Overlay only if text overlay is enabled */}
             {slide.showTextOverlay && (
@@ -174,14 +239,14 @@ export const HeroCarousel: React.FC = () => {
       )}
 
       {/* Bottom Slider Indicators & Controls */}
-      {heroSlides.length > 1 && (
+      {activeSlides.length > 1 && (
         <div
           className="absolute bottom-6 sm:bottom-8 left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-12 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Slide Line Dots */}
           <div className="flex items-center gap-2.5">
-            {heroSlides.map((_, i) => (
+            {activeSlides.map((_, i) => (
               <button
                 key={i}
                 type="button"
@@ -201,7 +266,7 @@ export const HeroCarousel: React.FC = () => {
             <div className="hidden xs:flex items-center gap-1.5 text-white/80 text-xs font-mono tracking-widest bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
               <span className="text-[#E6C280] font-bold">0{currentSlide + 1}</span>
               <span className="text-white/40">/</span>
-              <span>0{heroSlides.length}</span>
+              <span>0{activeSlides.length}</span>
             </div>
 
             <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md border border-white/15 rounded-full p-1 shadow-lg">
@@ -228,4 +293,5 @@ export const HeroCarousel: React.FC = () => {
     </section>
   );
 };
+
 

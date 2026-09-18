@@ -144,6 +144,7 @@ export interface HeroSlide {
   image: string; // fallback / default image
   desktopImage?: string; // High-res widescreen banner for PC / laptops
   mobileImage?: string; // Vertical/portrait optimized image for mobile phones
+  targetDevice?: 'all' | 'desktop' | 'mobile'; // Target specific device view or both
   title?: string;
   tagline?: string;
   subtitle?: string;
