@@ -311,16 +311,15 @@ export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
   {
     id: 'lookbook',
     type: 'lookbook',
-    title: 'Editorial Lookbook',
-    tagline: 'Shop The Look',
-    subtitle: 'Bespoke Kurukshetra boutique styling for festive gatherings & weddings.',
+    title: 'HANDBAGS',
+    tagline: 'Min. 60% Off',
+    subtitle: 'Curated luxury collection crafted for every modern silhouette.',
     enabled: true,
     order: 5,
     images: [
-      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=1400&q=85',
     ],
-    buttonText: 'Explore Lookbook Outfits',
+    buttonText: '+ Explore',
     buttonLink: 'plp',
   },
   {
