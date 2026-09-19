@@ -102,6 +102,19 @@ export const HomepageSectionsManager: React.FC = () => {
   const [heroTargetMedia, setHeroTargetMedia] = useState<{ slideId: string | null; field: 'desktopImage' | 'mobileImage' } | null>(null);
   const [isHeroMediaModalOpen, setIsHeroMediaModalOpen] = useState(false);
 
+  // Budget Photo State
+  const [budgetMediaTarget, setBudgetMediaTarget] = useState<BudgetTier | null>(null);
+  const [isBudgetMediaModalOpen, setIsBudgetMediaModalOpen] = useState(false);
+
+  const handleSelectBudgetMedia = (urls: string[]) => {
+    if (urls.length > 0 && budgetMediaTarget) {
+      updateBudgetTile(budgetMediaTarget, { image: urls[0] });
+      showToast('Updated budget card cover photo');
+    }
+    setIsBudgetMediaModalOpen(false);
+    setBudgetMediaTarget(null);
+  };
+
   // New Slide State
   const [isAddSlideModalOpen, setIsAddSlideModalOpen] = useState(false);
   const [newSlide, setNewSlide] = useState<{
@@ -1138,7 +1151,7 @@ export const HomepageSectionsManager: React.FC = () => {
             <div>
               <h2 className="font-serif text-lg font-bold text-[#242120]">Shop By Budget Cards</h2>
               <p className="text-xs text-[#736B63]">
-                Customize budget prices (Under ₹999, Under ₹1499), card cover photos, titles, and subheadings.
+                Manage price headings (e.g. Under ₹999) and upload/manage cover photos in the ImageKit <code>/budget-photos</code> folder.
               </p>
             </div>
             <button
@@ -1147,7 +1160,7 @@ export const HomepageSectionsManager: React.FC = () => {
                 resetBudgetTiles();
                 showToast('Reset budget tiles to defaults');
               }}
-              className="px-3.5 py-2 bg-white border border-[#D9CEBF] text-xs font-semibold rounded-lg flex items-center gap-1"
+              className="px-3.5 py-2 bg-white border border-[#D9CEBF] text-xs font-semibold rounded-lg flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5 text-[#736B63]" />
               <span>Reset Budget Cards</span>
@@ -1161,91 +1174,77 @@ export const HomepageSectionsManager: React.FC = () => {
                 className="bg-white rounded-xl border border-[#EAE4D9] shadow-xs overflow-hidden flex flex-col"
               >
                 {/* Live Card Preview */}
-                <div className="relative h-64 bg-[#1A1415] overflow-hidden p-4 flex flex-col justify-end text-white">
+                <div className="relative h-60 bg-[#1A1415] overflow-hidden p-4 flex flex-col justify-end text-white">
                   <img
                     src={tile.image}
                     alt={tile.priceLabel}
-                    className="absolute inset-0 w-full h-full object-cover opacity-65"
+                    className="absolute inset-0 w-full h-full object-cover opacity-75"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-                  <div className="absolute top-3 left-3 z-10">
-                    <span className="px-2 py-0.5 bg-white/90 text-[#721B29] text-[10px] font-bold uppercase rounded">
-                      {tile.badge}
-                    </span>
-                  </div>
 
                   <div className="relative z-10 space-y-1">
                     <span className="font-serif text-2xl font-bold text-[#FDFBF7] block">
                       {tile.priceLabel}
                     </span>
-                    <span className="text-[11px] uppercase tracking-wider text-[#E6C280] font-semibold block">
-                      {tile.title}
-                    </span>
-                    <p className="text-[11px] text-white/80 font-light line-clamp-2">{tile.subtitle}</p>
+                    <div className="inline-flex items-center gap-1 text-xs text-[#E6C280] font-semibold">
+                      <span>Explore Now</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
                   </div>
                 </div>
 
                 {/* Form Fields */}
-                <div className="p-4 bg-[#FAF8F3] border-t border-[#EAE4D9] space-y-2.5 text-xs">
+                <div className="p-4 bg-[#FAF8F3] border-t border-[#EAE4D9] space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
+                    <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
                       Price Heading Label
                     </label>
                     <input
                       type="text"
                       value={tile.priceLabel}
                       onChange={(e) => updateBudgetTile(tile.tier, { priceLabel: e.target.value })}
-                      className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs font-semibold focus:outline-none focus:border-[#721B29]"
+                      placeholder="e.g. Under ₹999"
+                      className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded-lg text-xs font-semibold focus:outline-none focus:border-[#721B29]"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                      Title / Style Name
+                    <label className="block font-bold text-[#4A453E] uppercase text-[10px] mb-1">
+                      Cover Photo (/budget-photos)
                     </label>
-                    <input
-                      type="text"
-                      value={tile.title}
-                      onChange={(e) => updateBudgetTile(tile.tier, { title: e.target.value })}
-                      className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs focus:outline-none focus:border-[#721B29]"
-                    />
-                  </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBudgetMediaTarget(tile.tier);
+                          setIsBudgetMediaModalOpen(true);
+                        }}
+                        className="flex-1 px-3 py-1.5 bg-white hover:bg-[#F4EFE6] border border-[#721B29] text-[#721B29] text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-[#721B29]" />
+                        <span>Media Library</span>
+                      </button>
+                    </div>
 
-                  <div>
-                    <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                      Subtitle / Styles Preview
-                    </label>
-                    <input
-                      type="text"
-                      value={tile.subtitle}
-                      onChange={(e) => updateBudgetTile(tile.tier, { subtitle: e.target.value })}
-                      className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs focus:outline-none focus:border-[#721B29]"
+                    <ImageKitUploader
+                      folder="/budget-photos"
+                      tags={['budget_photo', tile.tier]}
+                      buttonText="Upload to /budget-photos"
+                      onSuccess={(url) => {
+                        updateBudgetTile(tile.tier, { image: url });
+                        showToast(`Uploaded photo for ${tile.priceLabel}`);
+                      }}
                     />
-                  </div>
 
-                  <div>
-                    <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                      Badge Label
-                    </label>
-                    <input
-                      type="text"
-                      value={tile.badge}
-                      onChange={(e) => updateBudgetTile(tile.tier, { badge: e.target.value })}
-                      className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs focus:outline-none focus:border-[#721B29]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                      Cover Image URL
-                    </label>
-                    <input
-                      type="url"
-                      value={tile.image}
-                      onChange={(e) => updateBudgetTile(tile.tier, { image: e.target.value })}
-                      className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-xs focus:outline-none focus:border-[#721B29]"
-                    />
+                    <div className="mt-2">
+                      <input
+                        type="url"
+                        value={tile.image}
+                        onChange={(e) => updateBudgetTile(tile.tier, { image: e.target.value })}
+                        placeholder="Direct Image URL"
+                        className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-[11px] text-[#736B63] focus:outline-none focus:border-[#721B29]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2197,14 +2196,17 @@ export const HomepageSectionsManager: React.FC = () => {
         onSelectVideo={handleSelectSupabaseVideo}
       />
 
-      {/* ImageKit Media Library Modal for Video Selection */}
+      {/* ImageKit Media Library Modal for Budget Photos */}
       <ImageKitMediaLibraryModal
-        isOpen={isIgMediaLibraryOpen}
-        onClose={() => setIsIgMediaLibraryOpen(false)}
-        currentProductFolder="/videos"
-        mediaType="video"
+        isOpen={isBudgetMediaModalOpen}
+        onClose={() => {
+          setIsBudgetMediaModalOpen(false);
+          setBudgetMediaTarget(null);
+        }}
+        currentProductFolder="/budget-photos"
+        mediaType="image"
         multiple={false}
-        onSelectImages={handleSelectIgVideo}
+        onSelectImages={handleSelectBudgetMedia}
       />
     </div>
   );

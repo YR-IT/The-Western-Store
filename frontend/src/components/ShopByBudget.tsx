@@ -112,35 +112,18 @@ export const ShopByBudget: React.FC = () => {
               {/* Shading Gradients */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
-              {/* Top Badge */}
-              <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10">
-                <span className="px-2.5 sm:px-3 py-1 bg-white/90 backdrop-blur-md text-[#721B29] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-xs shadow-xs">
-                  {tile.badge}
-                </span>
-              </div>
-
-              {/* Bottom Content Box */}
-              <div className="relative z-10 p-4 sm:p-6 text-white">
-                <div className="mb-2">
-                  <span className="font-serif text-2xl sm:text-4xl font-bold text-[#FDFBF7] tracking-tight block">
+              {/* Bottom Content Box - Only Price Label and Explore Now */}
+              <div className="relative z-10 p-5 sm:p-6 text-white w-full">
+                <div className="mb-3 sm:mb-4">
+                  <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDFBF7] tracking-tight block">
                     {tile.priceLabel}
-                  </span>
-                  <span className="text-[11px] sm:text-xs uppercase tracking-widest text-[#E6C280] font-medium">
-                    {tile.title}
                   </span>
                 </div>
 
-                <p className="text-xs text-white/85 font-light line-clamp-2 mb-3 sm:mb-4 leading-relaxed">
-                  {tile.subtitle}
-                </p>
-
-                <div className="flex items-center justify-between pt-2.5 sm:pt-3 border-t border-white/20">
-                  <span className="text-[10px] sm:text-[11px] text-[#E6C280] font-medium">
-                    {tile.itemsPreview}
-                  </span>
-                  <div className="flex items-center gap-1 text-xs font-semibold text-white group-hover:text-[#E6C280] transition-colors">
+                <div className="flex items-center justify-between pt-3 border-t border-white/20 w-full">
+                  <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#E6C280] group-hover:text-white transition-colors">
                     <span>Explore Now</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </div>

@@ -123,6 +123,13 @@ Step 1: Database Setup ──► Step 2: Media CDN ──► Step 3: Backend API
    - **Public Key** (`public_...`)
    - **Private Key** (`private_...`)
 
+> [!NOTE]
+> **Zero Manual Folder Creation Needed:** You do **not** need to manually create folders in the ImageKit dashboard. The application automatically creates and routes assets into structured folders upon first upload from the Admin Panel:
+> - `/products` — Multi-angle garment photos
+> - `/budget-photos` — Shop by Budget card cover photos
+> - `/hero-slides` — Desktop & mobile homepage carousel banners
+> - `/videos` — Vertical video reels
+
 ---
 
 ### Step 3: Backend API Setup (Node / Express)
@@ -262,7 +269,8 @@ Here is the exact step-by-step resolution for common issues:
 - **Product Management:** Add, edit, delete products, manage multi-angle ImageKit images, sizes, colors, and stock counts.
 - **Category Management:** Create collections, reorder navigation items, upload banner artwork.
 - **Live Order Tracking:** View customer orders, update delivery milestones, assign courier AWB tracking numbers, and trigger instant WhatsApp dispatch messages.
-- **Homepage Customizer:** Customize hero slides, autoplay video reels, trust badges, customer reviews, and announcement banners.
+- **Homepage Customizer:** Customize hero slides (desktop & mobile), Shop By Budget cards with `/budget-photos` ImageKit uploads, autoplay video reels, trust badges, customer reviews, and announcement banners.
+- **Media Library Manager:** View, filter by folder (`/products`, `/budget-photos`, `/hero-slides`, `/videos`), select, and delete ImageKit CDN media directly from the admin UI.
 
 ---
 

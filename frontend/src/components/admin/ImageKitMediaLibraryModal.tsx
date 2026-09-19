@@ -104,12 +104,12 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
     if (isOpen) {
       setSelectedUrls([]);
       setDeleteConfirmId(null);
-      if (currentProductFolder === '/videos') {
-        setSelectedFolder('/videos');
+      if (currentProductFolder) {
+        setSelectedFolder(currentProductFolder);
       }
       fetchMediaLibrary();
     }
-  }, [isOpen]);
+  }, [isOpen, currentProductFolder]);
 
   const handleDeleteFile = async (fileId: string) => {
     setDeletingFileId(fileId);
@@ -160,15 +160,22 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
   const folders = [
     { id: 'all', label: 'All Folders' },
     { id: '/products', label: '/products' },
-    { id: '/videos', label: '/videos' },
+    { id: '/budget-photos', label: '/budget-photos' },
     { id: '/hero-slides', label: '/hero-slides' },
+    { id: '/videos', label: '/videos' },
   ];
 
   // Filtered files
   const filteredFiles = files.filter((f) => {
     // Folder filter
     if (selectedFolder !== 'all') {
-      if (!f.filePath.startsWith(selectedFolder)) return false;
+      const isBudgetFolder = selectedFolder === '/budget-photos' || selectedFolder === '/budget_photos';
+      if (isBudgetFolder) {
+        const match = f.filePath.startsWith('/budget-photos') || f.filePath.startsWith('/budget_photos') || f.filePath.toLowerCase().includes('budget');
+        if (!match) return false;
+      } else {
+        if (!f.filePath.startsWith(selectedFolder)) return false;
+      }
     }
     // Search query filter
     if (searchQuery.trim()) {
