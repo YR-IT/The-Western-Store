@@ -330,18 +330,7 @@ const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://loca
 
 // ─── STORE SETTINGS & HOMEPAGE CONFIGS (REELS, HERO, REVIEWS, ETC.) ───────────
 export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, any> | null> {
-  // 1. Try Backend Server API first (Fast, reliable, persistent local/server storage)
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/store-settings`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.settings && typeof json.settings === 'object') {
-        return json.settings;
-      }
-    }
-  } catch {}
-
-  // 2. Fallback to Supabase directly if Backend API is unreachable
+  // 1. Direct Supabase Query FIRST (sub-100ms ultra fast edge query)
   if (isSupabaseConfigured() && supabase) {
     try {
       const { data, error } = await supabase.from('store_settings').select('*');
@@ -356,6 +345,22 @@ export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, a
       }
     } catch {}
   }
+
+  // 2. Fallback to Backend API with strict 1.5s timeout (prevents Render sleeping cold-start from hanging page load)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.settings && typeof json.settings === 'object') {
+        return json.settings;
+      }
+    }
+  } catch {}
 
   return null;
 }

@@ -128,6 +128,8 @@ export const HeroCarousel: React.FC = () => {
                   isCurrent ? 'scale-103' : 'scale-100'
                 }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
+                decoding={index === 0 ? 'sync' : 'async'}
+                fetchPriority={index === 0 ? 'high' : 'low'}
               />
             ) : slide.targetDevice === 'mobile' ? (
               <img
@@ -137,6 +139,8 @@ export const HeroCarousel: React.FC = () => {
                   isCurrent ? 'scale-103' : 'scale-100'
                 }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
+                decoding={index === 0 ? 'sync' : 'async'}
+                fetchPriority={index === 0 ? 'high' : 'low'}
               />
             ) : (
               /* 'all' — use <picture> to serve widescreen on desktop, portrait on mobile */
@@ -149,6 +153,8 @@ export const HeroCarousel: React.FC = () => {
                     isCurrent ? 'scale-103' : 'scale-100'
                   }`}
                   loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding={index === 0 ? 'sync' : 'async'}
+                  fetchPriority={index === 0 ? 'high' : 'low'}
                 />
               </picture>
             )}
