@@ -86,7 +86,7 @@ export const HeroCarousel: React.FC = () => {
   return (
     <section
       id="hero-carousel"
-      className="relative w-full overflow-hidden bg-[#0D0809] select-none cursor-pointer h-[min(calc(100svh-98px),740px)] min-h-[420px] md:h-[min(calc(100svh-114px),800px)] md:min-h-[500px]"
+      className="relative w-full overflow-hidden bg-[#0D0809] select-none cursor-pointer h-[min(calc(100svh-98px),740px)] min-h-[420px] md:h-auto md:min-h-0 md:aspect-[16/9]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onClick={handleSlideClick}
@@ -123,9 +123,7 @@ export const HeroCarousel: React.FC = () => {
               <img
                 src={desktopImg}
                 alt={slide.title || 'The Western Store Desktop Banner'}
-                className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
-                  isCurrent ? 'scale-103' : 'scale-100'
-                }`}
+                className="w-full h-full object-cover object-center"
                 loading={index === 0 ? 'eager' : 'lazy'}
                 decoding={index === 0 ? 'sync' : 'async'}
                 fetchPriority={index === 0 ? 'high' : 'low'}
@@ -134,9 +132,7 @@ export const HeroCarousel: React.FC = () => {
               <img
                 src={mobileImg}
                 alt={slide.title || 'The Western Store Mobile Banner'}
-                className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
-                  isCurrent ? 'scale-103' : 'scale-100'
-                }`}
+                className="w-full h-full object-cover object-center"
                 loading={index === 0 ? 'eager' : 'lazy'}
                 decoding={index === 0 ? 'sync' : 'async'}
                 fetchPriority={index === 0 ? 'high' : 'low'}
@@ -148,9 +144,7 @@ export const HeroCarousel: React.FC = () => {
                 <img
                   src={mobileImg}
                   alt={slide.title || 'The Western Store Banner'}
-                  className={`w-full h-full object-cover object-center transition-transform duration-[8000ms] ease-out ${
-                    isCurrent ? 'scale-103' : 'scale-100'
-                  }`}
+                  className="w-full h-full object-cover object-center"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   decoding={index === 0 ? 'sync' : 'async'}
                   fetchPriority={index === 0 ? 'high' : 'low'}

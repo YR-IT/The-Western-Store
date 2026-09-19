@@ -839,7 +839,7 @@ export const HomepageSectionsManager: React.FC = () => {
                   {/* Live Hero Banner Preview Card */}
                   <div
                     className={`relative bg-[#1A1415] overflow-hidden flex flex-col justify-end text-white transition-all ${
-                      currentMode === 'mobile' ? 'h-72 aspect-[9/14] mx-auto w-48 rounded-lg my-3 border border-white/20 shadow-md' : 'h-60 w-full'
+                      currentMode === 'mobile' ? 'h-72 aspect-[9/14] mx-auto w-48 rounded-lg my-3 border border-white/20 shadow-md' : 'w-full aspect-[16/9] rounded-lg my-2 border border-white/20 shadow-md'
                     }`}
                   >
                     {activePreviewImg ? (
@@ -971,7 +971,7 @@ export const HomepageSectionsManager: React.FC = () => {
                         {(slide.targetDevice === 'all' || slide.targetDevice === 'desktop' || !slide.targetDevice) && (
                           <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
                             <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                              🖥️ PC / Laptop Banner Image (Widescreen 1920x600) *
+                              🖥️ PC / Laptop Banner Image (Widescreen 16:9 / 1920x1080) *
                             </label>
                             <div className="flex items-center gap-2">
                               <input
@@ -1793,7 +1793,7 @@ export const HomepageSectionsManager: React.FC = () => {
               {(newSlide.targetDevice === 'all' || newSlide.targetDevice === 'desktop') && (
                 <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
                   <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
-                    🖥️ PC / Laptop Banner Image (Widescreen 1920x600) *
+                    🖥️ PC / Laptop Banner Image (Widescreen 16:9 / 1920x1080) *
                   </label>
                   <div className="flex items-center gap-2">
                     <input
