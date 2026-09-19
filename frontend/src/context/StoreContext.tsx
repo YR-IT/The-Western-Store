@@ -32,6 +32,7 @@ import {
   TrustFeatureConfig,
   Testimonial,
   InstagramPost,
+  OrderItemSummary,
 } from '../types';
 import {
   INITIAL_PRODUCTS,
