@@ -1,0 +1,55 @@
+{
+  "hero_slides": [
+    {
+      "image": "https://ik.imagekit.io/kndawzmos/hero-slides/sharara__3_.jpg_paLj2vspH.jpg?updatedAt=1789771212654",
+      "desktopImage": "https://ik.imagekit.io/kndawzmos/hero-slides/sharara__3_.jpg_paLj2vspH.jpg?updatedAt=1789771212654",
+      "mobileImage": "",
+      "targetDevice": "desktop",
+      "title": "",
+      "tagline": "",
+      "subtitle": "",
+      "category": "All",
+      "ctaText": "Explore Collection",
+      "showTextOverlay": false,
+      "id": "slide_1789797290525"
+    }
+  ],
+  "instagram_posts": [
+    {
+      "id": "reel-1",
+      "reelUrl": "https://tgvqrxnyrougiidkdwkg.supabase.co/storage/v1/object/public/videos/reels/1789767981436_video-10542.mp4",
+      "caption": "Wedding guest goals in Kurukshetra 💖 Pre-stitched drape perfection. Tap for styling advice!",
+      "likes": 1420,
+      "comments": 64,
+      "productTag": "Pre-Stitched Royal Ruby Saree",
+      "title": "Royal Ruby Georgette Drape"
+    },
+    {
+      "id": "reel-2",
+      "reelUrl": "https://tgvqrxnyrougiidkdwkg.supabase.co/storage/v1/object/public/videos/reels/1789768006368_video-14300.mp4",
+      "caption": "Back in stock by popular demand! The viral terracotta cord set ✨ #TheWesternStoreKKR",
+      "likes": 1890,
+      "comments": 112,
+      "productTag": "Oasis Printed Cord Set",
+      "title": "Terracotta Festive Co-Ord"
+    },
+    {
+      "id": "reel-3",
+      "reelUrl": "https://tgvqrxnyrougiidkdwkg.supabase.co/storage/v1/object/public/videos/reels/1789768025636_video-32261.mp4",
+      "caption": "Farshi salwar love 🤍 Step out in regal elegance every single day. Pure boutique craft.",
+      "likes": 980,
+      "comments": 48,
+      "productTag": "Vintage Ivory Farshi Salwar",
+      "title": "Vintage Ivory Farshi Salwar"
+    },
+    {
+      "id": "reel-4",
+      "reelUrl": "https://tgvqrxnyrougiidkdwkg.supabase.co/storage/v1/object/public/videos/reels/1789768041203_video-34247.mp4",
+      "caption": "Banarasi Gulmohar lehenga set showcase ✨ Handcrafted festivities luxury collection.",
+      "likes": 2450,
+      "comments": 185,
+      "productTag": "Gulmohar Brocade Lehenga",
+      "title": "Gulmohar Brocade Banarasi Lehenga"
+    }
+  ]
+}

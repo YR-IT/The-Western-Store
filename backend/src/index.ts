@@ -4,6 +4,12 @@ import cors from 'cors';
 import ImageKit from '@imagekit/nodejs';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -315,6 +321,76 @@ app.delete('/api/imagekit/files/:fileId', async (req, res) => {
     console.error('[ImageKit] Delete file failed:', err);
     res.status(500).json({ error: err.message || 'Failed to delete file from ImageKit.' });
   }
+});
+
+// ─── Store Settings API (Hero Slides, Reels, Home Sections Persistence) ──
+const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'data', 'store_settings.json');
+
+function getLocalStoreSettings(): Record<string, any> {
+  try {
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('[Settings] Error reading local store settings:', e);
+  }
+  return {};
+}
+
+function saveLocalStoreSetting(key: string, value: any) {
+  try {
+    const dir = path.dirname(SETTINGS_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const current = getLocalStoreSettings();
+    current[key] = value;
+    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(current, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[Settings] Error saving local store setting:', e);
+  }
+}
+
+app.get('/api/store-settings', async (_req, res) => {
+  try {
+    const localSettings = getLocalStoreSettings();
+    if (supabase) {
+      const { data, error } = await supabase.from('store_settings').select('*');
+      if (!error && data && data.length > 0) {
+        const merged: Record<string, any> = { ...localSettings };
+        for (const row of data) {
+          if (row.key) merged[row.key] = row.value;
+        }
+        res.json({ success: true, settings: merged });
+        return;
+      }
+    }
+    res.json({ success: true, settings: localSettings });
+  } catch (err: any) {
+    console.error('[Settings] GET error:', err);
+    res.json({ success: true, settings: getLocalStoreSettings() });
+  }
+});
+
+app.post('/api/store-settings', async (req, res) => {
+  const { key, value } = req.body || {};
+  if (!key) {
+    res.status(400).json({ error: 'Missing setting key' });
+    return;
+  }
+
+  saveLocalStoreSetting(key, value);
+
+  if (supabase) {
+    try {
+      await supabase.from('store_settings').upsert({ key, value, updated_at: new Date().toISOString() });
+    } catch (e: any) {
+      console.warn('[Supabase] Background store_setting upsert exception:', e?.message || e);
+    }
+  }
+
+  res.json({ success: true, message: `Setting '${key}' saved successfully.` });
 });
 
 // ─── Start Server (Bound to 0.0.0.0 for Render) ───────────────────────────

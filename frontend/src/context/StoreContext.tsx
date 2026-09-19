@@ -717,6 +717,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setCollectionFilters(settings.collection_filters);
           localStorage.setItem('tws_collection_filters', JSON.stringify(settings.collection_filters));
         }
+      } else if (settings && Object.keys(settings).length === 0 && isSupabaseConfigured()) {
+        const currentHero = localStorage.getItem('tws_hero_slides');
+        if (currentHero) {
+          try {
+            const parsed = JSON.parse(currentHero);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              saveStoreSettingToSupabase('hero_slides', parsed).catch(() => {});
+            }
+          } catch {}
+        }
       }
       isInitialSettingsSyncDone.current = true;
     }).catch(() => {

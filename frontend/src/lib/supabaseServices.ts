@@ -82,6 +82,9 @@ export async function fetchCategoriesFromSupabase(): Promise<Category[] | null> 
 export async function syncCartToSupabase(userId: string, items: CartItem[]): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase || !userId) return false;
 
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid) return false; // Non-UUID mock/admin IDs shouldn't query Supabase auth-bound cart table
+
   try {
     await supabase.from('cart_items').delete().eq('user_id', userId);
     if (items.length === 0) return true;
@@ -106,6 +109,9 @@ export async function syncCartToSupabase(userId: string, items: CartItem[]): Pro
 // ─── WISHLIST SYNC ─────────────────────────────────────────────────────────
 export async function syncWishlistToSupabase(userId: string, productIds: string[]): Promise<boolean> {
   if (!isSupabaseConfigured() || !supabase || !userId) return false;
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid) return false; // Non-UUID mock/admin IDs shouldn't query Supabase auth-bound wishlist table
 
   try {
     await supabase.from('wishlist_items').delete().eq('user_id', userId);
@@ -320,49 +326,64 @@ export async function deleteCategoryFromSupabase(categoryId: string): Promise<bo
   }
 }
 
+const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+
 // ─── STORE SETTINGS & HOMEPAGE CONFIGS (REELS, HERO, REVIEWS, ETC.) ───────────
 export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, any> | null> {
-  if (!isSupabaseConfigured() || !supabase) return null;
-
+  // 1. Try Backend Server API first (Fast, reliable, persistent local/server storage)
   try {
-    const { data, error } = await supabase.from('store_settings').select('*');
-    if (error) {
-      console.warn('[Supabase] Failed to fetch store settings:', error.message);
-      return null;
-    }
-    if (!data || data.length === 0) return {};
-
-    const settings: Record<string, any> = {};
-    for (const row of data) {
-      if (row.key) {
-        settings[row.key] = row.value;
+    const res = await fetch(`${BACKEND_URL}/api/store-settings`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.settings && typeof json.settings === 'object') {
+        return json.settings;
       }
     }
-    return settings;
-  } catch (err) {
-    console.error('[Supabase] Store settings query exception:', err);
-    return null;
+  } catch {}
+
+  // 2. Fallback to Supabase directly if Backend API is unreachable
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { data, error } = await supabase.from('store_settings').select('*');
+      if (!error && data && data.length > 0) {
+        const settings: Record<string, any> = {};
+        for (const row of data) {
+          if (row.key) {
+            settings[row.key] = row.value;
+          }
+        }
+        return settings;
+      }
+    } catch {}
   }
+
+  return null;
 }
 
 export async function saveStoreSettingToSupabase(key: string, value: any): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false;
-
+  // 1. Persist to Backend Server API first
+  let savedToBackend = false;
   try {
-    const row = {
-      key,
-      value,
-      updated_at: new Date().toISOString(),
-    };
+    const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value }),
+    });
+    if (res.ok) savedToBackend = true;
+  } catch {}
 
-    const { error } = await supabase.from('store_settings').upsert(row);
-    if (error) {
-      console.warn(`[Supabase] Failed to save store setting '${key}':`, error.message);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error(`[Supabase] Store setting upsert exception for '${key}':`, err);
-    return false;
+  // 2. If Backend is unreachable, try Supabase directly
+  if (!savedToBackend && isSupabaseConfigured() && supabase) {
+    try {
+      const row = {
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      };
+      await supabase.from('store_settings').upsert(row);
+    } catch {}
   }
+
+  return true;
 }
+

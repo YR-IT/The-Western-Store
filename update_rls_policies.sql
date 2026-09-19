@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Explicitly grant permissions to API roles so PostgREST schema cache exposes the table
+GRANT ALL ON TABLE public.store_settings TO anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Store Settings Read" ON public.store_settings;
 DROP POLICY IF EXISTS "Public Store Settings Insert" ON public.store_settings;
@@ -61,6 +65,9 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.store_settings;
   END IF;
 END $$;
+
+-- Force PostgREST to instantly reload schema cache
+NOTIFY pgrst, 'reload schema';
 
 -- 5. Supabase Storage 'videos' Bucket & Policies
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

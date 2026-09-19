@@ -95,7 +95,7 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed left-0 right-0 z-40 transition-all duration-500 w-full ${
+      className={`fixed left-0 right-0 z-40 transition-all duration-300 w-full ${
         scrolled || view !== 'home'
           ? 'top-[34px] bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#EAE4D9] shadow-sm'
           : 'top-[34px] bg-transparent backdrop-blur-none border-b border-transparent'
@@ -111,9 +111,7 @@ export const Header: React.FC = () => {
               id="mobile-menu-btn"
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className={`lg:hidden p-2 transition-colors focus:outline-none rounded-lg ${
-                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
-              }`}
+              className="lg:hidden p-2 text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors focus:outline-none rounded-lg cursor-pointer"
               aria-label="Open navigation menu"
             >
               <Menu className="w-6 h-6" />
@@ -132,9 +130,7 @@ export const Header: React.FC = () => {
               <div className="shrink-0">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`text-lg xs:text-xl sm:text-2xl font-bold tracking-tight transition-colors duration-300 ${
-                      (scrolled || view !== 'home') ? 'text-[#721B29]' : 'text-white'
-                    }`}
+                    className="text-lg xs:text-xl sm:text-2xl font-bold tracking-tight text-[#721B29] transition-colors duration-300"
                     style={{ fontFamily: "'Great Vibes', cursive", transform: 'translateY(4px)', display: 'inline-block' }}
                   >
                     The Western Store
@@ -155,10 +151,10 @@ export const Header: React.FC = () => {
               id="nav-home"
               type="button"
               onClick={handleLogoClick}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 ${
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 cursor-pointer ${
                 view === 'home' && activeDropdown === null
-                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
-                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
             >
               Home
@@ -169,10 +165,10 @@ export const Header: React.FC = () => {
               id="nav-new-arrival"
               type="button"
               onClick={() => handleCategoryClick('New Arrivals')}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap cursor-pointer ${
                 view === 'plp' && (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival')
-                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
-                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
             >
               New Arrival
@@ -183,10 +179,10 @@ export const Header: React.FC = () => {
               id="nav-all-collections"
               type="button"
               onClick={() => handleCategoryClick('All')}
-              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap cursor-pointer ${
                 view === 'plp' && selectedCategory === 'All'
-                  ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
-                  : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
             >
               All Collections
@@ -202,10 +198,10 @@ export const Header: React.FC = () => {
                 id="nav-dropdown-budget"
                 type="button"
                 onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
-                className={`px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1 whitespace-nowrap ${
+                className={`px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1 whitespace-nowrap cursor-pointer ${
                   activeDropdown === 'budget' || selectedBudgetTier !== 'all'
-                    ? (scrolled || view !== 'home') ? 'text-[#721B29] font-bold bg-[#F3EFE6]' : 'text-white font-bold bg-white/15'
-                    : (scrolled || view !== 'home') ? 'text-[#4A453E] hover:text-[#721B29] hover:bg-[#F3EFE6]/70' : 'text-white/85 hover:text-white hover:bg-white/10'
+                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                    : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
                 }`}
               >
                 <Tag className="w-3.5 h-3.5 text-[#B8860B]" />
@@ -296,14 +292,10 @@ export const Header: React.FC = () => {
               id="header-search-btn"
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className={`hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs transition-all ${
-                scrolled
-                  ? 'border-[#E3DCCE] bg-[#FAF8F3] text-[#736B63] hover:border-[#721B29] hover:text-[#721B29]'
-                  : 'border-white/30 bg-white/10 text-white/80 hover:border-white hover:text-white'
-              }`}
+              className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#D9CEBF] bg-white/90 text-[#4A453E] hover:border-[#721B29] hover:text-[#721B29] text-xs transition-all shadow-2xs cursor-pointer"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Search outfits...</span>
+              <Search className="w-3.5 h-3.5 text-[#721B29]" />
+              <span className="font-medium">Search outfits...</span>
             </button>
 
             {/* Mobile / Tablet Search Button on Right */}
@@ -311,9 +303,7 @@ export const Header: React.FC = () => {
               id="mobile-search-btn"
               type="button"
               onClick={() => setIsSearchOpen(true)}
-              className={`lg:hidden p-1.5 xs:p-2 sm:p-2.5 transition-colors rounded-full ${
-                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
-              }`}
+              className="lg:hidden p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full cursor-pointer"
               aria-label="Search items"
             >
               <Search className="w-4 h-4 xs:w-5 xs:h-5" />
@@ -324,9 +314,7 @@ export const Header: React.FC = () => {
               id="header-wishlist-btn"
               type="button"
               onClick={() => setView('wishlist')}
-              className={`p-1.5 xs:p-2 sm:p-2.5 relative transition-colors rounded-full ${
-                (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
-              }`}
+              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full cursor-pointer"
               aria-label="Wishlist"
             >
               <Heart className={`w-4 h-4 xs:w-5 xs:h-5 ${wishlist.length > 0 ? 'text-[#721B29] fill-[#721B29]/15' : ''}`} />
@@ -343,9 +331,7 @@ export const Header: React.FC = () => {
                 id="header-account-btn"
                 type="button"
                 onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-                className={`p-1.5 xs:p-2 sm:p-2.5 transition-colors rounded-full flex items-center gap-1.5 ${
-                  (scrolled || view !== 'home') ? 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]' : 'text-white hover:text-white/80 hover:bg-white/10'
-                }`}
+                className="p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full flex items-center gap-1.5 cursor-pointer"
                 aria-label="Account and store manager"
               >
                 {currentUser?.avatar ? (
@@ -389,7 +375,7 @@ export const Header: React.FC = () => {
                             openAuthModal('customer', 'Sign in to associate your cart and order history.');
                             setAccountMenuOpen(false);
                           }}
-                          className="mt-2 w-full py-1.5 px-3 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#52131D] flex items-center justify-center gap-2 shadow-xs"
+                          className="mt-2 w-full py-1.5 px-3 bg-[#721B29] text-white text-xs font-bold rounded-lg hover:bg-[#52131D] flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                         >
                           <User className="w-3.5 h-3.5" />
                           <span>Sign In / Register</span>
@@ -406,7 +392,7 @@ export const Header: React.FC = () => {
                       setView('order-history');
                       setAccountMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group"
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4 text-[#721B29]" />
@@ -422,7 +408,7 @@ export const Header: React.FC = () => {
                       setView('track-order');
                       setAccountMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group"
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-[#721B29]" />
@@ -438,7 +424,7 @@ export const Header: React.FC = () => {
                     href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between"
+                    className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between cursor-pointer"
                   >
                     <span className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-emerald-700" />
@@ -462,7 +448,7 @@ export const Header: React.FC = () => {
                       }
                       setAccountMenuOpen(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2 cursor-pointer"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#721B29]" />
                     <span>Store Admin Panel</span>
@@ -476,7 +462,7 @@ export const Header: React.FC = () => {
                         logout();
                         setAccountMenuOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-red-700 font-semibold hover:bg-red-50 flex items-center gap-2 border-t border-[#EAE4D9] mt-1"
+                      className="w-full text-left px-4 py-2 text-xs text-red-700 font-semibold hover:bg-red-50 flex items-center gap-2 border-t border-[#EAE4D9] mt-1 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-red-600" />
                       <span>Sign Out</span>
@@ -491,9 +477,7 @@ export const Header: React.FC = () => {
               id="header-cart-btn"
               type="button"
               onClick={() => setIsCartDrawerOpen(true)}
-              className={`p-1.5 xs:p-2 sm:p-2.5 relative transition-colors rounded-full flex items-center gap-1 ${
-                (scrolled || view !== 'home') ? 'text-[#721B29] hover:text-[#52131D] hover:bg-[#721B29]/10' : 'text-white hover:text-white/80 hover:bg-white/10'
-              }`}
+              className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#721B29] hover:text-[#52131D] hover:bg-[#721B29]/10 transition-colors rounded-full flex items-center gap-1 cursor-pointer"
               aria-label={`Cart with ${cartCount} items`}
             >
               <ShoppingBag className="w-4 h-4 xs:w-5 xs:h-5" />
