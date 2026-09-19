@@ -4,7 +4,6 @@ import cors from 'cors';
 import ImageKit from '@imagekit/nodejs';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -123,108 +122,29 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
   }
 });
 
-// ─── Local Orders File Persistence Backup ──────────────────────────────────
-const ORDERS_FILE_PATH = path.join(__dirname, '..', 'data', 'orders.json');
-
-function getLocalOrders(): any[] {
-  try {
-    if (fs.existsSync(ORDERS_FILE_PATH)) {
-      const raw = fs.readFileSync(ORDERS_FILE_PATH, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.error('[Orders] Error reading local orders file:', e);
-  }
-  return [];
-}
-
-function saveLocalOrder(order: any) {
-  try {
-    const dir = path.dirname(ORDERS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    const current = getLocalOrders();
-    const filtered = current.filter((o: any) => o.id !== order.id);
-    filtered.unshift(order);
-    fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(filtered, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('[Orders] Error saving local order:', e);
-  }
-}
-
-function updateLocalOrder(id: string, updates: any) {
-  try {
-    const current = getLocalOrders();
-    const updated = current.map((o: any) => (o.id === id ? { ...o, ...updates } : o));
-    fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(updated, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('[Orders] Error updating local order:', e);
-  }
-}
-
-function deleteLocalOrder(id: string) {
-  try {
-    const current = getLocalOrders();
-    const filtered = current.filter((o: any) => o.id !== id);
-    fs.writeFileSync(ORDERS_FILE_PATH, JSON.stringify(filtered, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('[Orders] Error deleting local order:', e);
-  }
-}
-
 // ─── Secure Order Processing & Management Endpoints ─────────────────────────
+// Supabase is the single source of truth for orders — no local file cache.
 app.get('/api/orders', async (_req, res) => {
-  const localOrders = getLocalOrders();
-  let remoteOrders: any[] = [];
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data && Array.isArray(data)) {
-        remoteOrders = data;
-      } else if (error) {
-        console.warn('[Backend Supabase Orders Fetch Notice]', error.message);
-      }
-    } catch (err: any) {
-      console.error('[Backend GET /api/orders Exception]', err);
-    }
+  if (!supabase) {
+    res.status(503).json({ error: 'Supabase is not configured on the backend.' });
+    return;
   }
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  // Merge remote and local orders (keyed by id)
-  const map = new Map<string, any>();
-  remoteOrders.forEach((o) => {
-    if (o && o.id) map.set(o.id, o);
-  });
-  localOrders.forEach((o) => {
-    if (o && o.id) {
-      if (!map.has(o.id)) {
-        map.set(o.id, o);
-      } else {
-        map.set(o.id, { ...map.get(o.id), ...o });
-      }
-    }
-  });
+    if (error) throw error;
 
-  const merged = Array.from(map.values())
-    .filter(
-      (row: any) =>
-        row &&
-        (row.order_number || row.orderNumber) &&
-        row.id !== 'order-1001' &&
-        row.id !== 'order-1002'
-    )
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.created_at || b.createdAt || 0).getTime() -
-        new Date(a.created_at || a.createdAt || 0).getTime()
+    const filtered = (data || []).filter(
+      (row: any) => row && (row.order_number || row.orderNumber)
     );
-
-  res.json(merged);
+    res.json(filtered);
+  } catch (err: any) {
+    console.error('[Backend GET /api/orders Exception]', err);
+    res.status(500).json({ error: err.message || 'Failed to load orders.' });
+  }
 });
 
 app.post('/api/orders', async (req, res) => {
@@ -313,46 +233,41 @@ app.post('/api/orders', async (req, res) => {
       createdAt: nowIso,
     };
 
-    // 4. Save to local backup file immediately
-    saveLocalOrder(newOrder);
-
-    // 5. Save to Supabase (compatible with Supabase DB schema columns)
-    if (supabase) {
-      try {
-        const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
-        const supabaseRow: any = {
-          id: newOrderId,
-          order_number: orderNumber,
-          user_id: isUuid ? userId : null,
-          customer_name: formData.name || 'Customer',
-          customer_phone: formData.phone || '',
-          customer_email: formData.email || null,
-          shipping_address: {
-            address: formData.address || '',
-            pincode: formData.pincode || '',
-            city: formData.city || '',
-            state: formData.state || '',
-            notes: formData.notes || '',
-          },
-          total_amount: calculatedSubtotal,
-          status: 'Pending WhatsApp',
-          payment_method: 'whatsapp_cod',
-          items: validatedItems,
-        };
-        const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
-        if (insertErr) {
-          await supabase.from('orders').update(supabaseRow).eq('id', newOrderId);
-        }
-      } catch (orderErr: any) {
-        console.warn('[Supabase Order Insert Notice]', orderErr?.message || orderErr);
-      }
+    // 4. Save to Supabase (single source of truth — compatible with Supabase DB schema columns)
+    if (!supabase) {
+      res.status(503).json({ error: 'Supabase is not configured on the backend.' });
+      return;
+    }
+    const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
+    const supabaseRow: any = {
+      id: newOrderId,
+      order_number: orderNumber,
+      user_id: isUuid ? userId : null,
+      customer_name: formData.name || 'Customer',
+      customer_phone: formData.phone || '',
+      customer_email: formData.email || null,
+      shipping_address: {
+        address: formData.address || '',
+        pincode: formData.pincode || '',
+        city: formData.city || '',
+        state: formData.state || '',
+        notes: formData.notes || '',
+      },
+      total_amount: calculatedSubtotal,
+      status: 'Pending WhatsApp',
+      payment_method: 'whatsapp_cod',
+      items: validatedItems,
+    };
+    const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
+    if (insertErr) {
+      const { error: updateErr } = await supabase.from('orders').update(supabaseRow).eq('id', newOrderId);
+      if (updateErr) throw updateErr;
     }
 
     res.json({ success: true, orderId: newOrderId, orderNumber, total: calculatedSubtotal });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[Order Processing Error]', err);
-    const fallbackSuffix = Math.floor(1000 + Math.random() * 9000);
-    res.json({ success: true, orderNumber: clientOrderNumber || `TWS-2026-${fallbackSuffix}`, total: 0 });
+    res.status(500).json({ success: false, error: err.message || 'Failed to place order.' });
   }
 });
 
@@ -369,36 +284,41 @@ app.put('/api/orders/:id', async (req, res) => {
     ...(updates.trackingNumber ? { tracking_number: updates.trackingNumber } : {}),
     ...(updates.trackingLink ? { tracking_link: updates.trackingLink } : {}),
   };
-  updateLocalOrder(id, normalizedUpdates);
-
-  if (supabase) {
-    try {
-      const dbUpdates: any = {};
-      if (updates.status) dbUpdates.status = updates.status;
-      if (updates.courier_name || updates.courierName) dbUpdates.courier_name = updates.courier_name || updates.courierName;
-      if (updates.tracking_number || updates.trackingNumber) dbUpdates.tracking_number = updates.tracking_number || updates.trackingNumber;
-      if (Object.keys(dbUpdates).length > 0) {
-        await supabase.from('orders').update(dbUpdates).eq('id', id);
-      }
-    } catch (err: any) {
-      console.warn('[Supabase] Update order error:', err?.message);
-    }
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
+    return;
   }
-  res.json({ success: true });
+  try {
+    const dbUpdates: any = {};
+    if (updates.status) dbUpdates.status = updates.status;
+    if (updates.courier_name || updates.courierName) dbUpdates.courier_name = updates.courier_name || updates.courierName;
+    if (updates.tracking_number || updates.trackingNumber) dbUpdates.tracking_number = updates.tracking_number || updates.trackingNumber;
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
+      if (error) throw error;
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Supabase] Update order error:', err?.message);
+    res.status(500).json({ success: false, error: err.message || 'Failed to update order.' });
+  }
 });
 
 app.delete('/api/orders/:id', async (req, res) => {
   const { id } = req.params;
-  deleteLocalOrder(id);
 
-  if (supabase) {
-    try {
-      await supabase.from('orders').delete().eq('id', id);
-    } catch (err: any) {
-      console.warn('[Supabase] Delete order error:', err?.message);
-    }
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
+    return;
   }
-  res.json({ success: true });
+  try {
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('[Supabase] Delete order error:', err?.message);
+    res.status(500).json({ success: false, error: err.message || 'Failed to delete order.' });
+  }
 });
 
 app.get('/api/imagekit/auth', (req, res) => {
@@ -525,53 +445,28 @@ app.delete('/api/imagekit/files/:fileId', async (req, res) => {
   }
 });
 
+
+
 // ─── Store Settings API (Hero Slides, Reels, Home Sections Persistence) ──
-const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'data', 'store_settings.json');
-
-function getLocalStoreSettings(): Record<string, any> {
-  try {
-    if (fs.existsSync(SETTINGS_FILE_PATH)) {
-      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf-8');
-      return JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error('[Settings] Error reading local store settings:', e);
-  }
-  return {};
-}
-
-function saveLocalStoreSetting(key: string, value: any) {
-  try {
-    const dir = path.dirname(SETTINGS_FILE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    const current = getLocalStoreSettings();
-    current[key] = value;
-    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(current, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('[Settings] Error saving local store setting:', e);
-  }
-}
-
+// Supabase is the single source of truth. No local file cache, no committed
+// defaults — every read/write goes straight to the `store_settings` table so
+// nothing here can survive a redeploy and overwrite what was last saved.
 app.get('/api/store-settings', async (_req, res) => {
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
+    return;
+  }
   try {
-    const localSettings = getLocalStoreSettings();
-    if (supabase) {
-      const { data, error } = await supabase.from('store_settings').select('*');
-      if (!error && data && data.length > 0) {
-        const merged: Record<string, any> = { ...localSettings };
-        for (const row of data) {
-          if (row.key) merged[row.key] = row.value;
-        }
-        res.json({ success: true, settings: merged });
-        return;
-      }
+    const { data, error } = await supabase.from('store_settings').select('*');
+    if (error) throw error;
+    const settings: Record<string, any> = {};
+    for (const row of data || []) {
+      if (row.key) settings[row.key] = row.value;
     }
-    res.json({ success: true, settings: localSettings });
+    res.json({ success: true, settings });
   } catch (err: any) {
     console.error('[Settings] GET error:', err);
-    res.json({ success: true, settings: getLocalStoreSettings() });
+    res.status(500).json({ success: false, error: err.message || 'Failed to load store settings.' });
   }
 });
 
@@ -584,23 +479,27 @@ app.post('/api/store-settings', async (req, res) => {
     return;
   }
 
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
+    return;
+  }
+
   const { key, value } = req.body || {};
   if (!key) {
     res.status(400).json({ error: 'Missing setting key' });
     return;
   }
 
-  saveLocalStoreSetting(key, value);
-
-  if (supabase) {
-    try {
-      await supabase.from('store_settings').upsert({ key, value, updated_at: new Date().toISOString() });
-    } catch (e: any) {
-      console.warn('[Supabase] Background store_setting upsert exception:', e?.message || e);
-    }
+  try {
+    const { error } = await supabase
+      .from('store_settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    res.json({ success: true, message: `Setting '${key}' saved successfully.` });
+  } catch (e: any) {
+    console.error('[Settings] POST error:', e);
+    res.status(500).json({ success: false, error: e.message || 'Failed to save store setting.' });
   }
-
-  res.json({ success: true, message: `Setting '${key}' saved successfully.` });
 });
 
 // ─── Start Server (Bound to 0.0.0.0 for Render) ───────────────────────────

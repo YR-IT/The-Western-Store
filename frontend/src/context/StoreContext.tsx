@@ -32,6 +32,7 @@ import {
   TrustFeatureConfig,
   Testimonial,
   InstagramPost,
+  OrderItemSummary,
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -267,163 +268,75 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return INITIAL_CATEGORIES.filter((c) => c && !deletedIds.has(c.id));
   });
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
-    const saved = localStorage.getItem('tws_hero_slides');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_HERO_SLIDES;
-  });
+  // NOTE: These states start with in-code placeholder defaults purely so the
+  // page has something to paint on the very first render. They are never
+  // read from or written to localStorage. The real, permanent value always
+  // comes from Supabase (fetched below) and Supabase alone — so a refresh,
+  // a redeploy, or a brand-new browser all converge on the same saved state.
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(INITIAL_HERO_SLIDES);
+  const [announcementText, setAnnouncementText] = useState<string>(STORE_INFO.announcement);
+  const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(INITIAL_BUDGET_TILES);
+  const [trustFeatures, setTrustFeatures] = useState<TrustFeatureConfig[]>(INITIAL_TRUST_FEATURES);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(INITIAL_INSTAGRAM_POSTS);
+  const [instagramHandle, setInstagramHandle] = useState<string>(STORE_INFO.instagram);
+  const [homeSections, setHomeSections] = useState<HomeSectionConfig[]>(INITIAL_HOME_SECTIONS);
+  const [collectionFilters, setCollectionFilters] = useState<CollectionFilterConfig>(INITIAL_COLLECTION_FILTERS);
 
-  const [announcementText, setAnnouncementText] = useState<string>(() => {
-    return localStorage.getItem('tws_announcement') || STORE_INFO.announcement;
-  });
-
-  const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(() => {
-    const saved = localStorage.getItem('tws_budget_tiles');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_BUDGET_TILES;
-  });
-
-  const [trustFeatures, setTrustFeatures] = useState<TrustFeatureConfig[]>(() => {
-    const saved = localStorage.getItem('tws_trust_features');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_TRUST_FEATURES;
-  });
-
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
-    const saved = localStorage.getItem('tws_customer_reviews');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_TESTIMONIALS;
-  });
-
-  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
-    const saved = localStorage.getItem('tws_instagram_posts');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return INITIAL_INSTAGRAM_POSTS;
-  });
-
-  const [instagramHandle, setInstagramHandle] = useState<string>(() => {
-    return localStorage.getItem('tws_instagram_handle') || STORE_INFO.instagram;
-  });
-
-  // Home Sections State
-  const [homeSections, setHomeSections] = useState<HomeSectionConfig[]>(() => {
-    const saved = localStorage.getItem('tws_home_sections');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return INITIAL_HOME_SECTIONS;
-      }
-    }
-    return INITIAL_HOME_SECTIONS;
-  });
-
-  // Collection Filters State
-  const [collectionFilters, setCollectionFilters] = useState<CollectionFilterConfig>(() => {
-    const saved = localStorage.getItem('tws_collection_filters');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          fabrics: parsed.fabrics || INITIAL_COLLECTION_FILTERS.fabrics,
-          occasions: parsed.occasions || INITIAL_COLLECTION_FILTERS.occasions,
-          sizes: parsed.sizes || INITIAL_COLLECTION_FILTERS.sizes,
-          colors: parsed.colors || INITIAL_COLLECTION_FILTERS.colors,
-          budgetTiers: parsed.budgetTiers || INITIAL_COLLECTION_FILTERS.budgetTiers,
-          sortOptions: parsed.sortOptions || INITIAL_COLLECTION_FILTERS.sortOptions,
-        };
-      } catch {
-        return INITIAL_COLLECTION_FILTERS;
-      }
-    }
-    return INITIAL_COLLECTION_FILTERS;
-  });
-
+  // Only true once the first Supabase settings fetch has resolved. Guards
+  // every save-effect below so we never write a placeholder default back to
+  // Supabase before we've actually loaded what's really saved there.
   const isInitialSettingsSyncDone = useRef(false);
 
   useEffect(() => {
-    localStorage.setItem('tws_hero_slides', JSON.stringify(heroSlides));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('hero_slides', heroSlides).catch(() => {});
     }
   }, [heroSlides]);
 
   useEffect(() => {
-    localStorage.setItem('tws_announcement', announcementText);
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('announcement_text', announcementText).catch(() => {});
     }
   }, [announcementText]);
 
   useEffect(() => {
-    localStorage.setItem('tws_budget_tiles', JSON.stringify(budgetTiles));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('budget_tiles', budgetTiles).catch(() => {});
     }
   }, [budgetTiles]);
 
   useEffect(() => {
-    localStorage.setItem('tws_trust_features', JSON.stringify(trustFeatures));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('trust_features', trustFeatures).catch(() => {});
     }
   }, [trustFeatures]);
 
   useEffect(() => {
-    localStorage.setItem('tws_customer_reviews', JSON.stringify(testimonials));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('testimonials', testimonials).catch(() => {});
     }
   }, [testimonials]);
 
   useEffect(() => {
-    localStorage.setItem('tws_instagram_posts', JSON.stringify(instagramPosts));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('instagram_posts', instagramPosts).catch(() => {});
     }
   }, [instagramPosts]);
 
   useEffect(() => {
-    localStorage.setItem('tws_instagram_handle', instagramHandle);
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('instagram_handle', instagramHandle).catch(() => {});
     }
   }, [instagramHandle]);
 
   useEffect(() => {
-    localStorage.setItem('tws_home_sections', JSON.stringify(homeSections));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('home_sections', homeSections).catch(() => {});
     }
   }, [homeSections]);
 
   useEffect(() => {
-    localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
     if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('collection_filters', collectionFilters).catch(() => {});
     }
@@ -469,7 +382,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetHomeSections = () => {
     setHomeSections(INITIAL_HOME_SECTIONS);
-    localStorage.removeItem('tws_home_sections');
   };
 
   const updateCollectionFilters = (updates: Partial<CollectionFilterConfig>) => {
@@ -478,7 +390,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetCollectionFilters = () => {
     setCollectionFilters(INITIAL_COLLECTION_FILTERS);
-    localStorage.removeItem('tws_collection_filters');
   };
 
   const updateHeroSlide = (id: string, updates: Partial<HeroSlide>) => {
@@ -496,7 +407,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetHeroSlides = () => {
     setHeroSlides(INITIAL_HERO_SLIDES);
-    localStorage.removeItem('tws_hero_slides');
   };
 
   const updateBudgetTile = (tier: BudgetTier, updates: Partial<BudgetTileConfig>) => {
@@ -505,7 +415,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetBudgetTiles = () => {
     setBudgetTiles(INITIAL_BUDGET_TILES);
-    localStorage.removeItem('tws_budget_tiles');
   };
 
   const updateTrustFeature = (id: string, updates: Partial<TrustFeatureConfig>) => {
@@ -514,7 +423,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetTrustFeatures = () => {
     setTrustFeatures(INITIAL_TRUST_FEATURES);
-    localStorage.removeItem('tws_trust_features');
   };
 
   const updateTestimonial = (id: string, updates: Partial<Testimonial>) => {
@@ -536,7 +444,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetTestimonials = () => {
     setTestimonials(INITIAL_TESTIMONIALS);
-    localStorage.removeItem('tws_customer_reviews');
   };
 
   const updateInstagramPost = (id: string, updates: Partial<InstagramPost>) => {
@@ -570,7 +477,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const resetInstagramPosts = () => {
     setInstagramPosts(INITIAL_INSTAGRAM_POSTS);
-    localStorage.removeItem('tws_instagram_posts');
   };
 
   // Orders (Starts completely empty for live production use)
@@ -769,53 +675,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     syncOrders();
 
+    // Load every homepage setting straight from Supabase. Whatever is (or
+    // isn't) saved there is the truth — there is no local fallback and
+    // nothing here ever writes a stale value back to Supabase.
     fetchStoreSettingsFromSupabase().then((settings) => {
-      if (settings && Object.keys(settings).length > 0) {
+      if (settings) {
         if (settings.instagram_posts && Array.isArray(settings.instagram_posts) && settings.instagram_posts.length > 0) {
           setInstagramPosts(settings.instagram_posts);
-          localStorage.setItem('tws_instagram_posts', JSON.stringify(settings.instagram_posts));
         }
         if (settings.hero_slides && Array.isArray(settings.hero_slides) && settings.hero_slides.length > 0) {
           setHeroSlides(settings.hero_slides);
-          localStorage.setItem('tws_hero_slides', JSON.stringify(settings.hero_slides));
         }
         if (settings.testimonials && Array.isArray(settings.testimonials) && settings.testimonials.length > 0) {
           setTestimonials(settings.testimonials);
-          localStorage.setItem('tws_customer_reviews', JSON.stringify(settings.testimonials));
         }
         if (settings.home_sections && Array.isArray(settings.home_sections) && settings.home_sections.length > 0) {
           setHomeSections(settings.home_sections);
-          localStorage.setItem('tws_home_sections', JSON.stringify(settings.home_sections));
         }
         if (settings.budget_tiles && Array.isArray(settings.budget_tiles) && settings.budget_tiles.length > 0) {
           setBudgetTiles(settings.budget_tiles);
-          localStorage.setItem('tws_budget_tiles', JSON.stringify(settings.budget_tiles));
         }
         if (settings.trust_features && Array.isArray(settings.trust_features) && settings.trust_features.length > 0) {
           setTrustFeatures(settings.trust_features);
-          localStorage.setItem('tws_trust_features', JSON.stringify(settings.trust_features));
         }
         if (settings.announcement_text !== undefined && typeof settings.announcement_text === 'string') {
           setAnnouncementText(settings.announcement_text);
-          localStorage.setItem('tws_announcement', settings.announcement_text);
         }
         if (settings.instagram_handle && typeof settings.instagram_handle === 'string') {
           setInstagramHandle(settings.instagram_handle);
-          localStorage.setItem('tws_instagram_handle', settings.instagram_handle);
         }
         if (settings.collection_filters && typeof settings.collection_filters === 'object') {
           setCollectionFilters(settings.collection_filters);
-          localStorage.setItem('tws_collection_filters', JSON.stringify(settings.collection_filters));
-        }
-      } else if (settings && Object.keys(settings).length === 0 && isSupabaseConfigured()) {
-        const currentHero = localStorage.getItem('tws_hero_slides');
-        if (currentHero) {
-          try {
-            const parsed = JSON.parse(currentHero);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              saveStoreSettingToSupabase('hero_slides', parsed).catch(() => {});
-            }
-          } catch {}
         }
       }
       isInitialSettingsSyncDone.current = true;
@@ -864,31 +754,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             if (key === 'instagram_posts' && Array.isArray(val)) {
               setInstagramPosts(val);
-              localStorage.setItem('tws_instagram_posts', JSON.stringify(val));
             } else if (key === 'hero_slides' && Array.isArray(val)) {
               setHeroSlides(val);
-              localStorage.setItem('tws_hero_slides', JSON.stringify(val));
             } else if (key === 'testimonials' && Array.isArray(val)) {
               setTestimonials(val);
-              localStorage.setItem('tws_customer_reviews', JSON.stringify(val));
             } else if (key === 'home_sections' && Array.isArray(val)) {
               setHomeSections(val);
-              localStorage.setItem('tws_home_sections', JSON.stringify(val));
             } else if (key === 'budget_tiles' && Array.isArray(val)) {
               setBudgetTiles(val);
-              localStorage.setItem('tws_budget_tiles', JSON.stringify(val));
             } else if (key === 'trust_features' && Array.isArray(val)) {
               setTrustFeatures(val);
-              localStorage.setItem('tws_trust_features', JSON.stringify(val));
             } else if (key === 'announcement_text' && typeof val === 'string') {
               setAnnouncementText(val);
-              localStorage.setItem('tws_announcement', val);
             } else if (key === 'instagram_handle' && typeof val === 'string') {
               setInstagramHandle(val);
-              localStorage.setItem('tws_instagram_handle', val);
             } else if (key === 'collection_filters' && typeof val === 'object') {
               setCollectionFilters(val);
-              localStorage.setItem('tws_collection_filters', JSON.stringify(val));
             }
           }
         )
@@ -1057,10 +938,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('tws_categories_v4', JSON.stringify(categories));
   }, [categories]);
-
-  useEffect(() => {
-    localStorage.setItem('tws_announcement', announcementText);
-  }, [announcementText]);
 
   // Cart Helpers
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
