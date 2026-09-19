@@ -89,11 +89,7 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed left-0 right-0 z-40 transition-all duration-300 w-full ${
-        scrolled || view !== 'home'
-          ? 'top-[34px] bg-[#FDFBF7]/95 backdrop-blur-md border-b border-[#EAE4D9] shadow-sm'
-          : 'top-[34px] bg-transparent backdrop-blur-none border-b border-transparent'
-      }`}
+      className="fixed top-[34px] left-0 right-0 z-40 transition-all duration-300 w-full bg-white/95 backdrop-blur-md border-b border-[#EAE4D9] shadow-xs"
     >
       {/* Unified Single-Row Header Container */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">

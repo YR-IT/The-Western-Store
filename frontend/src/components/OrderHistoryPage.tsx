@@ -61,10 +61,10 @@ export const OrderHistoryPage: React.FC = () => {
 
     // Text search
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchNumber = o.orderNumber.toLowerCase().includes(q);
-      const matchItems = o.items.some((i) => i.title.toLowerCase().includes(q));
-      const matchTracking = o.trackingNumber?.toLowerCase().includes(q);
+      const q = searchQuery.toLowerCase().trim();
+      const matchNumber = (o.orderNumber || o.id || '').toLowerCase().includes(q);
+      const matchItems = Array.isArray(o.items) && o.items.some((i) => (i?.title || '').toLowerCase().includes(q));
+      const matchTracking = o.trackingNumber ? o.trackingNumber.toLowerCase().includes(q) : false;
       return matchNumber || matchItems || matchTracking;
     }
 

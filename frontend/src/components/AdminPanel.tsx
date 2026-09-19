@@ -353,18 +353,28 @@ export const AdminPanel: React.FC = () => {
   };
 
   const filteredOrders = orders.filter((o) => {
+    if (!o || !o.id) return false;
     if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false;
     if (orderTrackingFilter === 'has_tracking' && !o.trackingNumber && !o.trackingLink) return false;
     if (orderTrackingFilter === 'missing_tracking' && (o.trackingNumber || o.trackingLink)) return false;
     if (orderSearch) {
-      const q = orderSearch.toLowerCase();
+      const q = orderSearch.toLowerCase().trim();
+      const orderNum = (o.orderNumber || o.id || '').toLowerCase();
+      const custName = (o.customerName || '').toLowerCase();
+      const phone = (o.phone || '');
+      const city = (o.city || '').toLowerCase();
+      const courier = (o.courierName || '').toLowerCase();
+      const tracking = (o.trackingNumber || '').toLowerCase();
+      const itemsMatch = Array.isArray(o.items) && o.items.some((i) => (i?.title || '').toLowerCase().includes(q));
+
       return (
-        o.orderNumber.toLowerCase().includes(q) ||
-        o.customerName.toLowerCase().includes(q) ||
-        o.phone.includes(q) ||
-        o.city.toLowerCase().includes(q) ||
-        (o.courierName && o.courierName.toLowerCase().includes(q)) ||
-        (o.trackingNumber && o.trackingNumber.toLowerCase().includes(q))
+        orderNum.includes(q) ||
+        custName.includes(q) ||
+        phone.includes(q) ||
+        city.includes(q) ||
+        courier.includes(q) ||
+        tracking.includes(q) ||
+        itemsMatch
       );
     }
     return true;
@@ -762,14 +772,14 @@ export const AdminPanel: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-[#242120] font-sans">
-                            #{order.orderNumber}
+                            #{order.orderNumber || order.id}
                           </span>
                           <span>•</span>
-                          <span className="font-medium text-[#242120]">{order.customerName}</span>
-                          <span className="text-[#8C8276]">({order.city})</span>
+                          <span className="font-medium text-[#242120]">{order.customerName || 'Customer'}</span>
+                          <span className="text-[#8C8276]">({order.city || 'Standard'})</span>
                         </div>
                         <p className="text-[11px] text-[#736B63] mt-0.5">
-                          {order.items.map((i) => `${i.title} (${i.size})`).join(', ')}
+                          {(order.items || []).map((i) => `${i?.title || 'Garment'} (${i?.size || 'Free Size'})`).join(', ') || 'Direct order'}
                         </p>
                       </div>
 
@@ -804,7 +814,7 @@ export const AdminPanel: React.FC = () => {
                         )}
 
                         <span className="font-sans font-bold text-sm text-[#721B29]">
-                          ₹{order.total.toLocaleString('en-IN')}
+                          ₹{(order.total || 0).toLocaleString('en-IN')}
                         </span>
 
                         <span
@@ -935,19 +945,21 @@ export const AdminPanel: React.FC = () => {
                               {/* Order ID & Date */}
                               <td className="p-3.5 font-sans">
                                 <span className="font-bold text-[#721B29] block">
-                                  #{order.orderNumber}
+                                  #{order.orderNumber || order.id}
                                 </span>
                                 <span className="text-[10px] text-[#8C8276] block">
-                                  {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                                  {order.createdAt
+                                    ? new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })
+                                    : 'Recently Placed'}
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => openOrderTracking(order.orderNumber, order.phone)}
+                                  onClick={() => openOrderTracking(order.orderNumber || order.id, order.phone)}
                                   className="mt-1 text-[10px] text-[#721B29] hover:underline flex items-center gap-0.5 cursor-pointer"
                                   title="View customer tracking page"
                                 >
@@ -958,25 +970,25 @@ export const AdminPanel: React.FC = () => {
 
                               {/* Customer Details */}
                               <td className="p-3.5">
-                                <p className="font-bold">{order.customerName}</p>
+                                <p className="font-bold">{order.customerName || 'Customer'}</p>
                                 <p className="text-[11px] text-[#736B63]">
-                                  📲 {order.phone}
+                                  📲 {order.phone || 'No phone'}
                                 </p>
-                                <p className="text-[10px] text-[#8C8276] truncate max-w-[200px]" title={`${order.address}, ${order.city} - ${order.pincode}`}>
-                                  {order.address}, {order.city} - {order.pincode}
+                                <p className="text-[10px] text-[#8C8276] truncate max-w-[200px]" title={`${order.address || ''}, ${order.city || ''} - ${order.pincode || ''}`}>
+                                  {order.address || 'Address not provided'}, {order.city || ''} {order.pincode ? `- ${order.pincode}` : ''}
                                 </p>
                               </td>
 
                               {/* Items */}
                               <td className="p-3.5">
                                 <div className="space-y-1 max-w-[220px]">
-                                  {order.items.map((item, idx) => (
+                                  {(order.items || []).map((item, idx) => (
                                     <div key={idx} className="text-[11px] leading-snug">
                                       <span>{item.quantity}x </span>
-                                      <strong>{item.title}</strong>
+                                      <strong>{item.title || 'Item'}</strong>
                                       <span className="text-[#8C8276]">
                                         {' '}
-                                        [{item.size} / {item.color}]
+                                        [{item.size || 'Free Size'}{item.color ? ` / ${item.color}` : ''}]
                                       </span>
                                     </div>
                                   ))}
@@ -990,7 +1002,7 @@ export const AdminPanel: React.FC = () => {
 
                               {/* Total Amount */}
                               <td className="p-3.5 font-sans font-bold text-[#721B29]">
-                                ₹{order.total.toLocaleString('en-IN')}
+                                ₹{(order.total || 0).toLocaleString('en-IN')}
                               </td>
 
                               {/* Courier & Tracking Details Column */}

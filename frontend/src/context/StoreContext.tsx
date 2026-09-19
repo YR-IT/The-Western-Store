@@ -580,7 +580,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((o: Order) => o && !o.id?.startsWith('order-100') && !o.orderNumber?.startsWith('TWS-2026-100'));
+          return parsed.filter((o: Order) => o && o.id && o.orderNumber && !['order-1001', 'order-1002'].includes(o.id));
         }
       } catch {
         return [];
@@ -669,15 +669,105 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     });
 
-    fetchOrdersFromSupabase().then((remoteOrders) => {
-      if (remoteOrders !== null) {
+    const syncOrders = async () => {
+      try {
+        const fetchedOrders: Order[] = [];
+        let hasRemoteData = false;
+
+        // 1. Try Supabase
+        const remoteOrders = await fetchOrdersFromSupabase();
+        if (remoteOrders !== null && remoteOrders.length > 0) {
+          fetchedOrders.push(...remoteOrders);
+          hasRemoteData = true;
+        }
+
+        // 2. Fetch from backend API
+        try {
+          const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+          const res = await fetch(`${backendUrl}/api/orders`);
+          if (res.ok) {
+            const apiOrders = await res.json();
+            if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+              const mappedOrders: Order[] = apiOrders.map((row: any) => ({
+                id: row.id,
+                orderNumber: row.order_number || row.orderNumber || row.id,
+                createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+                customerName: row.customer_name || row.customerName || 'Customer',
+                phone: row.customer_phone || row.phone || '',
+                email: row.customer_email || row.email || undefined,
+                address: row.shipping_address?.address || row.address || '',
+                pincode: row.shipping_address?.pincode || row.pincode || '',
+                city: row.shipping_address?.city || row.city || '',
+                state: row.shipping_address?.state || row.state || '',
+                notes: row.notes || row.shipping_address?.notes || undefined,
+                items: Array.isArray(row.items) ? row.items : [],
+                subtotal: Number(row.total_amount ?? row.subtotal ?? row.total ?? 0),
+                shippingFee: 0,
+                total: Number(row.total_amount ?? row.total ?? row.subtotal ?? 0),
+                status: (row.status as OrderStatus) || 'Pending WhatsApp',
+                courierName: row.courier_name || row.courierName || undefined,
+                trackingNumber: row.tracking_number || row.trackingNumber || undefined,
+                trackingLink: row.tracking_number || row.trackingNumber
+                  ? `https://delhivery.com/track/package/${row.tracking_number || row.trackingNumber}`
+                  : (row.tracking_link || row.trackingLink || undefined),
+                userId: row.user_id || row.userId || undefined,
+              }));
+
+              const existingIds = new Set(fetchedOrders.map((o) => o.id));
+              for (const o of mappedOrders) {
+                if (!existingIds.has(o.id)) {
+                  fetchedOrders.push(o);
+                  existingIds.add(o.id);
+                }
+              }
+              hasRemoteData = true;
+            }
+          }
+        } catch (backendErr) {
+          console.warn('[Backend Orders Sync Notice]', backendErr);
+        }
+
+        // 3. Merge with current local state / storage so local orders are never accidentally lost
         setOrders((prev) => {
-          const remoteIds = new Set(remoteOrders.map((o) => o.id));
-          const localOnly = prev.filter((o) => o && o.id && !remoteIds.has(o.id));
-          return [...localOnly, ...remoteOrders];
+          const map = new Map<string, Order>();
+          fetchedOrders.forEach((o) => {
+            if (o && o.id) map.set(o.id, o);
+          });
+          prev.forEach((o) => {
+            if (o && o.id) {
+              if (!map.has(o.id)) {
+                map.set(o.id, o);
+              } else {
+                const existing = map.get(o.id)!;
+                map.set(o.id, {
+                  ...existing,
+                  ...o,
+                  status: o.status || existing.status,
+                  trackingNumber: o.trackingNumber || existing.trackingNumber,
+                  courierName: o.courierName || existing.courierName,
+                  trackingLink: o.trackingLink || existing.trackingLink,
+                });
+              }
+            }
+          });
+
+          const merged = Array.from(map.values())
+            .filter((o) => o && o.id && o.orderNumber && !['order-1001', 'order-1002'].includes(o.id))
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          if (merged.length > 0 || hasRemoteData) {
+            try {
+              localStorage.setItem('tws_orders', JSON.stringify(merged));
+            } catch {}
+            return merged;
+          }
+          return prev;
         });
+      } catch (err) {
+        console.warn('[Orders Sync Notice]', err);
       }
-    });
+    };
+    syncOrders();
 
     fetchStoreSettingsFromSupabase().then((settings) => {
       if (settings && Object.keys(settings).length > 0) {
@@ -741,11 +831,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           { event: '*', schema: 'public', table: 'orders' },
           () => {
             fetchOrdersFromSupabase().then((remoteOrders) => {
-              if (remoteOrders !== null) {
+              if (remoteOrders !== null && remoteOrders.length > 0) {
                 setOrders((prev) => {
-                  const remoteIds = new Set(remoteOrders.map((o) => o.id));
-                  const localOnly = prev.filter((o) => o && o.id && !remoteIds.has(o.id));
-                  return [...localOnly, ...remoteOrders];
+                  const map = new Map<string, Order>();
+                  remoteOrders.forEach((o) => o && o.id && map.set(o.id, o));
+                  prev.forEach((o) => {
+                    if (o && o.id && !map.has(o.id)) map.set(o.id, o);
+                  });
+                  const merged = Array.from(map.values())
+                    .filter((o) => o && o.id && o.orderNumber && !['order-1001', 'order-1002'].includes(o.id))
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                  try {
+                    localStorage.setItem('tws_orders', JSON.stringify(merged));
+                  } catch {}
+                  return merged;
                 });
               }
             });
@@ -1079,22 +1178,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    setOrders((prev) =>
-      prev.map((order) => {
+    setOrders((prev) => {
+      const updatedList = prev.map((order) => {
         if (order.id !== orderId) return order;
         const updated = { ...order, status };
         saveOrderToSupabase(updated, updated.userId).catch(() => {});
         return updated;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('tws_orders', JSON.stringify(updatedList));
+      } catch {}
+      return updatedList;
+    });
+
+    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    fetch(`${backendUrl}/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => {});
   };
 
   const updateOrderTracking = (
     orderId: string,
     tracking: OrderTrackingUpdate
   ) => {
-    setOrders((prev) =>
-      prev.map((order) => {
+    setOrders((prev) => {
+      const updatedList = prev.map((order) => {
         if (order.id !== orderId) return order;
         const updated: Order = {
           ...order,
@@ -1107,76 +1217,155 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           saveOrderToSupabase(updated, updated.userId).catch(() => {});
         }
         return updated;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('tws_orders', JSON.stringify(updatedList));
+      } catch {}
+      return updatedList;
+    });
+
+    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    fetch(`${backendUrl}/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        courier_name: tracking.courierName,
+        courierName: tracking.courierName,
+        tracking_number: tracking.trackingNumber,
+        trackingNumber: tracking.trackingNumber,
+        tracking_link: tracking.trackingLink,
+        trackingLink: tracking.trackingLink,
+        status: tracking.status,
+      }),
+    }).catch(() => {});
   };
 
   const deleteOrder = (id: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== id));
+    setOrders((prev) => {
+      const updated = prev.filter((o) => o.id !== id);
+      try {
+        localStorage.setItem('tws_orders', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     deleteOrderFromSupabase(id).catch((err) => console.warn('[Supabase] Delete order notice:', err));
+    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    fetch(`${backendUrl}/api/orders/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
   const submitWhatsAppOrder = async (formData: CheckoutFormData) => {
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    let orderNumber = `TWS-2026-${randomSuffix}`;
+    let finalTotal = cartSubtotal;
 
-    const itemsSummary = cart.map((item) => ({
+    const validatedItems: OrderItemSummary[] = cart.map((item) => ({
       productId: item.productId,
-      size: item.size,
-      color: item.color,
+      title: item.product.title,
+      image: item.product.images?.[0] || '',
+      size: item.size || item.product?.sizes?.[0] || 'Free Size',
+      color: item.color && item.color !== 'Standard' ? item.color : '',
       quantity: item.quantity,
+      price: item.price,
     }));
 
+    const newOrder: Order = {
+      id: `order-${Date.now()}`,
+      orderNumber,
+      userId: currentUser?.id,
+      userEmail: currentUser?.email || formData.email,
+      customerName: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      pincode: formData.pincode,
+      city: formData.city,
+      state: formData.state,
+      notes: formData.notes,
+      items: validatedItems,
+      subtotal: cartSubtotal,
+      shippingFee: 0,
+      total: finalTotal,
+      status: 'Pending WhatsApp' as OrderStatus,
+      createdAt: new Date().toISOString(),
+    };
+
+    // 1. Immediately store order in local store state & localStorage & Supabase
+    setOrders((prev) => {
+      const updated = [newOrder, ...prev.filter((o) => o.id !== newOrder.id)];
+      try {
+        localStorage.setItem('tws_orders', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    setLastPlacedOrder(newOrder);
+
     try {
+      saveOrderToSupabase(newOrder, currentUser?.id).catch((err) =>
+        console.warn('[Supabase Order Insert Notice]', err)
+      );
+    } catch (err) {
+      console.warn('[Supabase Order Call Notice]', err);
+    }
+
+    // 2. Send to backend API in background
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       const response = await fetch(`${backendUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
+          orderId: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          userId: currentUser?.id,
           formData,
-          items: itemsSummary,
+          items: validatedItems,
         }),
       });
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error('Failed to submit order');
+      if (response.ok) {
+        const resData = await response.json();
+        if (resData.orderNumber) orderNumber = resData.orderNumber;
+        if (resData.total !== undefined && resData.total > 0) finalTotal = resData.total;
       }
-
-      const { orderNumber, total } = await response.json();
-
-      // Clear cart
-      clearCart();
-
-      // Build formatted message for WhatsApp using the server-calculated total
-      let message = `*NEW ORDER - THE WESTERN STORE, KURUKSHETRA*\n\n`;
-      message += `*Order ID:* ${orderNumber}\n`;
-      message += `*Date:* ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n`;
-      message += `👤 *Customer Details:*\n`;
-      message += `• Name: ${formData.name}\n`;
-      message += `• Phone: ${formData.phone}\n`;
-      message += `• Address: ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}\n`;
-      if (formData.notes) {
-        message += `• Note: ${formData.notes}\n`;
-      }
-      message += `\n👗 *Items Ordered:*\n`;
-      cart.forEach((item, index) => {
-        message += `${index + 1}. *${item.product.title}*\n`;
-        message += `   Size: ${item.size} | Color: ${item.color}\n`;
-        message += `   Qty: ${item.quantity} × ₹${item.price.toLocaleString('en-IN')} = ₹${(item.quantity * item.price).toLocaleString('en-IN')}\n`;
-      });
-      message += `\n─────────────────────\n`;
-      message += `*Total Amount:* ₹${total.toLocaleString('en-IN')}\n`;
-      message += `*Shipping:* Free / Pan-India Delivery\n`;
-      message += `*Status:* Pending WhatsApp Confirmation\n`;
-      message += `─────────────────────\n\n`;
-      message += `Hi The Western Store team! I have submitted this order on your website. Kindly confirm availability and share payment/QR details for dispatch from your Kurukshetra store. Thank you!`;
-
-      const encodedMessage = encodeURIComponent(message);
-      const waUrl = `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedMessage}`;
-
-      return { orderNumber, waUrl };
     } catch (err) {
-      console.error('[Order Submission Error]', err);
-      throw err;
+      console.warn('[Backend Order Notice] Running in direct frontend mode:', err);
     }
+
+    // 3. Clear cart
+    clearCart();
+
+    // 4. Build formatted message for WhatsApp
+    let message = `*NEW ORDER - THE WESTERN STORE, KURUKSHETRA*\n\n`;
+    message += `*Order ID:* ${orderNumber}\n`;
+    message += `*Date:* ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n`;
+    message += `👤 *Customer Details:*\n`;
+    message += `• Name: ${formData.name}\n`;
+    message += `• Phone: ${formData.phone}\n`;
+    message += `• Address: ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}\n`;
+    if (formData.notes) {
+      message += `• Note: ${formData.notes}\n`;
+    }
+    message += `\n👗 *Items Ordered:*\n`;
+    validatedItems.forEach((item, index) => {
+      message += `${index + 1}. *${item.title}*\n`;
+      message += `   Size: ${item.size}${item.color ? ` | Color: ${item.color}` : ''}\n`;
+      message += `   Qty: ${item.quantity} × ₹${item.price.toLocaleString('en-IN')} = ₹${(item.quantity * item.price).toLocaleString('en-IN')}\n`;
+    });
+    message += `\n─────────────────────\n`;
+    message += `*Total Amount:* ₹${finalTotal.toLocaleString('en-IN')}\n`;
+    message += `*Shipping:* Free / Pan-India Delivery\n`;
+    message += `*Status:* Pending WhatsApp Confirmation\n`;
+    message += `─────────────────────\n\n`;
+    message += `Hi The Western Store team! I have submitted this order on your website. Kindly confirm availability and share payment/QR details for dispatch from your Kurukshetra store. Thank you!`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const waUrl = `https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodedMessage}`;
+
+    return { order: newOrder, orderNumber, waUrl };
   };
 
   // Admin Catalog & Supabase DB Sync

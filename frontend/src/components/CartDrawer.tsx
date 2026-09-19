@@ -136,10 +136,14 @@ export const CartDrawer: React.FC = () => {
                             </button>
                           </div>
 
-                          <div className="mt-1 flex items-center gap-2 text-[11px] text-[#736B63]">
-                            <span>Size: <strong className="text-[#242120]">{item.selectedSize}</strong></span>
-                            <span>•</span>
-                            <span>Color: <strong className="text-[#242120]">{item.selectedColor}</strong></span>
+                          <div className="mt-1 flex items-center flex-wrap gap-2 text-[11px] text-[#736B63]">
+                            <span>Size: <strong className="text-[#242120]">{item.size || item.product?.sizes?.[0] || 'Free Size'}</strong></span>
+                            {item.color && item.color !== 'Standard' && item.color.trim() !== '' && (
+                              <>
+                                <span>•</span>
+                                <span>Color: <strong className="text-[#242120]">{item.color}</strong></span>
+                              </>
+                            )}
                           </div>
                         </div>
 

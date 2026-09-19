@@ -21,8 +21,8 @@ export const QuickViewModal: React.FC = () => {
 
   useEffect(() => {
     if (quickViewProduct) {
-      setSelectedSize(quickViewProduct.sizes[0] || 'M');
-      setSelectedColor(quickViewProduct.colors[0]?.name || 'Standard');
+      setSelectedSize(quickViewProduct.sizes?.[0] || 'Free Size');
+      setSelectedColor(quickViewProduct.colors?.[0]?.name || '');
       setQuantity(1);
       setAdded(false);
     }

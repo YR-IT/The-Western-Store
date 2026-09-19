@@ -181,7 +181,7 @@ const StorefrontContent: React.FC = () => {
       <Header />
 
       {/* Main View Router with Smooth Fade-in Transition */}
-      <main className={`flex-1 w-full ${currentView !== 'home' ? 'pt-[98px] sm:pt-[114px]' : ''}`}>
+      <main className="flex-1 w-full pt-[98px] sm:pt-[114px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}

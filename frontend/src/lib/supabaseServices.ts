@@ -138,7 +138,7 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
   try {
     const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
 
-    const row = {
+    const row: any = {
       id: order.id,
       order_number: order.orderNumber,
       user_id: isUuid ? userId : null,
@@ -146,11 +146,11 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
       customer_phone: order.phone,
       customer_email: order.email || order.userEmail || null,
       shipping_address: {
-        address: order.address,
-        city: order.city,
-        state: order.state,
-        pincode: order.pincode,
-        notes: order.notes,
+        address: order.address || '',
+        city: order.city || '',
+        state: order.state || '',
+        pincode: order.pincode || '',
+        notes: order.notes || '',
       },
       total_amount: order.total,
       status: order.status,
@@ -160,10 +160,25 @@ export async function saveOrderToSupabase(order: Order, userId?: string): Promis
       courier_name: order.courierName || null,
     };
 
-    const { error } = await supabase.from('orders').upsert(row);
-    if (error) {
-      console.warn('[Supabase] Order save failed:', error.message, error.details);
-      return false;
+    // Try direct insert first
+    const { error: insertError } = await supabase.from('orders').insert([row]);
+    if (insertError) {
+      // If order already exists, attempt update
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          status: order.status,
+          tracking_number: order.trackingNumber || null,
+          courier_name: order.courierName || null,
+          shipping_address: row.shipping_address,
+          total_amount: order.total,
+        })
+        .eq('id', order.id);
+
+      if (updateError) {
+        console.warn('[Supabase] Order save failed:', updateError.message, updateError.details);
+        return false;
+      }
     }
     return true;
   } catch (err) {
@@ -187,7 +202,7 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
     }
 
     return (data || [])
-      .filter((row: any) => row.order_number && !row.order_number.startsWith('TWS-2026-100') && row.id !== 'order-1002')
+      .filter((row: any) => row && (row.order_number || row.id) && row.id !== 'order-1001' && row.id !== 'order-1002')
       .map((row: any) => ({
         id: row.id,
         orderNumber: row.order_number || row.id,
@@ -199,15 +214,17 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
         pincode: row.shipping_address?.pincode || '',
         city: row.shipping_address?.city || '',
         state: row.shipping_address?.state || '',
-        notes: row.shipping_address?.notes || undefined,
-        items: row.items || [],
-        subtotal: row.total_amount || 0,
+        notes: row.notes || row.shipping_address?.notes || undefined,
+        items: Array.isArray(row.items) ? row.items : [],
+        subtotal: Number(row.total_amount) || 0,
         shippingFee: 0,
-        total: row.total_amount || 0,
+        total: Number(row.total_amount) || 0,
         status: row.status || 'Pending WhatsApp',
         courierName: row.courier_name || undefined,
         trackingNumber: row.tracking_number || undefined,
-        trackingLink: row.tracking_number ? `https://delhivery.com/track/package/${row.tracking_number}` : undefined,
+        trackingLink: row.tracking_number
+          ? `https://delhivery.com/track/package/${row.tracking_number}`
+          : (row.tracking_link || undefined),
         userId: row.user_id || undefined,
       }));
   } catch (err) {

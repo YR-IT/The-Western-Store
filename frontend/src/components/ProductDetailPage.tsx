@@ -153,16 +153,19 @@ export const ProductDetailPage: React.FC = () => {
   });
   const [reviewSuccessMsg, setReviewSuccessMsg] = useState(false);
 
-  // Trigger skeleton loading when product changes or on mount
+  // Trigger skeleton loading and reset selections when product changes
   useEffect(() => {
     setIsLoading(true);
     setSelectedImageIdx(0);
     setReviewPage(1);
+    setSelectedSize(product.sizes?.[0] || 'Free Size');
+    setSelectedColor(product.colors?.[0]?.name || '');
+    setQuantity(1);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 350);
     return () => clearTimeout(timer);
-  }, [selectedProductId]);
+  }, [selectedProductId, product]);
 
   useEffect(() => {
     setReviewPage(1);

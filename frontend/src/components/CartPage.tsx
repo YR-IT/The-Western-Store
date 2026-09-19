@@ -132,16 +132,15 @@ export const CartPage: React.FC = () => {
                         </button>
                       </div>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#5C544B]">
-                        <span className="bg-[#FAF7F0] px-2 py-0.5 rounded-xs border border-[#EAE4D9]">
-                          Size: <strong>{item.selectedSize}</strong>
+                      <div className="mt-2 flex flex-wrap items-center gap-2.5 text-xs text-[#5C544B]">
+                        <span className="bg-[#FAF7F0] px-2.5 py-0.5 rounded-xs border border-[#EAE4D9]">
+                          Size: <strong className="text-[#242120]">{item.size || item.product?.sizes?.[0] || 'Free Size'}</strong>
                         </span>
-                        <span className="bg-[#FAF7F0] px-2 py-0.5 rounded-xs border border-[#EAE4D9]">
-                          Color: <strong>{item.selectedColor}</strong>
-                        </span>
-                        <span className="text-[#8C8276]">
-                          Unit Price: ₹{item.product.price.toLocaleString('en-IN')}
-                        </span>
+                        {item.color && item.color !== 'Standard' && item.color.trim() !== '' && (
+                          <span className="bg-[#FAF7F0] px-2.5 py-0.5 rounded-xs border border-[#EAE4D9]">
+                            Color: <strong className="text-[#242120]">{item.color}</strong>
+                          </span>
+                        )}
                       </div>
                     </div>
 
