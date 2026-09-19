@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,6 +7,13 @@ export const HeroCarousel: React.FC = () => {
   const { heroSlides, navigateToCategory, navigateToPlp } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Unique key that changes whenever we want the progress bar animation to restart
+  const [progressKey, setProgressKey] = useState(0);
+
+  // Touch swipe tracking
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   // Responsive device view detection (Desktop >= 768px, Mobile < 768px)
   const [isMobile, setIsMobile] = useState<boolean>(() => {
@@ -47,20 +54,67 @@ export const HeroCarousel: React.FC = () => {
   const nextSlide = useCallback(() => {
     if (activeSlides.length === 0) return;
     setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
+    setProgressKey((k) => k + 1);
   }, [activeSlides.length]);
 
   const prevSlide = useCallback(() => {
     if (activeSlides.length === 0) return;
     setCurrentSlide((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+    setProgressKey((k) => k + 1);
   }, [activeSlides.length]);
 
-  const goToSlide = (idx: number) => setCurrentSlide(idx);
+  const goToSlide = (idx: number) => {
+    setCurrentSlide(idx);
+    setProgressKey((k) => k + 1);
+  };
 
+  // Auto-play: restart interval whenever slide changes or pause state changes
   useEffect(() => {
     if (isPaused || activeSlides.length <= 1) return;
     const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
-  }, [nextSlide, isPaused, activeSlides.length]);
+  }, [nextSlide, isPaused, activeSlides.length, currentSlide]);
+
+  // Bump progressKey when pause is lifted so the bar restarts from 0
+  const prevPaused = useRef(isPaused);
+  useEffect(() => {
+    if (prevPaused.current && !isPaused) {
+      setProgressKey((k) => k + 1);
+    }
+    prevPaused.current = isPaused;
+  }, [isPaused]);
+
+  // ── Touch / Swipe handlers ────────────────────────────────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setIsPaused(true); // pause auto-play while user is touching
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only treat as a horizontal swipe if horizontal movement dominates
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (dx < 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+    setIsPaused(false); // resume auto-play after swipe
+  };
+
+  const handleTouchCancel = () => {
+    touchStartX.current = null;
+    touchStartY.current = null;
+    setIsPaused(false);
+  };
 
   if (!activeSlides || activeSlides.length === 0) return null;
 
@@ -90,17 +144,22 @@ export const HeroCarousel: React.FC = () => {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onClick={handleSlideClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       {/* Top Progress Bar */}
       {activeSlides.length > 1 && (
         <div className="absolute top-0 left-0 right-0 z-30 h-[2px] bg-white/10 pointer-events-none">
-          <motion.div
-            key={`${currentSlide}-${active?.id}`}
-            initial={{ width: '0%' }}
-            animate={{ width: isPaused ? undefined : '100%' }}
-            transition={{ duration: 6, ease: 'linear' }}
-            className="h-full bg-gradient-to-r from-[#B8860B] via-[#F0D080] to-[#B8860B]"
-          />
+          {!isPaused && (
+            <motion.div
+              key={progressKey}
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 6, ease: 'linear' }}
+              className="h-full bg-gradient-to-r from-[#B8860B] via-[#F0D080] to-[#B8860B]"
+            />
+          )}
         </div>
       )}
 
@@ -292,5 +351,3 @@ export const HeroCarousel: React.FC = () => {
     </section>
   );
 };
-
-
