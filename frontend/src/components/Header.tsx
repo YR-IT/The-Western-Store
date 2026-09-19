@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../context/StoreContext';
-import { ProductCategory, BudgetTier } from '../types';
+import { ProductCategory } from '../types';
 import { STORE_INFO } from '../data/mockData';
 import {
   Search,
@@ -18,7 +18,7 @@ import {
   Phone,
   Home,
   Package,
-  Tag,
+
   MessageCircle,
   LogOut,
   UserCheck,
@@ -32,8 +32,6 @@ export const Header: React.FC = () => {
     setView,
     selectedCategory,
     navigateToCategory,
-    navigateToBudget,
-    selectedBudgetTier,
     cartCount,
     setIsCartDrawerOpen,
     wishlist,
@@ -47,7 +45,7 @@ export const Header: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | 'budget' | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<'ethnic' | 'western' | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -80,11 +78,7 @@ export const Header: React.FC = () => {
     setActiveDropdown(null);
   };
 
-  const handleBudgetClick = (tier: BudgetTier) => {
-    navigateToBudget(tier);
-    setMobileMenuOpen(false);
-    setActiveDropdown(null);
-  };
+
 
   const handleLogoClick = () => {
     setView('home');
@@ -188,101 +182,19 @@ export const Header: React.FC = () => {
               All Collections
             </button>
 
-            {/* Budget Edits Dropdown */}
-            <div
-              className="relative shrink-0"
-              onMouseEnter={() => setActiveDropdown('budget')}
-              onMouseLeave={() => setActiveDropdown(null)}
+            {/* Contact Us Link */}
+            <button
+              id="nav-contact"
+              type="button"
+              onClick={() => { setView('contact'); setActiveDropdown(null); }}
+              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 cursor-pointer ${
+                view === 'contact'
+                  ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
+                  : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
+              }`}
             >
-              <button
-                id="nav-dropdown-budget"
-                type="button"
-                onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
-                className={`px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md inline-flex items-center gap-1 whitespace-nowrap cursor-pointer ${
-                  activeDropdown === 'budget' || selectedBudgetTier !== 'all'
-                    ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
-                    : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
-                }`}
-              >
-                <Tag className="w-3.5 h-3.5 text-[#B8860B]" />
-                <span>Budget Edits</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeDropdown === 'budget' ? 'rotate-180 text-[#721B29]' : 'text-[#8C8276]'}`} />
-              </button>
-
-              {/* Budget Dropdown Menu */}
-              {activeDropdown === 'budget' && (
-                <div className="absolute left-0 mt-1 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-1.5 border-b border-[#EAE4D9]">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#B8860B]">Curated Price Ranges</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_999')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
-                      <p className="text-[10px] text-[#736B63]">Daily cottons, crop tops & tees</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1499')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
-                      <p className="text-[10px] text-[#736B63]">Party co-ords, midis & wide denims</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1999')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
-                      <p className="text-[10px] text-[#736B63]">Silk drapes, anarkalis & suit sets</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_2499')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
-                      <p className="text-[10px] text-[#736B63]">Heavy festive co-ords & festive sets</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('premium')}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#F3EFE6] transition-colors flex items-center justify-between group"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-[#242120]">Luxury & Bridal (₹2,500+)</p>
-                      <p className="text-[10px] text-[#736B63]">Heavy Banarasi lehengas & drapes</p>
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D] group-hover:text-[#721B29]" />
-                  </button>
-                  <div className="mt-1 pt-1 border-t border-[#EAE4D9]">
-                    <button
-                      type="button"
-                      onClick={() => handleBudgetClick('all')}
-                      className="w-full text-left px-4 py-2 bg-[#721B29]/5 text-xs font-bold text-[#721B29] hover:bg-[#721B29]/10 flex items-center gap-1.5"
-                    >
-                      <Tag className="w-3.5 h-3.5 text-[#721B29]" />
-                      <span>View All Budget Collections</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+              Contact Us
+            </button>
           </nav>
 
           {/* Right: Actions (Search, Wishlist, Account, Cart) */}
@@ -433,26 +345,25 @@ export const Header: React.FC = () => {
                     <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
                   </a>
 
-                  <div className="my-1 border-t border-[#EAE4D9]" />
-
-                  {/* Admin Portal Link */}
-                  <button
-                    id="admin-portal-link"
-                    type="button"
-                    onClick={() => {
-                      if (currentUser?.isAdmin) {
-                        setView('admin');
-                        setAdminActiveTab('dashboard');
-                      } else {
-                        openAuthModal('admin', 'Boutique Admin Authentication Required');
-                      }
-                      setAccountMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2 cursor-pointer"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-[#721B29]" />
-                    <span>Store Admin Panel</span>
-                  </button>
+                  {/* Admin Portal Link - only visible for logged in admins */}
+                  {currentUser?.isAdmin && (
+                    <>
+                      <div className="my-1 border-t border-[#EAE4D9]" />
+                      <button
+                        id="admin-portal-link"
+                        type="button"
+                        onClick={() => {
+                          setView('admin');
+                          setAdminActiveTab('dashboard');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2 cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                        <span>Store Admin Panel</span>
+                      </button>
+                    </>
+                  )}
 
                   {/* Sign Out Button if logged in */}
                   {currentUser && (
@@ -594,48 +505,8 @@ export const Header: React.FC = () => {
                 </button>
               </div>
 
-              {/* Mobile Categories & Budget Ranges Navigation */}
+              {/* Mobile Categories Navigation */}
               <div className="py-2 flex-1">
-                {/* Budget Ranges Section */}
-                <div className="px-4 py-1.5 text-xs font-bold text-[#B8860B] uppercase tracking-wider bg-[#B8860B]/10 border-y border-[#B8860B]/20 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5" />
-                  <span>Budget Edits (Price Ranges)</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1 p-2 bg-[#FAF8F3] border-b border-[#EAE4D9]">
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_999')}
-                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
-                  >
-                    <p className="text-xs font-bold text-[#721B29]">Under ₹999</p>
-                    <p className="text-[9px] text-[#736B63]">Cottons & Tees</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1499')}
-                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
-                  >
-                    <p className="text-xs font-bold text-[#721B29]">Under ₹1,499</p>
-                    <p className="text-[9px] text-[#736B63]">Party Co-ords</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_1999')}
-                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
-                  >
-                    <p className="text-xs font-bold text-[#721B29]">Under ₹1,999</p>
-                    <p className="text-[9px] text-[#736B63]">Silk & Suit Sets</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBudgetClick('under_2499')}
-                    className="p-2 bg-white border border-[#EAE4D9] rounded-lg text-left hover:border-[#721B29]"
-                  >
-                    <p className="text-xs font-bold text-[#721B29]">Under ₹2,499</p>
-                    <p className="text-[9px] text-[#736B63]">Festive Sets</p>
-                  </button>
-                </div>
-
                 {/* Categories Group */}
                 <div className="px-4 py-1.5 text-xs font-bold text-[#721B29] uppercase tracking-wider bg-[#F3EFE6]/60 border-y border-[#EAE4D9]">
                   Explore Categories
@@ -692,6 +563,21 @@ export const Header: React.FC = () => {
                       Live
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('contact');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-[#721B29]" />
+                      <span>Contact Us</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D]" />
+                  </button>
                 </div>
 
                 <div className="mt-4 px-4 py-3 bg-[#FAF8F3] mx-3 rounded-xl border border-[#EAE4D9]">
@@ -726,24 +612,22 @@ export const Header: React.FC = () => {
                 </div>
               </div>
 
-              {/* Footer Admin Link */}
-              <div className="p-4 border-t border-[#EAE4D9] bg-[#F8F5EE]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (currentUser?.isAdmin) {
+              {/* Mobile Drawer Admin Link - only visible for logged in admins */}
+              {currentUser?.isAdmin && (
+                <div className="p-4 border-t border-[#EAE4D9] bg-[#F8F5EE]">
+                  <button
+                    type="button"
+                    onClick={() => {
                       setView('admin');
-                    } else {
-                      openAuthModal('admin', 'Boutique Admin Authentication Required');
-                    }
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full py-2.5 px-4 bg-[#721B29] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Store Management (Admin)</span>
-                </button>
-              </div>
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#721B29] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Store Management (Admin)</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>,
           document.body

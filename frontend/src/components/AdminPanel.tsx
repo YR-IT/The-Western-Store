@@ -139,6 +139,7 @@ export const AdminPanel: React.FC = () => {
     navigateToCategory,
     navigateToProduct,
     setSelectedProductId,
+    currentUser,
   } = useStore();
 
   // Search & Filter in Orders
@@ -526,6 +527,27 @@ export const AdminPanel: React.FC = () => {
     reorderCategories(updated);
     showToast(`Moved "${updated[index + 1].name}" down`);
   };
+
+  if (!currentUser?.isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-[#721B29] mb-4 shadow-sm">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-serif font-bold text-[#242120] mb-2">Admin Access Required</h2>
+        <p className="text-xs text-[#736B63] max-w-md mb-6 leading-relaxed">
+          You must be logged in as an authorized store administrator to view the Management Console.
+        </p>
+        <button
+          type="button"
+          onClick={() => setView('home')}
+          className="px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+        >
+          Return to Storefront
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div

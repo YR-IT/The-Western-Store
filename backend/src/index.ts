@@ -374,6 +374,14 @@ app.get('/api/store-settings', async (_req, res) => {
 });
 
 app.post('/api/store-settings', async (req, res) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  const expectedSecret = process.env.ADMIN_SECRET || 'westernstore_admin_2026';
+
+  if (!adminSecret || adminSecret !== expectedSecret) {
+    res.status(401).json({ error: 'Unauthorized: Invalid admin secret header.' });
+    return;
+  }
+
   const { key, value } = req.body || {};
   if (!key) {
     res.status(400).json({ error: 'Missing setting key' });

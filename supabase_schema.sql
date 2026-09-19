@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS public.cart_items CASCADE;
 DROP TABLE IF EXISTS public.products CASCADE;
 DROP TABLE IF EXISTS public.categories CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP TABLE IF EXISTS public.store_settings CASCADE;
 
 -- 2. PROFILES TABLE (Extends Supabase Auth users)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -130,9 +131,33 @@ CREATE TABLE IF NOT EXISTS public.orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. STORE SETTINGS TABLE (Hero slides, Reels, Testimonials, Home Sections)
+CREATE TABLE IF NOT EXISTS public.store_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Explicitly grant table permissions to PostgREST roles
+GRANT ALL ON TABLE public.store_settings TO anon, authenticated, service_role;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
 -- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- 9. ROW LEVEL SECURITY (RLS) POLICIES & HELPER FUNCTIONS
 -- ==============================================================================
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (
+    (auth.jwt() ->> 'role' = 'service_role') OR
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -140,21 +165,29 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 
--- Categories & Products: Public Read, Authenticated Write
+-- Categories: Public Read, Admin Write
 CREATE POLICY "Public Categories Read" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Public Categories Insert" ON public.categories FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Categories Update" ON public.categories FOR UPDATE USING (true);
-CREATE POLICY "Public Categories Delete" ON public.categories FOR DELETE USING (true);
+CREATE POLICY "Admin Categories Insert" ON public.categories FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin Categories Update" ON public.categories FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin Categories Delete" ON public.categories FOR DELETE USING (public.is_admin());
 
+-- Products: Public Read, Admin Write
 CREATE POLICY "Public Products Read" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public Products Insert" ON public.products FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Products Update" ON public.products FOR UPDATE USING (true);
-CREATE POLICY "Public Products Delete" ON public.products FOR DELETE USING (true);
+CREATE POLICY "Admin Products Insert" ON public.products FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin Products Update" ON public.products FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin Products Delete" ON public.products FOR DELETE USING (public.is_admin());
+
+-- Store Settings: Public Read, Admin Write
+CREATE POLICY "Public Store Settings Read" ON public.store_settings FOR SELECT USING (true);
+CREATE POLICY "Admin Store Settings Insert" ON public.store_settings FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Admin Store Settings Update" ON public.store_settings FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin Store Settings Delete" ON public.store_settings FOR DELETE USING (public.is_admin());
 
 -- Profiles: Users read/write their own profile
-CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id OR public.is_admin());
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 
 -- Cart Items: Users manage their own cart
 CREATE POLICY "Users manage own cart select" ON public.cart_items FOR SELECT USING (auth.uid() = user_id);
@@ -167,29 +200,19 @@ CREATE POLICY "Users manage own wishlist select" ON public.wishlist_items FOR SE
 CREATE POLICY "Users manage own wishlist insert" ON public.wishlist_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users manage own wishlist delete" ON public.wishlist_items FOR DELETE USING (auth.uid() = user_id);
 
--- Orders: Public Insert & Read for storefront checkout & order tracking
-CREATE POLICY "Public insert orders" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public select orders" ON public.orders FOR SELECT USING (true);
-CREATE POLICY "Public update orders" ON public.orders FOR UPDATE USING (true);
-
--- Store Settings Table (Autoplay Reels, Hero Slides, Testimonials, Home Sections)
-CREATE TABLE IF NOT EXISTS public.store_settings (
-  key TEXT PRIMARY KEY,
-  value JSONB NOT NULL,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Orders: Public Insert for checkout, Read for user/tracking, Admin Update/Delete
+CREATE POLICY "Customer Orders Insert" ON public.orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Customer and Admin Orders Read" ON public.orders FOR SELECT USING (
+  public.is_admin() OR
+  (auth.uid() IS NOT NULL AND auth.uid() = user_id) OR
+  auth.uid() IS NULL
 );
+CREATE POLICY "Admin Orders Update" ON public.orders FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Admin Orders Delete" ON public.orders FOR DELETE USING (public.is_admin());
 
-ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Store Settings Read" ON public.store_settings;
-DROP POLICY IF EXISTS "Public Store Settings Insert" ON public.store_settings;
-DROP POLICY IF EXISTS "Public Store Settings Update" ON public.store_settings;
-DROP POLICY IF EXISTS "Public Store Settings Delete" ON public.store_settings;
-CREATE POLICY "Public Store Settings Read" ON public.store_settings FOR SELECT USING (true);
-CREATE POLICY "Public Store Settings Insert" ON public.store_settings FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Store Settings Update" ON public.store_settings FOR UPDATE USING (true);
-CREATE POLICY "Public Store Settings Delete" ON public.store_settings FOR DELETE USING (true);
-
--- Enable Realtime broadcasting for live order tracking & catalog updates & store settings
+-- ==============================================================================
+-- 10. REALTIME PUBLICATIONS
+-- ==============================================================================
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -219,7 +242,7 @@ BEGIN
 END $$;
 
 -- ==============================================================================
--- 7. SUPABASE STORAGE BUCKET FOR REELS & VIDEOS (UNLIMITED FREE STREAMING)
+-- 11. SUPABASE STORAGE BUCKET FOR REELS & VIDEOS
 -- ==============================================================================
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
@@ -231,26 +254,18 @@ VALUES (
 )
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- Storage Policies for 'videos' Bucket (Allows public streaming + admin uploads)
 DROP POLICY IF EXISTS "Public Read Videos" ON storage.objects;
 DROP POLICY IF EXISTS "Public Upload Videos" ON storage.objects;
 DROP POLICY IF EXISTS "Public Update Videos" ON storage.objects;
 DROP POLICY IF EXISTS "Public Delete Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Upload Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Update Videos" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Delete Videos" ON storage.objects;
 
-CREATE POLICY "Public Read Videos"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'videos');
+CREATE POLICY "Public Read Videos" ON storage.objects FOR SELECT USING (bucket_id = 'videos');
+CREATE POLICY "Admin Upload Videos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'videos' AND public.is_admin());
+CREATE POLICY "Admin Update Videos" ON storage.objects FOR UPDATE USING (bucket_id = 'videos' AND public.is_admin());
+CREATE POLICY "Admin Delete Videos" ON storage.objects FOR DELETE USING (bucket_id = 'videos' AND public.is_admin());
 
-CREATE POLICY "Public Upload Videos"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'videos');
-
-CREATE POLICY "Public Update Videos"
-ON storage.objects FOR UPDATE
-USING (bucket_id = 'videos');
-
-CREATE POLICY "Public Delete Videos"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'videos');
-
-
+-- Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

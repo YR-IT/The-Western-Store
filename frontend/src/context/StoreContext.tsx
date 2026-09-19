@@ -60,9 +60,9 @@ interface CheckoutFormData {
 
 interface StoreContextType {
   // Navigation
-  view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history';
-  currentView: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history';
-  setView: (view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history') => void;
+  view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact';
+  currentView: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact';
+  setView: (view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact') => void;
   selectedCategory: ProductCategory | 'All';
   setSelectedCategory: (category: ProductCategory | 'All') => void;
   selectedBudgetTier: BudgetTier | 'all';
@@ -196,7 +196,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation State
-  const [view, setView] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history'>(
+  const [view, setView] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact'>(
     () => (localStorage.getItem('tws_view') as any) || 'home'
   );
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>(

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
 import { Heart, ShoppingBag, Eye, Flame } from 'lucide-react';
-import { motion } from 'motion/react';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 interface ProductCardProps {
@@ -21,14 +20,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const secondaryImage = rawSecondary !== rawPrimary ? getOptimizedImageUrl(rawSecondary, 800, 85) : null;
 
   return (
-    <motion.div
+    <div
       id={`product-card-${product.id}`}
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -4 }}
-      className="group relative flex flex-col h-full bg-white rounded-lg overflow-hidden border border-[#EAE4D9]/80 hover:border-[#D0C5B4] hover:shadow-md transition-all duration-300"
+      className="product-card group relative flex flex-col h-full bg-white rounded-lg overflow-hidden border border-[#EAE4D9]/80 hover:border-[#D0C5B4] hover:shadow-md transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -187,6 +181,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

@@ -361,12 +361,20 @@ export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, a
 }
 
 export async function saveStoreSettingToSupabase(key: string, value: any): Promise<boolean> {
+  const adminSecret =
+    sessionStorage.getItem('tws_admin_secret') ||
+    ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
+    'westernstore_admin_2026';
+
   // 1. Persist to Backend Server API first
   let savedToBackend = false;
   try {
     const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(adminSecret ? { 'x-admin-secret': adminSecret } : {}),
+      },
       body: JSON.stringify({ key, value }),
     });
     if (res.ok) savedToBackend = true;

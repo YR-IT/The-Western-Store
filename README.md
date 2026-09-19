@@ -1,6 +1,6 @@
 # The Western Store Kurukshetra 🛍️✨
 
-A high-performance, boutique e-commerce web platform built for **The Western Store Kurukshetra**, featuring direct **WhatsApp Order Placement**, **ImageKit CDN photo uploads**, **Supabase PostgreSQL database with Realtime subscriptions**, and a dedicated **Boutique Admin Panel**.
+A high-performance, boutique e-commerce web platform built for **The Western Store Kurukshetra**, featuring direct **WhatsApp Order Placement**, **ImageKit CDN photo uploads**, **Supabase PostgreSQL database with Realtime subscriptions**, and a dedicated, role-protected **Boutique Admin Panel**.
 
 ---
 
@@ -21,14 +21,15 @@ A high-performance, boutique e-commerce web platform built for **The Western Sto
  │ • Customer Account & Auth Profiles           │  │ • Category Cover Images      │
  │ • Saved Shopping Cart & Wishlist Sync        │  │ • Automatic WebP Conversion  │
  │ • Customer Orders & Tracking History         │  │ • Real-time Image Resizing   │
- │ • Supabase Realtime WebSocket Pub/Sub        │  └──────────────▲───────────────┘
- └──────────────────────────────────────────────┘                 │
-                                                                   │ (HMAC Signature)
+ │ • Store Settings (Hero, Reels, Reviews)      │  └──────────────▲───────────────┘
+ │ • Supabase Realtime WebSocket Pub/Sub        │                 │
+ └──────────────────────────────────────────────┘                 │ (HMAC Signature)
                                                     ┌──────────────┴───────────────┐
                                                     │    EXPRESS BACKEND (RENDER)  │
                                                     │ • Admin Authentication       │
                                                     │ • ImageKit Upload Tokens     │
                                                     │ • Order Total Verification   │
+                                                    │ • Store Settings Persistence │
                                                     │ • Keeps Secret Keys Private  │
                                                     └──────────────────────────────┘
 ```
@@ -48,7 +49,7 @@ A high-performance, boutique e-commerce web platform built for **The Western Sto
 
 ```text
 The Western Store/
-├── backend/                  # Express API server (Admin Auth, ImageKit tokens, Orders)
+├── backend/                  # Express API server (Admin Auth, ImageKit tokens, Orders, Settings)
 │   ├── src/
 │   │   └── index.ts          # Express entry point & secure endpoints
 │   ├── .env.example          # Backend environment variables template
@@ -59,7 +60,7 @@ The Western Store/
 │   ├── public/
 │   │   └── _redirects        # Netlify SPA router rewrite
 │   ├── src/
-│   │   ├── components/       # UI components (Storefront, PDP, PLP, AdminPanel, Lookbook)
+│   │   ├── components/       # UI components (Storefront, PDP, PLP, AdminPanel, Header, Footer)
 │   │   ├── context/          # StoreContext (Catalog, Cart, Wishlist, Local Storage, Realtime)
 │   │   ├── data/             # Initial metadata & store configurations
 │   │   ├── lib/              # Supabase & ImageKit service wrappers
@@ -68,157 +69,209 @@ The Western Store/
 │   ├── vercel.json           # Vercel SPA router rewrite
 │   ├── package.json
 │   └── vite.config.ts
-├── supabase_schema.sql       # Complete database schema (tables, triggers, RLS, realtime)
-├── rls_polices_fix.sql       # 1-click script to truncate demo data & grant CRUD permissions
-├── update_rls_policies.sql   # Standalone RLS security update script
+├── supabase_schema.sql       # Complete database schema (tables, triggers, RLS, realtime, storage)
+├── update_rls_policies.sql   # Standalone 1-click script to fix RLS, 404 store_settings & storage without losing data
 ├── seed_supabase.sql         # Optional sample demo catalog seed data
-└── README.md                 # System documentation & deployment guide
+├── clean_catalog_reset.sql   # Clean slate script to wipe test products & categories for live launch
+├── SECURITY_PATCH_PLAN.md    # Security checklist & implementation status
+└── README.md                 # System documentation & execution guide
 ```
 
 ---
 
-## 🚀 Systemized Implementation & Setup Guide
+## 🚀 Step-by-Step Setup Guide
 
-To set up and run the entire platform from scratch, execute the following phases in sequence:
+Follow these 4 simple steps to get the entire project running locally or in production:
 
 ```
-Step 1: Supabase DB ──► Step 2: ImageKit CDN ──► Step 3: Backend Server ──► Step 4: Frontend App
+Step 1: Database Setup ──► Step 2: Media CDN ──► Step 3: Backend API ──► Step 4: Frontend App
 ```
 
 ---
 
-### Phase 1: Database & Media Storage Setup (Supabase)
+### Step 1: Database Setup (Supabase)
 
 1. **Create a Supabase Project**:
-   - Go to [Supabase Console](https://supabase.com) and create a new project.
+   - Go to [Supabase](https://supabase.com) and create a new project.
    - Go to **Project Settings → API** and copy:
-     - `Project URL` (e.g. `https://xxxx.supabase.co`)
+     - `Project URL` (e.g., `https://xxxx.supabase.co`)
      - `anon / public key`
-     - `service_role key` (keep this secret; only used in backend).
+     - `service_role key` (keep secret; backend only).
 
-2. **Database SQL Scripts & Execution Guide**:
-   Navigate to the **SQL Editor** in your Supabase Dashboard and run the appropriate scripts according to your workflow:
+2. **Choose the SQL Script to Run in Supabase SQL Editor**:
 
-   | Script File | Purpose | When to Run |
-   |---|---|---|
-   | [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql) | **Complete Database & Storage Schema** — Creates tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`, `store_settings`), Realtime publication, and initializes the public `videos` Supabase Storage bucket with streaming & CRUD policies. | **Mandatory on initial new setup**. |
-   | [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) | **Clean Slate + RLS & Storage Fix** — Truncates existing demo catalog data and ensures full Admin CRUD permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) on all tables and creates the `videos` storage bucket. | **When starting fresh** with your own store inventory. |
-   | [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) | **Standalone RLS & Storage Update Script** — Updates and grants full CRUD policies on `categories`, `products`, `orders`, and `store_settings` + `videos` storage bucket **without** wiping or truncating existing inventory data. | **When fixing permissions / adding storage** on an active database with existing items. |
-   | [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql) | **Demo Catalog Seed** — Inserts sample categories and curated boutique garments with tags, sizes, colors, and prices. | **Optional** (for development / demo testing). |
+| Goal | Script to Run | Description |
+|---|---|---|
+| **Fresh Setup (New Database)** | [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql) | Creates all tables (`products`, `categories`, `orders`, `profiles`, `cart_items`, `wishlist_items`, `store_settings`), real-time sync publications, `videos` storage bucket, and production-hardened RLS policies. |
+| **Fix Existing DB / Resolve Errors** | [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) | **1-Click Quick Fix**: Resolves `store_settings` 404 errors, RLS permission errors, creates missing `videos` storage bucket, grants role access, and refreshes the PostgREST cache **without losing existing products or categories**. |
+| **Populate Sample Test Products** | [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql) | Inserts sample categories and curated boutique items (suits, sarees, co-ords) for testing and development. |
+| **Wipe Test Data (Clean Slate)** | [`clean_catalog_reset.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/clean_catalog_reset.sql) | Safely truncates test products and categories to launch with your own authentic boutique inventory (preserves customer accounts, orders, and store settings). |
 
-3. **Step-by-Step Guide for a Brand New Setup**:
-   - **Step 1 (Schema & Storage Creation):**
-     1. Open [`supabase_schema.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/supabase_schema.sql).
-     2. Copy and paste its entire contents into **Supabase Dashboard → SQL Editor** and click **Run**.
-     3. *This automatically creates all database tables, real-time sync channels, and the public `videos` storage bucket with public streaming and admin upload permissions.*
-   - **Step 2 (Choose Catalog State):**
-     - **For your own boutique products (Clean slate):** Run [`rls_polices_fix.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/rls_polices_fix.sql) in SQL Editor.
-     - **To populate test demo products:** Run [`seed_supabase.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/seed_supabase.sql).
-   - **Step 3 (Verify Storage Bucket):**
-     1. In Supabase Dashboard, click **Storage** in the left sidebar.
-     2. Verify that the `videos` bucket is listed with the **Public** tag.
-     3. You can now upload vertical `.mp4` video reels directly from the Boutique Admin Panel under **Homepage Customizer → Autoplay Video Reels**!
+3. **Execution Instructions**:
+   1. Open **Supabase Dashboard → SQL Editor**.
+   2. Click **New query**.
+   3. Copy the contents of the chosen `.sql` file, paste into the editor, and click **Run**.
+   4. Verify that the query returns **`Success. No rows returned`**.
 
 ---
 
-### Phase 2: Media CDN Setup (ImageKit)
+### Step 2: Media CDN Setup (ImageKit)
 
 1. Sign up for a free account at [ImageKit.io](https://imagekit.io).
-2. Go to **Developer Options** in the ImageKit dashboard and copy:
+2. In the ImageKit Dashboard, go to **Developer Options** and copy:
    - **URL-endpoint** (e.g. `https://ik.imagekit.io/your_id`)
    - **Public Key** (`public_...`)
    - **Private Key** (`private_...`)
 
 ---
 
-### Phase 3: Backend API Setup (Node/Express)
+### Step 3: Backend API Setup (Node / Express)
 
-1. **Local Setup**:
+1. **Install dependencies**:
    ```bash
    cd backend
    npm install
-   cp .env.example .env
    ```
+
 2. **Configure `backend/.env`**:
    ```env
    PORT=4000
    FRONTEND_URL=http://localhost:5173
-   IMAGEKIT_PUBLIC_KEY=public_your_key_here
-   IMAGEKIT_PRIVATE_KEY=private_your_key_here
-   IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_endpoint_here
+   IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
+   IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
+   IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_endpoint_id
    SUPABASE_URL=https://your_project_id.supabase.co
-   SUPABASE_KEY=your_supabase_anon_or_service_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ADMIN_EMAIL=admin@thewesternstore.com
    ADMIN_PASSWORD=admin123
    ADMIN_SECRET=westernstore_admin_2026
    ```
-3. **Run Backend Locally**:
+
+3. **Start the backend server**:
    ```bash
    npm run dev
-   # API running on http://localhost:4000
-   # Health check: http://localhost:4000/api/health
    ```
-4. **Deploy Backend to Render**:
-   - Create a **Web Service** on Render pointing to the `/backend` folder.
-   - Add the environment variables listed in `backend/.env` under **Render Environment**.
+   Verify at: `http://localhost:4000/api/health`
+
+4. **Deploy Backend to Render (Optional)**:
+   - Connect the repo on [Render](https://render.com) and create a **Web Service** with root directory `/backend`.
    - Build Command: `npm install && npm run build`
    - Start Command: `npm start`
+   - Add the environment variables from `backend/.env`.
 
 ---
 
-### Phase 4: Frontend Web App Setup (React + Vite)
+### Step 4: Frontend Web App Setup (React + Vite)
 
-1. **Local Setup**:
+1. **Install dependencies**:
    ```bash
    cd frontend
    npm install
-   cp .env.example .env
    ```
+
 2. **Configure `frontend/.env`**:
    ```env
    VITE_BACKEND_URL=http://localhost:4000
    VITE_SUPABASE_URL=https://your_project_id.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
-3. **Run Frontend Locally**:
+
+3. **Start the frontend application**:
    ```bash
    npm run dev
-   # App running at http://localhost:5173
    ```
-4. **Deploy Frontend to Vercel / Netlify**:
-   - Import repository root or `/frontend` into Vercel/Netlify.
-   - Set Environment Variables:
-     - `VITE_BACKEND_URL`: `https://your-backend.onrender.com`
-     - `VITE_SUPABASE_URL`: `https://your_project_id.supabase.co`
-     - `VITE_SUPABASE_ANON_KEY`: `your_supabase_anon_key_here`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
+   Open your browser at `http://localhost:5173`.
+
+4. **Deploy Frontend to Vercel / Netlify (Optional)**:
+   - Set the root directory to `/frontend` (or deploy root).
+   - Set Build Command: `npm run build`
+   - Set Output Directory: `dist`
+   - Add the 3 environment variables from `frontend/.env` (pointing `VITE_BACKEND_URL` to your live Render backend URL).
+
+---
+
+## 🔧 Troubleshooting & Error Resolution Guide
+
+Here is the exact step-by-step resolution for common issues:
+
+### 1. 🔴 `store_settings?select=*: 404 (Not Found)` / Hero Slides or Reels Not Loading
+* **Symptom:** In the browser console, you see `.../rest/v1/store_settings?select=*: 404` and hero slides or reels do not persist or load from Supabase.
+* **Root Cause:** The `store_settings` table was not yet created, permissions were not granted to `anon`/`authenticated` roles, or PostgREST's schema cache has not reloaded.
+* **Step-by-Step Fix:**
+  1. Open **Supabase Dashboard → SQL Editor**.
+  2. Copy and paste the following snippet (or run [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql)):
+     ```sql
+     CREATE TABLE IF NOT EXISTS public.store_settings (
+       key TEXT PRIMARY KEY,
+       value JSONB NOT NULL,
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+     );
+     GRANT ALL ON TABLE public.store_settings TO anon, authenticated, service_role;
+     GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+     ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+     DROP POLICY IF EXISTS "Public Store Settings Read" ON public.store_settings;
+     CREATE POLICY "Public Store Settings Read" ON public.store_settings FOR SELECT USING (true);
+     NOTIFY pgrst, 'reload schema';
+     ```
+  3. Click **Run**.
+  4. Refresh your browser page. The 404 will disappear immediately.
+
+---
+
+### 2. 🔴 `new row violates row-level security policy` / RLS Permission Denied Error
+* **Symptom:** Saving a product, category, or order fails with a Supabase policy violation error.
+* **Root Cause:** Supabase RLS is enabled without the appropriate `INSERT`/`UPDATE` policy for the active role.
+* **Step-by-Step Fix:**
+  1. Run [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) in your Supabase SQL Editor.
+  2. This updates all RLS policies across `categories`, `products`, `orders`, and `store_settings` while ensuring public readability and admin/service-role write authorization.
+
+---
+
+### 3. 🔴 Supabase Video / Reel Upload Error (`bucket not found` or `storage error`)
+* **Symptom:** Uploading `.mp4` video reels in the Admin Panel fails.
+* **Root Cause:** The Supabase Storage bucket named `videos` has not been initialized or is set to private.
+* **Step-by-Step Fix:**
+  1. Go to **Supabase Dashboard → Storage**.
+  2. If the `videos` bucket does not exist, run [`update_rls_policies.sql`](file:///Users/aditya/Desktop/WORK/The%20Western%20Store/update_rls_policies.sql) (or click **New bucket**, name it `videos`, and toggle **Public bucket** to ON).
+  3. Ensure the MIME types `video/mp4, video/webm, video/quicktime` are accepted.
+
+---
+
+### 4. 🔴 ImageKit 401 Unauthorized / "Failed to generate upload authentication"
+* **Symptom:** Product photo upload modal says unauthorized or fails to generate signature.
+* **Root Cause:** `backend/.env` is missing `IMAGEKIT_PRIVATE_KEY` / `ADMIN_SECRET` or the backend server is offline.
+* **Step-by-Step Fix:**
+  1. Verify the backend is running by opening `http://localhost:4000/api/health` in your browser.
+  2. Check that `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, and `IMAGEKIT_URL_ENDPOINT` in `backend/.env` match your ImageKit developer console.
+  3. Make sure you are logged in as Admin so the frontend sends the valid `x-admin-secret` header.
 
 ---
 
 ## 👑 Boutique Admin Panel Guide
 
-To access the boutique administrative portal:
-
+### How to Access Admin Panel:
 1. Open the storefront in your browser.
-2. Click the **Account / Login** button in the header and switch to **Admin Login**.
-3. Default credentials (configurable in `backend/.env`):
+2. Click the **User / Account icon** in the top navigation bar.
+3. Switch to the **Admin Login** tab.
+4. Default credentials:
    - **Email:** `admin@thewesternstore.com`
-   - **Password:** `admin123`
-4. Once authenticated, the Admin Dashboard allows you to:
-   - **Product Management:** Add, edit, or delete garments, manage variants (sizes & colors), upload multi-angle photos directly to ImageKit CDN, and toggle live stock availability.
-   - **Category Management:** Reorder store navigation tabs, create custom edits, and upload category banners.
-   - **Live Order Tracking:** Manage incoming WhatsApp customer orders, assign Delhivery / Blue Dart AWB tracking numbers, generate instant WhatsApp customer dispatch messages, and update statuses.
-   - **Homepage Layout Customizer:** Customize hero carousel slides, banner announcements, editorial lookbooks, trust badges, and boutique reviews.
+   - **Password:** `admin123` *(change in `backend/.env` for production)*
+5. Once logged in, the **Store Admin Panel** option will appear in your account menu, allowing you to access the dashboard.
+
+### Admin Capabilities:
+- **Product Management:** Add, edit, delete products, manage multi-angle ImageKit images, sizes, colors, and stock counts.
+- **Category Management:** Create collections, reorder navigation items, upload banner artwork.
+- **Live Order Tracking:** View customer orders, update delivery milestones, assign courier AWB tracking numbers, and trigger instant WhatsApp dispatch messages.
+- **Homepage Customizer:** Customize hero slides, autoplay video reels, trust badges, customer reviews, and announcement banners.
 
 ---
 
-## 🔐 Security & Architecture Safeguards
+## 🔐 Security Hardening & Best Practices
 
-- **Persistent Deletion Safeguard:** Product and category deletions made in the admin portal are tracked with persistent identifiers, preventing deleted items from reappearing upon page reload.
-- **Server-Side Validation:** Prices, garment options, and final bill totals are computed and verified server-side before orders are dispatched.
-- **Admin Brute-Force Rate Limiting:** Login attempts are rate-limited via IP window protection.
-- **Strict Key Isolation:** `IMAGEKIT_PRIVATE_KEY`, `ADMIN_PASSWORD`, and `ADMIN_SECRET` are never bundled in client-side code.
+- **Role-Protected Navigation:** The Store Admin link is completely hidden from non-admin visitors and protected by server-side verification.
+- **Client Route Guards:** Unauthenticated users attempting to access `/admin` are immediately redirected to the storefront.
+- **Secure Backend Endpoints:** Administrative endpoints (ImageKit token generation, media file deletion, store settings mutations) require strict `x-admin-secret` header authorization.
+- **Production Row-Level Security:** Database mutations are locked to admin roles and backend service credentials while preserving fast, public reads for customer catalog browsing.
 
 ---
 

@@ -1,24 +1,20 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
-import { ProductCategory } from '../types';
+
 import {
   MapPin,
   Phone,
   Instagram,
   Clock,
   Mail,
-  ShieldCheck,
   CreditCard,
   Heart,
   ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const CATEGORIES: ProductCategory[] = [
-  'Ethnic Wear',
-  'Western Wear',
-];
+
 
 const footerContainerVariants = {
   hidden: { opacity: 0 },
@@ -38,7 +34,7 @@ const footerColVariants = {
 };
 
 export const Footer: React.FC = () => {
-  const { navigateToCategory, setView, setAdminActiveTab } = useStore();
+  const { setView } = useStore();
 
   return (
     <footer className="bg-[#1C1717] text-[#E8E1D5] border-t border-[#332A2B] pt-14 pb-8 w-full max-w-full overflow-hidden">
@@ -48,10 +44,10 @@ export const Footer: React.FC = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-80px' }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#2E2425]"
+          className="flex flex-col lg:flex-row gap-10 pb-12 border-b border-[#2E2425]"
         >
-          {/* Col 1 & 2: Brand & Kurukshetra Physical Boutique */}
-          <motion.div variants={footerColVariants} className="lg:col-span-2">
+          {/* Left: Brand Info */}
+          <motion.div variants={footerColVariants} className="lg:flex-1">
             <div className="flex items-center gap-3 mb-3">
               <div>
                 <div className="flex items-center gap-1.5">
@@ -109,38 +105,9 @@ export const Footer: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Col 3: Categories & Quick Links */}
-          <motion.div variants={footerColVariants}>
-            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-              Categories
-            </h4>
-            <ul className="space-y-2 text-xs">
-              {CATEGORIES.map((cat) => (
-                <li key={cat}>
-                  <button
-                    type="button"
-                    onClick={() => navigateToCategory(cat)}
-                    className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
-                    <span>{cat}</span>
-                  </button>
-                </li>
-              ))}
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setView('wishlist')}
-                  className="text-[#B5ABA0] hover:text-[#E6C280] transition-colors text-left flex items-center gap-1 group"
-                >
-                  <ChevronRight className="w-3 h-3 text-[#721B29] group-hover:translate-x-0.5 transition-transform" />
-                  <span>My Wishlist</span>
-                </button>
-              </li>
-            </ul>
-          </motion.div>
 
-          {/* Col 4: Store Locator (3 Locations) */}
+          {/* Right: Store Locator + Customer Care */}
+          <div className="ml-auto flex flex-col sm:flex-row gap-10 lg:gap-16">
           <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
               Store Locator
@@ -200,22 +167,10 @@ export const Footer: React.FC = () => {
               <li>
                 <span className="block text-[#8E8378]">Authentic Hand-Drape Sarees</span>
               </li>
-              <li className="pt-2">
-                {/* Internal Admin link */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView('admin');
-                    setAdminActiveTab('dashboard');
-                  }}
-                  className="text-[11px] text-[#E6C280] hover:underline flex items-center gap-1.5"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#E6C280]" />
-                  <span>Store Admin Portal</span>
-                </button>
-              </li>
             </ul>
           </motion.div>
+
+          </div>
         </motion.div>
 
         {/* Bottom Bar: Copyright & Payment/Trust Badges */}
@@ -228,6 +183,17 @@ export const Footer: React.FC = () => {
         >
           <p className="flex items-center gap-1">
             <span>© {new Date().getFullYear()} The Western Store, Kurukshetra. All rights reserved.</span>
+          </p>
+          <p className="text-[11px] text-[#5A534F]">
+            Designed by{' '}
+            <a
+              href="https://www.yritsolutions.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#B8860B] hover:text-[#E6C280] hover:underline transition-colors"
+            >
+              YR IT Solutions
+            </a>
           </p>
 
           {/* Payment & WhatsApp ordering badges */}

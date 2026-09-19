@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { AnnouncementBar } from './components/AnnouncementBar';
@@ -6,7 +6,7 @@ import { Header } from './components/Header';
 import { HeroCarousel } from './components/HeroCarousel';
 import { ProductSection } from './components/ProductSection';
 import { ShopByBudget } from './components/ShopByBudget';
-import { EditorialLookbook } from './components/EditorialLookbook';
+import { TrustStrip } from './components/TrustStrip';
 import { Testimonials } from './components/Testimonials';
 import { InstagramFeed } from './components/InstagramFeed';
 import { Footer } from './components/Footer';
@@ -18,7 +18,8 @@ import { CartPage } from './components/CartPage';
 import { WishlistPage } from './components/WishlistPage';
 import { OrderTrackingPage } from './components/OrderTrackingPage';
 import { OrderHistoryPage } from './components/OrderHistoryPage';
-import { AdminPanel } from './components/AdminPanel';
+import { ContactPage } from './components/ContactPage';
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 import { CartDrawer } from './components/CartDrawer';
 import { WhatsAppCheckoutModal } from './components/WhatsAppCheckoutModal';
 import { QuickViewModal } from './components/QuickViewModal';
@@ -40,6 +41,7 @@ const StorefrontContent: React.FC = () => {
     isAuthModalOpen,
     isCheckoutModalOpen,
     isSizeChartOpen,
+    currentUser,
   } = useStore();
 
   // Scroll to top on view changes
@@ -47,8 +49,12 @@ const StorefrontContent: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentView]);
 
-  // If in admin view, render admin panel full-width
+  // If in admin view, verify admin status before rendering admin panel
   if (currentView === 'admin') {
+    if (!currentUser?.isAdmin) {
+      setView('home');
+      return null;
+    }
     return (
       <motion.div
         key="admin"
@@ -57,7 +63,9 @@ const StorefrontContent: React.FC = () => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
       >
-        <AdminPanel />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-[#736B63]">Loading admin…</div>}>
+          <AdminPanel />
+        </Suspense>
       </motion.div>
     );
   }
@@ -112,7 +120,9 @@ const StorefrontContent: React.FC = () => {
           />
         );
       case 'lookbook':
-        return <EditorialLookbook key={sec.id} />;
+      case 'trust':
+      case 'trust-strip':
+        return <TrustStrip key={sec.id} />;
       case 'testimonials':
         return <Testimonials key={sec.id} />;
       case 'instagram':
@@ -191,6 +201,7 @@ const StorefrontContent: React.FC = () => {
             {currentView === 'wishlist' && <WishlistPage />}
             {currentView === 'track-order' && <OrderTrackingPage />}
             {currentView === 'order-history' && <OrderHistoryPage />}
+            {currentView === 'contact' && <ContactPage />}
           </motion.div>
         </AnimatePresence>
       </main>

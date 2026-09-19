@@ -208,6 +208,7 @@ export type HomeSectionType =
   | 'best-sellers'
   | 'lookbook'
   | 'trust-strip'
+  | 'trust'
   | 'testimonials'
   | 'instagram'
   | 'custom-banner';
