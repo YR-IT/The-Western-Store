@@ -23,40 +23,64 @@ const VideoReelCard: React.FC<VideoReelCardProps> = ({ post, index }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   // Video source - prefer videoUrl or reelUrl (if direct file)
   const videoSrc = post.videoUrl || post.reelUrl || '';
+  const posterSrc = post.thumbnail || post.image;
 
-  // Smart Bandwidth & Performance: Only play and load video when in viewport
+  // 1. Lookahead prefetch: Attach src when within 400px of viewport to buffer early without wasting bandwidth
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || !videoSrc) return;
 
-    const observer = new IntersectionObserver(
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const loadObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            const vid = videoRef.current;
-            if (vid) {
-              vid.play().catch(() => {});
-            }
-          } else {
-            const vid = videoRef.current;
-            if (vid && !vid.paused) {
-              vid.pause();
-            }
-          }
-        });
+        if (entries[0]?.isIntersecting) {
+          setShouldLoad(true);
+          loadObserver.disconnect();
+        }
       },
-      { threshold: 0.15 }
+      { rootMargin: '400px 0px 400px 0px', threshold: 0 }
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    loadObserver.observe(el);
+    return () => loadObserver.disconnect();
   }, [videoSrc]);
+
+  // 2. Play/Pause controller: Autoplay only when actually visible in viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !videoSrc) return;
+
+    if (!('IntersectionObserver' in window)) return;
+
+    const playObserver = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const vid = videoRef.current;
+        if (!vid) return;
+
+        if (entry?.isIntersecting) {
+          vid.play().catch(() => {});
+        } else {
+          if (!vid.paused) {
+            vid.pause();
+          }
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    playObserver.observe(el);
+    return () => playObserver.disconnect();
+  }, [videoSrc, shouldLoad]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,8 +119,8 @@ const VideoReelCard: React.FC<VideoReelCardProps> = ({ post, index }) => {
         {videoSrc && !hasError ? (
           <video
             ref={videoRef}
-            src={isVisible ? videoSrc : undefined}
-            autoPlay
+            src={shouldLoad ? videoSrc : undefined}
+            poster={posterSrc}
             loop
             muted={isMuted}
             playsInline

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
-
+import { compressAndResizeImage } from '../../utils/imageUtils';
 
 interface ImageKitUploaderProps {
   onUploadSuccess: (url: string) => void;
@@ -38,8 +38,10 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
     setProgress(15);
 
     try {
-      // Upload the original file directly — no client-side compression or resizing
-      const file = rawFile;
+      // Videos upload directly; images are compressed to q-92 / 3840px max
+      // — visually indistinguishable from original, but ~50% smaller on disk.
+      const isVideo = rawFile.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v)$/i.test(rawFile.name);
+      const file = isVideo ? rawFile : await compressAndResizeImage(rawFile);
       setProgress(30);
 
       const adminSecretToUse =
