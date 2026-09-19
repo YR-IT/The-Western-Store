@@ -268,20 +268,94 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     return INITIAL_CATEGORIES.filter((c) => c && !deletedIds.has(c.id));
   });
-  // NOTE: These states start with in-code placeholder defaults purely so the
-  // page has something to paint on the very first render. They are never
-  // read from or written to localStorage. The real, permanent value always
-  // comes from Supabase (fetched below) and Supabase alone — so a refresh,
-  // a redeploy, or a brand-new browser all converge on the same saved state.
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(INITIAL_HERO_SLIDES);
-  const [announcementText, setAnnouncementText] = useState<string>(STORE_INFO.announcement);
-  const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(INITIAL_BUDGET_TILES);
-  const [trustFeatures, setTrustFeatures] = useState<TrustFeatureConfig[]>(INITIAL_TRUST_FEATURES);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
-  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(INITIAL_INSTAGRAM_POSTS);
-  const [instagramHandle, setInstagramHandle] = useState<string>(STORE_INFO.instagram);
-  const [homeSections, setHomeSections] = useState<HomeSectionConfig[]>(INITIAL_HOME_SECTIONS);
-  const [collectionFilters, setCollectionFilters] = useState<CollectionFilterConfig>(INITIAL_COLLECTION_FILTERS);
+  // heroSlides always starts empty — Supabase is the single source of truth.
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+
+  const [announcementText, setAnnouncementText] = useState<string>(() => {
+    return localStorage.getItem('tws_announcement') || STORE_INFO.announcement;
+  });
+
+  const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(() => {
+    const saved = localStorage.getItem('tws_budget_tiles');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_BUDGET_TILES;
+  });
+
+  const [trustFeatures, setTrustFeatures] = useState<TrustFeatureConfig[]>(() => {
+    const saved = localStorage.getItem('tws_trust_features');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_TRUST_FEATURES;
+  });
+
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
+    const saved = localStorage.getItem('tws_customer_reviews');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_TESTIMONIALS;
+  });
+
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>(() => {
+    const saved = localStorage.getItem('tws_instagram_posts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return INITIAL_INSTAGRAM_POSTS;
+  });
+
+  const [instagramHandle, setInstagramHandle] = useState<string>(() => {
+    return localStorage.getItem('tws_instagram_handle') || STORE_INFO.instagram;
+  });
+
+  // Home Sections State
+  const [homeSections, setHomeSections] = useState<HomeSectionConfig[]>(() => {
+    const saved = localStorage.getItem('tws_home_sections');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return INITIAL_HOME_SECTIONS;
+      }
+    }
+    return INITIAL_HOME_SECTIONS;
+  });
+
+  // Collection Filters State
+  const [collectionFilters, setCollectionFilters] = useState<CollectionFilterConfig>(() => {
+    const saved = localStorage.getItem('tws_collection_filters');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          fabrics: parsed.fabrics || INITIAL_COLLECTION_FILTERS.fabrics,
+          occasions: parsed.occasions || INITIAL_COLLECTION_FILTERS.occasions,
+          sizes: parsed.sizes || INITIAL_COLLECTION_FILTERS.sizes,
+          colors: parsed.colors || INITIAL_COLLECTION_FILTERS.colors,
+          budgetTiers: parsed.budgetTiers || INITIAL_COLLECTION_FILTERS.budgetTiers,
+          sortOptions: parsed.sortOptions || INITIAL_COLLECTION_FILTERS.sortOptions,
+        };
+      } catch {
+        return INITIAL_COLLECTION_FILTERS;
+      }
+    }
+    return INITIAL_COLLECTION_FILTERS;
+  });
 
   // Only true once the first Supabase settings fetch has resolved. Guards
   // every save-effect below so we never write a placeholder default back to
@@ -406,7 +480,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const resetHeroSlides = () => {
-    setHeroSlides(INITIAL_HERO_SLIDES);
+    setHeroSlides([]);
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('hero_slides', []).catch(() => {});
+    }
   };
 
   const updateBudgetTile = (tier: BudgetTier, updates: Partial<BudgetTileConfig>) => {
@@ -674,6 +751,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
     syncOrders();
+    try {
+      localStorage.removeItem('tws_hero_slides');
+    } catch {}
 
     // Load every homepage setting straight from Supabase. Whatever is (or
     // isn't) saved there is the truth — there is no local fallback and
@@ -683,7 +763,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (settings.instagram_posts && Array.isArray(settings.instagram_posts) && settings.instagram_posts.length > 0) {
           setInstagramPosts(settings.instagram_posts);
         }
-        if (settings.hero_slides && Array.isArray(settings.hero_slides) && settings.hero_slides.length > 0) {
+        if (settings.hero_slides !== undefined && Array.isArray(settings.hero_slides)) {
           setHeroSlides(settings.hero_slides);
         }
         if (settings.testimonials && Array.isArray(settings.testimonials) && settings.testimonials.length > 0) {

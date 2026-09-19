@@ -448,9 +448,7 @@ app.delete('/api/imagekit/files/:fileId', async (req, res) => {
 
 
 // ─── Store Settings API (Hero Slides, Reels, Home Sections Persistence) ──
-// Supabase is the single source of truth. No local file cache, no committed
-// defaults — every read/write goes straight to the `store_settings` table so
-// nothing here can survive a redeploy and overwrite what was last saved.
+// Pure Supabase persistence: no local file cache or defaults
 app.get('/api/store-settings', async (_req, res) => {
   if (!supabase) {
     res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
@@ -496,9 +494,9 @@ app.post('/api/store-settings', async (req, res) => {
       .upsert({ key, value, updated_at: new Date().toISOString() });
     if (error) throw error;
     res.json({ success: true, message: `Setting '${key}' saved successfully.` });
-  } catch (e: any) {
-    console.error('[Settings] POST error:', e);
-    res.status(500).json({ success: false, error: e.message || 'Failed to save store setting.' });
+  } catch (err: any) {
+    console.error('[Settings] POST error:', err);
+    res.status(500).json({ error: err.message || 'Failed to save store setting.' });
   }
 });
 

@@ -42,60 +42,7 @@ export const STORE_INFO = {
 
 export const INITIAL_CATEGORIES: Category[] = [];
 
-export const INITIAL_HERO_SLIDES: HeroSlide[] = [
-  {
-    id: 'slide-1',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1920&q=85',
-    desktopImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1920&q=85',
-    mobileImage: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=85',
-    targetDevice: 'all',
-    title: 'The Festive Grace',
-    tagline: 'Autumn / Wedding Edit 2026',
-    subtitle: 'Hand-pleated pre-stitched sarees, regal lehengas and festive suits tailored for celebrations.',
-    category: 'Ethnic Wear',
-    ctaText: 'Explore Ethnic Wear',
-    showTextOverlay: false,
-  },
-  {
-    id: 'slide-2',
-    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1920&q=85',
-    desktopImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1920&q=85',
-    mobileImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=85',
-    targetDevice: 'all',
-    title: 'Modern Western & Co-Ords',
-    tagline: 'Everyday Chic To Evening Soirées',
-    subtitle: 'Breezy linen-cotton cord sets, statement tunics and tailored western silhouettes.',
-    category: 'Western Wear',
-    ctaText: 'Shop Western Wear',
-    showTextOverlay: false,
-  },
-  {
-    id: 'slide-3',
-    image: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1920&q=85',
-    desktopImage: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1920&q=85',
-    mobileImage: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=85',
-    targetDevice: 'all',
-    title: 'Editorial Denim & Tops',
-    tagline: 'Kurukshetra’s Youth Favorite',
-    subtitle: 'Korean wide-leg jeans, corset blouses and minimal daywear curated for collegiate style.',
-    category: 'Western Wear',
-    ctaText: 'View Western Edit',
-    showTextOverlay: false,
-  },
-  {
-    id: 'slide-4',
-    image: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1920&q=85',
-    desktopImage: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1920&q=85',
-    mobileImage: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=85',
-    targetDevice: 'all',
-    title: 'Pure Chanderi & Georgette Sets',
-    tagline: 'Handcrafted Heritage',
-    subtitle: 'Delicate gota-patti and threadwork suits with feather-light organza dupattas.',
-    category: 'Ethnic Wear',
-    ctaText: 'Shop Ethnic Wear',
-    showTextOverlay: false,
-  },
-];
+export const INITIAL_HERO_SLIDES: HeroSlide[] = [];
 
 export const INITIAL_PRODUCTS: Product[] = [];
 
