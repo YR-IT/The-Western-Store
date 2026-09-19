@@ -10,14 +10,16 @@ export const FALLBACK_CATEGORY_IMAGE =
   'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80';
 
 /**
- * Transforms ImageKit, Unsplash, or CDN image URLs to use optimal width,
- * quality, and modern format (WebP/AVIF) transformations.
- * This prevents 400 Bad Request errors from unconstrained high-res DSLR photos (>25MP).
+ * Returns the ImageKit or CDN image URL at full original quality.
+ * No width cap, quality reduction, or format conversion is applied —
+ * ImageKit serves the exact file that was uploaded.
+ * The optional width/quality params are kept for call-site compatibility
+ * but are ignored for ImageKit URLs.
  */
 export function getOptimizedImageUrl(
   url: string | null | undefined,
-  width: number = 1000,
-  quality: number = 85
+  width: number = 4096,
+  quality: number = 100
 ): string {
   if (!url || typeof url !== 'string' || !url.trim()) {
     return FALLBACK_PRODUCT_IMAGE;
@@ -25,29 +27,23 @@ export function getOptimizedImageUrl(
 
   const cleanUrl = url.trim();
 
-  // 1. ImageKit CDN URL transformation
+  // 1. ImageKit CDN URL — strip any existing tr: transformation segment
+  //    so the original uploaded file is served without re-encoding.
   if (cleanUrl.includes('ik.imagekit.io')) {
     try {
-      // Matches https://ik.imagekit.io/<endpoint-id>/[optional tr:.../]<rest-of-path>
-      const match = cleanUrl.match(/^(https?:\/\/ik\.imagekit\.io\/[^/]+)(?:\/tr:[^/]+)?(\/.*)$/);
-      if (match) {
-        const baseUrl = match[1];
-        const restPath = match[2];
-        return `${baseUrl}/tr:w-${width},q-${quality},f-auto${restPath}`;
-      }
+      // Remove a /tr:... segment anywhere in the path
+      return cleanUrl.replace(/\/tr:[^/]+/, '');
     } catch {
       return cleanUrl;
     }
   }
 
-  // 2. Unsplash transformation
+  // 2. Unsplash — request high quality without forcing a specific crop width
   if (cleanUrl.includes('images.unsplash.com')) {
     try {
       const urlObj = new URL(cleanUrl);
-      urlObj.searchParams.set('w', String(width));
-      urlObj.searchParams.set('q', String(quality));
+      urlObj.searchParams.set('q', '100');
       urlObj.searchParams.set('auto', 'format');
-      urlObj.searchParams.set('fit', 'crop');
       return urlObj.toString();
     } catch {
       return cleanUrl;
