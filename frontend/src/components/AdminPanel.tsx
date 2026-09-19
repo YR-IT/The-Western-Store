@@ -204,6 +204,25 @@ export const AdminPanel: React.FC = () => {
     (o) => o.status !== 'Cancelled' && o.status !== 'Delivered' && !o.trackingNumber && !o.trackingLink
   ).length;
 
+  // Compute top-selling category by total items ordered (excluding cancelled orders)
+  const topSellingCategory = (() => {
+    const categoryCounts: Record<string, number> = {};
+    const activeOrders = orders.filter((o) => o.status !== 'Cancelled');
+    for (const order of activeOrders) {
+      for (const item of order.items || []) {
+        const product = products.find((p) => p.id === item.productId);
+        const cat = product?.category;
+        if (cat) {
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + (item.quantity || 1);
+        }
+      }
+    }
+    const entries = Object.entries(categoryCounts);
+    if (entries.length === 0) return { name: '—', count: 0 };
+    const [name, count] = entries.reduce((best, curr) => (curr[1] > best[1] ? curr : best));
+    return { name, count };
+  })();
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -740,11 +759,15 @@ export const AdminPanel: React.FC = () => {
                   </span>
                   <div className="mt-2 flex items-baseline justify-between">
                     <span className="font-serif text-lg sm:text-xl font-bold text-[#242120]">
-                      Ethnic Wear
+                      {topSellingCategory.name}
                     </span>
                     <Tag className="w-4 h-4 text-[#721B29]" />
                   </div>
-                  <p className="text-[11px] text-[#736B63] mt-1">Leading demand this week</p>
+                  <p className="text-[11px] text-[#736B63] mt-1">
+                    {topSellingCategory.count > 0
+                      ? `${topSellingCategory.count} item${topSellingCategory.count !== 1 ? 's' : ''} ordered across all orders`
+                      : 'No orders yet'}
+                  </p>
                 </div>
               </div>
 
