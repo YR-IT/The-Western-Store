@@ -155,6 +155,9 @@ export const AdminPanel: React.FC = () => {
   // Tracking Modal State
   const [trackingModalOrder, setTrackingModalOrder] = useState<Order | null>(null);
 
+  // Order Details Modal State
+  const [orderDetailsModal, setOrderDetailsModal] = useState<Order | null>(null);
+
   // Modals state
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -980,15 +983,6 @@ export const AdminPanel: React.FC = () => {
                                       })
                                     : 'Recently Placed'}
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() => openOrderTracking(order.orderNumber || order.id, order.phone)}
-                                  className="mt-1 text-[10px] text-[#721B29] hover:underline flex items-center gap-0.5 cursor-pointer"
-                                  title="View customer tracking page"
-                                >
-                                  <Eye className="w-2.5 h-2.5" />
-                                  <span>Customer View</span>
-                                </button>
                               </td>
 
                               {/* Customer Details */}
@@ -1119,6 +1113,16 @@ export const AdminPanel: React.FC = () => {
                               {/* Actions Column */}
                               <td className="p-3.5 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setOrderDetailsModal(order)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#FAF7F0] hover:bg-[#EAE4D9] text-[#242120] border border-[#D9CEBF] rounded-xs font-semibold text-[11px] transition-colors cursor-pointer"
+                                    title="View Full Order Details"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-[#721B29]" />
+                                    <span>Show Details</span>
+                                  </button>
+
                                   <button
                                     type="button"
                                     onClick={() => handleOpenTrackingModal(order)}
@@ -1686,6 +1690,245 @@ export const AdminPanel: React.FC = () => {
           {adminActiveTab === 'filters' && <CollectionFiltersManager />}
         </main>
       </div>
+
+      {/* ORDER DETAILS MODAL */}
+      {orderDetailsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => setOrderDetailsModal(null)}
+          />
+          <div className="relative w-full max-w-2xl bg-[#FDFBF7] rounded-xl shadow-2xl border border-[#E0D7C8] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#EAE4D9] bg-[#FAF8F3] flex-shrink-0">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-[#242120]">
+                  Order #{orderDetailsModal.orderNumber || orderDetailsModal.id}
+                </h2>
+                <p className="text-[11px] text-[#8C8276] mt-0.5">
+                  {orderDetailsModal.createdAt
+                    ? new Date(orderDetailsModal.createdAt).toLocaleDateString('en-IN', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'Recently Placed'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`px-2.5 py-1 rounded-sm text-[11px] font-semibold border ${
+                    orderDetailsModal.status === 'Pending WhatsApp'
+                      ? 'bg-amber-50 text-amber-900 border-amber-300'
+                      : orderDetailsModal.status === 'Confirmed' || orderDetailsModal.status === 'Paid'
+                      ? 'bg-blue-50 text-blue-900 border-blue-300'
+                      : orderDetailsModal.status === 'Shipped'
+                      ? 'bg-purple-50 text-purple-900 border-purple-300'
+                      : orderDetailsModal.status === 'Delivered'
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                      : 'bg-gray-100 text-gray-800 border-gray-300'
+                  }`}
+                >
+                  {orderDetailsModal.status}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setOrderDetailsModal(null)}
+                  className="p-1.5 rounded-lg text-[#8C8276] hover:bg-[#EAE4D9] hover:text-[#242120] transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto flex-1 divide-y divide-[#F0EBE0]">
+
+              {/* Customer & Contact */}
+              <div className="px-6 py-4 space-y-2">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8276] mb-2">Customer &amp; Contact</h3>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                  <div>
+                    <span className="text-[#8C8276]">Name</span>
+                    <p className="font-semibold text-[#242120] mt-0.5">{orderDetailsModal.customerName || '—'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[#8C8276]">Phone</span>
+                    <p className="font-semibold text-[#242120] mt-0.5">{orderDetailsModal.phone || '—'}</p>
+                  </div>
+                  {orderDetailsModal.email && (
+                    <div className="col-span-2">
+                      <span className="text-[#8C8276]">Email</span>
+                      <p className="font-semibold text-[#242120] mt-0.5">{orderDetailsModal.email}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div className="px-6 py-4">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8276] mb-2">Shipping Address</h3>
+                <div className="flex items-start gap-2 text-xs">
+                  <MapPin className="w-3.5 h-3.5 text-[#721B29] mt-0.5 flex-shrink-0" />
+                  <p className="text-[#242120] leading-relaxed">
+                    {orderDetailsModal.address || '—'}<br />
+                    {orderDetailsModal.city}{orderDetailsModal.state ? `, ${orderDetailsModal.state}` : ''}
+                    {orderDetailsModal.pincode ? ` — ${orderDetailsModal.pincode}` : ''}
+                  </p>
+                </div>
+                {orderDetailsModal.notes && (
+                  <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 italic">
+                    📝 Note: {orderDetailsModal.notes}
+                  </p>
+                )}
+              </div>
+
+              {/* Products Ordered */}
+              <div className="px-6 py-4">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8276] mb-3">Products Ordered</h3>
+                <div className="space-y-3">
+                  {(orderDetailsModal.items || []).map((item, idx) => {
+                    const product = products.find((p) => p.id === item.productId);
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        {(item.image || product?.images?.[0]) && (
+                          <img
+                            src={item.image || product?.images?.[0]}
+                            alt={item.title}
+                            className="w-12 h-12 object-cover rounded-md border border-[#EAE4D9] flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[#242120] leading-snug truncate">{item.title || 'Item'}</p>
+                          <p className="text-[11px] text-[#736B63] mt-0.5">
+                            Size: <span className="font-medium">{item.size || 'Free Size'}</span>
+                            {item.color ? <> &nbsp;·&nbsp; Color: <span className="font-medium">{item.color}</span></> : ''}
+                            {product?.category ? <> &nbsp;·&nbsp; <span className="text-[#721B29]">{product.category}</span></> : ''}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-bold text-[#242120]">₹{(item.price || 0).toLocaleString('en-IN')}</p>
+                          <p className="text-[10px] text-[#8C8276]">Qty: {item.quantity || 1}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Pricing Breakdown */}
+              <div className="px-6 py-4">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8276] mb-2">Pricing</h3>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-[#736B63]">Subtotal</span>
+                    <span className="font-medium">₹{(orderDetailsModal.subtotal || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#736B63]">Shipping</span>
+                    <span className="font-medium">
+                      {orderDetailsModal.shippingFee === 0 ? (
+                        <span className="text-emerald-700 font-semibold">Free</span>
+                      ) : (
+                        `₹${(orderDetailsModal.shippingFee || 0).toLocaleString('en-IN')}`
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-[#EAE4D9] pt-1.5 mt-1">
+                    <span className="font-bold text-[#242120]">Total</span>
+                    <span className="font-bold text-[#721B29] text-sm">₹{(orderDetailsModal.total || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tracking Info (if available) */}
+              {(orderDetailsModal.trackingNumber || orderDetailsModal.trackingLink || orderDetailsModal.courierName) && (
+                <div className="px-6 py-4">
+                  <h3 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C8276] mb-2">Tracking &amp; Dispatch</h3>
+                  <div className="space-y-1.5 text-xs">
+                    {orderDetailsModal.courierName && (
+                      <div className="flex justify-between">
+                        <span className="text-[#736B63]">Courier</span>
+                        <span className="font-medium">{orderDetailsModal.courierName}</span>
+                      </div>
+                    )}
+                    {orderDetailsModal.trackingNumber && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#736B63]">AWB / Tracking No.</span>
+                        <span className="font-mono font-bold bg-[#F4EFE6] px-2 py-0.5 rounded border border-[#D9CEBF]">{orderDetailsModal.trackingNumber}</span>
+                      </div>
+                    )}
+                    {orderDetailsModal.shippedDate && (
+                      <div className="flex justify-between">
+                        <span className="text-[#736B63]">Shipped Date</span>
+                        <span className="font-medium">{orderDetailsModal.shippedDate}</span>
+                      </div>
+                    )}
+                    {orderDetailsModal.estimatedDelivery && (
+                      <div className="flex justify-between">
+                        <span className="text-[#736B63]">Est. Delivery</span>
+                        <span className="font-medium">{orderDetailsModal.estimatedDelivery}</span>
+                      </div>
+                    )}
+                    {orderDetailsModal.trackingLink && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#736B63]">Tracking Link</span>
+                        <a
+                          href={orderDetailsModal.trackingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[#721B29] hover:underline font-medium"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Open
+                        </a>
+                      </div>
+                    )}
+                    {orderDetailsModal.trackingNotes && (
+                      <p className="text-[11px] text-[#736B63] italic mt-1 bg-[#FAF8F3] px-2.5 py-1.5 rounded border border-[#EAE4D9]">
+                        {orderDetailsModal.trackingNotes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-3 px-6 py-3.5 border-t border-[#EAE4D9] bg-[#FAF8F3] flex-shrink-0">
+              <a
+                href={`https://wa.me/91${orderDetailsModal.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(orderDetailsModal.customerName)}%2C%20greetings%20from%20The%20Western%20Store!`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-xs transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                WhatsApp Customer
+              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setOrderDetailsModal(null); handleOpenTrackingModal(orderDetailsModal); }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#FAF7F0] hover:bg-[#EAE4D9] text-[#242120] border border-[#D9CEBF] rounded-lg font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  <Truck className="w-3.5 h-3.5 text-[#721B29]" />
+                  {(orderDetailsModal.trackingNumber || orderDetailsModal.trackingLink) ? 'Edit Tracking' : 'Add Tracking'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderDetailsModal(null)}
+                  className="px-3 py-2 bg-[#242120] hover:bg-[#3A3530] text-white rounded-lg font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SELLER ORDER TRACKING MANAGEMENT MODAL */}
       {trackingModalOrder && (
