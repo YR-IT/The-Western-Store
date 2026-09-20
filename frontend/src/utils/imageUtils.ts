@@ -10,21 +10,16 @@ export const FALLBACK_CATEGORY_IMAGE =
   'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80';
 
 /**
- * Returns an ImageKit or CDN image URL with smart, visually-lossless compression.
- *
- * Strategy:
- *  - quality 90  → indistinguishable from original to human eye, ~50% smaller
- *  - f-auto      → ImageKit serves WebP/AVIF automatically (~30% extra saving)
- *  - width 1920  → covers full HD & most retina displays; pass a larger value
- *                  (e.g. 3840) for hero banners that need 4K sharpness
- *
- * Net effect: an 8 MB upload becomes ~1–2 MB on the wire — well within
- * ImageKit's 20 GB/month free bandwidth for 400–500 daily users.
+ * Returns the ImageKit or CDN image URL at full original quality.
+ * No width cap, quality reduction, or format conversion is applied —
+ * ImageKit serves the exact file that was uploaded.
+ * The optional width/quality params are kept for call-site compatibility
+ * but are ignored for ImageKit URLs.
  */
 export function getOptimizedImageUrl(
   url: string | null | undefined,
-  width: number = 1920,
-  quality: number = 90
+  width: number = 4096,
+  quality: number = 100
 ): string {
   if (!url || typeof url !== 'string' || !url.trim()) {
     return FALLBACK_PRODUCT_IMAGE;
@@ -32,32 +27,22 @@ export function getOptimizedImageUrl(
 
   const cleanUrl = url.trim();
 
-  // 1. ImageKit CDN URL — strip any stale tr: segment, then apply our
-  //    smart transformation: width cap, q-90, and auto WebP/AVIF format.
+  // 1. ImageKit CDN URL — strip any existing tr: transformation segment
+  //    so the original uploaded file is served without re-encoding.
   if (cleanUrl.includes('ik.imagekit.io')) {
     try {
-      const stripped = cleanUrl.replace(/\/tr:[^/]+/, '');
-      // Insert transformation right after the endpoint root
-      // e.g. https://ik.imagekit.io/abc/products/img.jpg
-      //   -> https://ik.imagekit.io/abc/tr:w-1920,q-90,f-auto/products/img.jpg
-      const match = stripped.match(/^(https?:\/\/ik\.imagekit\.io\/[^/]+)(\/.*)?$/);
-      if (match) {
-        const base = match[1];
-        const rest = match[2] || '';
-        return `${base}/tr:w-${width},q-${quality},f-auto${rest}`;
-      }
-      return stripped;
+      // Remove a /tr:... segment anywhere in the path
+      return cleanUrl.replace(/\/tr:[^/]+/, '');
     } catch {
       return cleanUrl;
     }
   }
 
-  // 2. Unsplash — high quality, auto format
+  // 2. Unsplash — request high quality without forcing a specific crop width
   if (cleanUrl.includes('images.unsplash.com')) {
     try {
       const urlObj = new URL(cleanUrl);
-      urlObj.searchParams.set('w', String(width));
-      urlObj.searchParams.set('q', String(quality));
+      urlObj.searchParams.set('q', '100');
       urlObj.searchParams.set('auto', 'format');
       return urlObj.toString();
     } catch {
