@@ -497,5 +497,26 @@ app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`   Running on port: ${PORT}`);
   console.log(`   ImageKit auth endpoint: GET /api/imagekit/auth`);
   console.log(`   Health check endpoint: GET /api/health\n`);
+
+  // ─── Render Free-Tier Keep-Alive Self-Ping ───────────────────────────────
+  // Render spins down free services after ~15 min of inactivity (cold-start = 30-60s delay).
+  // Pinging own /api/health every 14 min keeps the dyno warm at zero cost.
+  // RENDER_EXTERNAL_URL is automatically injected by Render in production.
+  const selfUrl = process.env.RENDER_EXTERNAL_URL;
+  if (selfUrl) {
+    console.log(`   Keep-alive self-ping active → ${selfUrl}/api/health (every 14 min)\n`);
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${selfUrl}/api/health`);
+        if (res.ok) {
+          console.log(`[Keep-alive] Self-ping OK — ${new Date().toISOString()}`);
+        } else {
+          console.warn(`[Keep-alive] Self-ping returned status ${res.status}`);
+        }
+      } catch (err) {
+        console.warn('[Keep-alive] Self-ping failed (server may be restarting):', err);
+      }
+    }, 14 * 60 * 1000); // 14 minutes
+  }
 });
 
