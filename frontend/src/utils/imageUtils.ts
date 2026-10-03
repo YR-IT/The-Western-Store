@@ -76,76 +76,93 @@ export async function compressAndResizeImage(
   quality = 0.92
 ): Promise<File> {
   // If not an image or SVG/GIF, return as is
-  if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
+  if (!file || !file.type || !file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
     return file;
   }
 
   return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (readerEvent) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
+    try {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              let { width, height } = img;
 
-        // Only scale down if image exceeds max dimension
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
+              // Only scale down if image exceeds max dimension
+              if (width > maxWidth || height > maxHeight) {
+                if (width > height) {
+                  height = Math.round((height * maxWidth) / width);
+                  width = maxWidth;
+                } else {
+                  width = Math.round((width * maxHeight) / height);
+                  height = maxHeight;
+                }
+              }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(file);
-          return;
-        }
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                resolve(file);
+                return;
+              }
 
-        // Draw image smoothed
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
+              // Draw image smoothed
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert canvas to blob
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
+              // Convert canvas to blob
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) {
+                    resolve(file);
+                    return;
+                  }
+
+                  try {
+                    const originalName = file.name ? file.name.replace(/\.[^/.]+$/, '') : 'upload';
+                    const newFile = new File([blob], `${originalName}.jpg`, {
+                      type: 'image/jpeg',
+                      lastModified: Date.now(),
+                    });
+                    resolve(newFile);
+                  } catch {
+                    // Fallback for browsers/webviews where new File() is restricted
+                    const blobFile = blob as any;
+                    blobFile.name = `${(file.name || 'upload').replace(/\.[^/.]+$/, '')}.jpg`;
+                    resolve(blobFile);
+                  }
+                },
+                'image/jpeg',
+                quality
+              );
+            } catch {
               resolve(file);
-              return;
             }
+          };
 
-            // Create a clean filename replacing extension with .jpg if converted
-            const originalName = file.name.replace(/\.[^/.]+$/, '');
-            const newFile = new File([blob], `${originalName}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
+          img.onerror = () => {
+            resolve(file);
+          };
 
-            resolve(newFile);
-          },
-          'image/jpeg',
-          quality
-        );
+          img.src = (readerEvent.target?.result as string) || '';
+        } catch {
+          resolve(file);
+        }
       };
 
-      img.onerror = () => {
+      reader.onerror = () => {
         resolve(file);
       };
 
-      img.src = readerEvent.target?.result as string;
-    };
-
-    reader.onerror = () => {
+      reader.readAsDataURL(file);
+    } catch {
       resolve(file);
-    };
-
-    reader.readAsDataURL(file);
+    }
   });
 }

@@ -3,18 +3,23 @@ import { Upload, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from '
 import { compressAndResizeImage } from '../../utils/imageUtils';
 
 interface ImageKitUploaderProps {
-  onUploadSuccess: (url: string) => void;
+  onUploadSuccess?: (url: string) => void;
+  onSuccess?: (url: string) => void;
   folder?: string;
+  tags?: string[];
   buttonText?: string;
   className?: string;
   accept?: string;
 }
 
-const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+const rawBackendUrl = ((import.meta as any).env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
+const BACKEND_URL = rawBackendUrl || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : '');
 
 export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   onUploadSuccess,
+  onSuccess,
   folder = '/products',
+  tags,
   buttonText = 'Upload Image to ImageKit CDN',
   className = '',
   accept,
@@ -74,11 +79,14 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       // Step 2: Prepare FormData for ImageKit Upload API
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('fileName', file.name);
+      formData.append('fileName', file.name || 'upload');
       formData.append('token', token);
       formData.append('expire', String(expire));
       formData.append('signature', signature);
       formData.append('folder', folder);
+      if (tags && tags.length > 0) {
+        formData.append('tags', tags.join(','));
+      }
       if (publicKey) formData.append('publicKey', publicKey);
 
       setProgress(75);
@@ -101,7 +109,11 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
 
       const finalUrl = uploadData.url || '';
       setSuccessMsg('Uploaded to ImageKit successfully!');
-      onUploadSuccess(finalUrl);
+
+      const callback = onUploadSuccess || onSuccess;
+      if (typeof callback === 'function') {
+        callback(finalUrl);
+      }
 
       // Clear file input
       if (fileInputRef.current) fileInputRef.current.value = '';

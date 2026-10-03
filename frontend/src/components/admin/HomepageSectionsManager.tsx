@@ -1279,7 +1279,7 @@ export const HomepageSectionsManager: React.FC = () => {
                       folder="/budget-photos"
                       tags={['budget_photo', tile.tier]}
                       buttonText="Upload to /budget-photos"
-                      onSuccess={(url) => {
+                      onUploadSuccess={(url) => {
                         updateBudgetTile(tile.tier, { image: url });
                         showToast(`Uploaded photo for ${tile.priceLabel}`);
                       }}
