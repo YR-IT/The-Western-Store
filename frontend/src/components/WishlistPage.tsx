@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from './ProductCard';
-import { Heart, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Heart, ArrowLeft } from 'lucide-react';
 
 export const WishlistPage: React.FC = () => {
   const { wishlist, products, setView } = useStore();

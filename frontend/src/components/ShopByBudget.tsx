@@ -4,54 +4,6 @@ import { useStore } from '../context/StoreContext';
 import { BudgetTier } from '../types';
 import { ArrowRight, Tag } from 'lucide-react';
 
-interface BudgetTile {
-  tier: BudgetTier;
-  title: string;
-  priceLabel: string;
-  subtitle: string;
-  itemsPreview: string;
-  image: string;
-  badge: string;
-}
-
-const BUDGET_TILES: BudgetTile[] = [
-  {
-    tier: 'under_999',
-    title: 'Pocket Friendly Chic',
-    priceLabel: 'Under ₹999',
-    subtitle: 'Daily cotton kurtis, Korean crop tops & chic summer co-ords',
-    itemsPreview: '15+ styles available',
-    image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80',
-    badge: 'College & Daily Edit',
-  },
-  {
-    tier: 'under_1499',
-    title: 'Mid-Tier Elegance',
-    priceLabel: 'Under ₹1,499',
-    subtitle: 'Flowy anarkali suits, tiered dresses & vintage wide-leg jeans',
-    itemsPreview: '28+ styles available',
-    image: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80',
-    badge: 'Most Popular',
-  },
-  {
-    tier: 'under_1999',
-    title: 'Festive & Premium',
-    priceLabel: 'Under ₹1,999',
-    subtitle: 'Pre-stitched georgette sarees, fusion capes & embroidered sets',
-    itemsPreview: '22+ styles available',
-    image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
-    badge: 'Wedding Guest Favorite',
-  },
-  {
-    tier: 'under_2499',
-    title: 'Royal Celebration',
-    priceLabel: 'Under ₹2,499',
-    subtitle: 'Heavy embroidered organza suits, bridal co-ords & festive drapes',
-    itemsPreview: '18+ styles available',
-    image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80',
-    badge: 'Grand Festive Edit',
-  },
-];
 
 export const ShopByBudget: React.FC = () => {
   const { navigateToBudget, budgetTiles, homeSections } = useStore();
@@ -101,13 +53,19 @@ export const ShopByBudget: React.FC = () => {
               onClick={() => navigateToBudget(tile.tier)}
               className="group relative h-[340px] xs:h-[380px] sm:h-[420px] rounded-xl overflow-hidden cursor-pointer shadow-xs hover:shadow-xl transition-all duration-500 border border-[#E0D7C8] bg-white flex flex-col justify-end w-full"
             >
-              {/* Background Image with Zoom */}
-              <img
-                src={tile.image}
-                alt={tile.priceLabel}
-                className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
-                loading="lazy"
-              />
+              {/* Background Image with Zoom (hidden when no image is set) */}
+              {tile.image && (
+                <img
+                  src={tile.image}
+                  alt={tile.priceLabel}
+                  className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                />
+              )}
+              {/* Warm fallback background when no image is uploaded yet */}
+              {!tile.image && (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#3D2B1F] via-[#6B4226] to-[#B8860B]" />
+              )}
 
               {/* Shading Gradients */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />

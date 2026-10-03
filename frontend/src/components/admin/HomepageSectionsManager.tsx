@@ -220,7 +220,7 @@ export const HomepageSectionsManager: React.FC = () => {
     title: 'Festival Flash Sale',
     tagline: 'Limited Time Edit',
     subtitle: 'Flat 20% off on all heavy bridal lehengas and pre-stitched sarees',
-    imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
+    imageUrl: '',
     buttonText: 'Shop Sale Now',
     buttonLink: 'plp',
   });

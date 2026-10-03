@@ -452,7 +452,7 @@ export const AdminPanel: React.FC = () => {
         isBestSeller: Boolean(data.isBestSeller),
         isNew: Boolean(data.isNew),
         budgetTier: data.budgetTier || 'under_1499',
-        images: data.images && data.images.length > 0 ? data.images : ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'],
+        images: data.images && data.images.length > 0 ? data.images : [],
         sizes: data.sizes || ['Free Size'],
         colors: data.colors || [{ name: 'Deep Maroon' }],
         description: data.description || 'Exclusive boutique garment crafted for The Western Store.',
@@ -511,7 +511,7 @@ export const AdminPanel: React.FC = () => {
       addCategory({
         name: data.name || 'New Category',
         subtitle: data.subtitle,
-        image: data.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+        image: data.image || '',
         slug: data.slug,
       });
       showToast(`Created new category "${data.name}"!`);

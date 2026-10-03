@@ -3,11 +3,11 @@
  * and graceful fallback handling across The Western Store application.
  */
 
-export const FALLBACK_PRODUCT_IMAGE =
-  'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80';
+// Fallback images intentionally left empty — no placeholder/mock images
+// for client deployment. UI components handle the empty state gracefully.
+export const FALLBACK_PRODUCT_IMAGE = '';
 
-export const FALLBACK_CATEGORY_IMAGE =
-  'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80';
+export const FALLBACK_CATEGORY_IMAGE = '';
 
 /**
  * Returns the ImageKit or CDN image URL at full original quality.

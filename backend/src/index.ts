@@ -274,16 +274,7 @@ app.post('/api/orders', async (req, res) => {
 app.put('/api/orders/:id', async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
-  
-  const normalizedUpdates: any = {
-    ...updates,
-    ...(updates.courier_name ? { courierName: updates.courier_name } : {}),
-    ...(updates.tracking_number ? { trackingNumber: updates.tracking_number } : {}),
-    ...(updates.tracking_link ? { trackingLink: updates.tracking_link } : {}),
-    ...(updates.courierName ? { courier_name: updates.courierName } : {}),
-    ...(updates.trackingNumber ? { tracking_number: updates.trackingNumber } : {}),
-    ...(updates.trackingLink ? { tracking_link: updates.trackingLink } : {}),
-  };
+
   if (!supabase) {
     res.status(503).json({ success: false, error: 'Supabase is not configured on the backend.' });
     return;
