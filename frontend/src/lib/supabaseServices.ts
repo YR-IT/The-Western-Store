@@ -343,7 +343,8 @@ export async function deleteCategoryFromSupabase(categoryId: string): Promise<bo
   }
 }
 
-const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+const rawBackendUrl = ((import.meta as any).env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
+const BACKEND_URL = rawBackendUrl || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : '');
 
 // ─── STORE SETTINGS & HOMEPAGE CONFIGS (REELS, HERO, REVIEWS, ETC.) ───────────
 export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, any> | null> {
@@ -360,24 +361,28 @@ export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, a
         }
         return settings;
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[Supabase] fetchStoreSettings direct error:', err);
+    }
   }
 
-  // 2. Fallback to Backend API with strict 1.5s timeout (prevents Render sleeping cold-start from hanging page load)
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.settings && typeof json.settings === 'object') {
-        return json.settings;
+  // 2. Fallback to Backend API with 2s timeout
+  if (BACKEND_URL) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.settings && typeof json.settings === 'object') {
+          return json.settings;
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return null;
 }
@@ -388,32 +393,44 @@ export async function saveStoreSettingToSupabase(key: string, value: any): Promi
     ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
     'westernstore_admin_2026';
 
-  // 1. Persist to Backend Server API first
   let savedToBackend = false;
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(adminSecret ? { 'x-admin-secret': adminSecret } : {}),
-      },
-      body: JSON.stringify({ key, value }),
-    });
-    if (res.ok) savedToBackend = true;
-  } catch {}
 
-  // 2. If Backend is unreachable, try Supabase directly
-  if (!savedToBackend && isSupabaseConfigured() && supabase) {
+  // 1. Persist to Backend Server API first
+  if (BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(adminSecret ? { 'x-admin-secret': adminSecret } : {}),
+        },
+        body: JSON.stringify({ key, value }),
+      });
+      if (res.ok) savedToBackend = true;
+    } catch (err) {
+      console.warn('[StoreSettings] Backend save failed, falling back to Supabase direct:', err);
+    }
+  }
+
+  // 2. Persist to Supabase directly
+  if (isSupabaseConfigured() && supabase) {
     try {
       const row = {
         key,
         value,
         updated_at: new Date().toISOString(),
       };
-      await supabase.from('store_settings').upsert(row);
-    } catch {}
+      const { error } = await supabase.from('store_settings').upsert(row);
+      if (error) {
+        console.warn('[Supabase] Save store setting direct error:', error.message);
+      } else {
+        return true;
+      }
+    } catch (err) {
+      console.error('[Supabase] Save store setting direct exception:', err);
+    }
   }
 
-  return true;
+  return savedToBackend;
 }
 

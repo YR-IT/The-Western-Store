@@ -421,9 +421,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [collectionFilters]);
 
   const updateHomeSection = (id: string, updates: Partial<HomeSectionConfig>) => {
-    setHomeSections((prev) =>
-      prev.map((sec) => (sec.id === id ? { ...sec, ...updates } : sec))
-    );
+    setHomeSections((prev) => {
+      const updated = prev.map((sec) => (sec.id === id ? { ...sec, ...updates } : sec));
+      try {
+        localStorage.setItem('tws_home_sections', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('home_sections', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const addHomeSection = (section: Omit<HomeSectionConfig, 'id' | 'order'>) => {
@@ -434,11 +441,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: newId,
       order: newOrder,
     };
-    setHomeSections((prev) => [...prev, newSec]);
+    setHomeSections((prev) => {
+      const updated = [...prev, newSec];
+      try {
+        localStorage.setItem('tws_home_sections', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('home_sections', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const deleteHomeSection = (id: string) => {
-    setHomeSections((prev) => prev.filter((sec) => sec.id !== id));
+    setHomeSections((prev) => {
+      const updated = prev.filter((sec) => sec.id !== id);
+      try {
+        localStorage.setItem('tws_home_sections', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('home_sections', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const reorderHomeSections = (id: string, direction: 'up' | 'down') => {
@@ -453,13 +478,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const temp = copy[idx];
       copy[idx] = copy[targetIdx];
       copy[targetIdx] = temp;
-
-      return copy.map((sec, i) => ({ ...sec, order: i + 1 }));
+      const ordered = copy.map((sec, i) => ({ ...sec, order: i + 1 }));
+      try {
+        localStorage.setItem('tws_home_sections', JSON.stringify(ordered));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('home_sections', ordered).catch(() => {});
+      }
+      return ordered;
     });
   };
 
   const resetHomeSections = () => {
     setHomeSections(INITIAL_HOME_SECTIONS);
+    try {
+      localStorage.setItem('tws_home_sections', JSON.stringify(INITIAL_HOME_SECTIONS));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('home_sections', INITIAL_HOME_SECTIONS).catch(() => {});
+    }
   };
 
   const updateCollectionFilters = (updates: Partial<CollectionFilterConfig>) => {
@@ -526,23 +563,62 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateBudgetTile = (tier: BudgetTier, updates: Partial<BudgetTileConfig>) => {
-    setBudgetTiles((prev) => prev.map((bt) => (bt.tier === tier ? { ...bt, ...updates } : bt)));
+    setBudgetTiles((prev) => {
+      const updated = prev.map((bt) => (bt.tier === tier ? { ...bt, ...updates } : bt));
+      try {
+        localStorage.setItem('tws_budget_tiles', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('budget_tiles', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const resetBudgetTiles = () => {
     setBudgetTiles(INITIAL_BUDGET_TILES);
+    try {
+      localStorage.setItem('tws_budget_tiles', JSON.stringify(INITIAL_BUDGET_TILES));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('budget_tiles', INITIAL_BUDGET_TILES).catch(() => {});
+    }
   };
 
   const updateTrustFeature = (id: string, updates: Partial<TrustFeatureConfig>) => {
-    setTrustFeatures((prev) => prev.map((tf) => (tf.id === id ? { ...tf, ...updates } : tf)));
+    setTrustFeatures((prev) => {
+      const updated = prev.map((tf) => (tf.id === id ? { ...tf, ...updates } : tf));
+      try {
+        localStorage.setItem('tws_trust_features', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('trust_features', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const resetTrustFeatures = () => {
     setTrustFeatures(INITIAL_TRUST_FEATURES);
+    try {
+      localStorage.setItem('tws_trust_features', JSON.stringify(INITIAL_TRUST_FEATURES));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('trust_features', INITIAL_TRUST_FEATURES).catch(() => {});
+    }
   };
 
   const updateTestimonial = (id: string, updates: Partial<Testimonial>) => {
-    setTestimonials((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setTestimonials((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
+      try {
+        localStorage.setItem('tws_customer_reviews', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('testimonials', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const addTestimonial = (t: Omit<Testimonial, 'id' | 'date'>) => {
@@ -551,28 +627,79 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id: `rev_${Date.now()}`,
       date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
     };
-    setTestimonials((prev) => [newReview, ...prev]);
+    setTestimonials((prev) => {
+      const updated = [newReview, ...prev];
+      try {
+        localStorage.setItem('tws_customer_reviews', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('testimonials', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const deleteTestimonial = (id: string) => {
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    setTestimonials((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
+      try {
+        localStorage.setItem('tws_customer_reviews', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('testimonials', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const resetTestimonials = () => {
     setTestimonials(INITIAL_TESTIMONIALS);
+    try {
+      localStorage.setItem('tws_customer_reviews', JSON.stringify(INITIAL_TESTIMONIALS));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('testimonials', INITIAL_TESTIMONIALS).catch(() => {});
+    }
   };
 
   const updateInstagramPost = (id: string, updates: Partial<InstagramPost>) => {
-    setInstagramPosts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    setInstagramPosts((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      try {
+        localStorage.setItem('tws_instagram_posts', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('instagram_posts', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const addInstagramPost = (post: Omit<InstagramPost, 'id'>) => {
     const newPost: InstagramPost = { ...post, id: `ig_${Date.now()}` };
-    setInstagramPosts((prev) => [...prev, newPost]);
+    setInstagramPosts((prev) => {
+      const updated = [...prev, newPost];
+      try {
+        localStorage.setItem('tws_instagram_posts', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('instagram_posts', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const deleteInstagramPost = (id: string) => {
-    setInstagramPosts((prev) => prev.filter((p) => p.id !== id));
+    setInstagramPosts((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem('tws_instagram_posts', JSON.stringify(updated));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('instagram_posts', updated).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const reorderInstagramPosts = (id: string, direction: 'up' | 'down') => {
@@ -587,12 +714,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const temp = copy[idx];
       copy[idx] = copy[targetIdx];
       copy[targetIdx] = temp;
+      try {
+        localStorage.setItem('tws_instagram_posts', JSON.stringify(copy));
+      } catch {}
+      if (isSupabaseConfigured()) {
+        saveStoreSettingToSupabase('instagram_posts', copy).catch(() => {});
+      }
       return copy;
     });
   };
 
   const resetInstagramPosts = () => {
     setInstagramPosts(INITIAL_INSTAGRAM_POSTS);
+    try {
+      localStorage.setItem('tws_instagram_posts', JSON.stringify(INITIAL_INSTAGRAM_POSTS));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      saveStoreSettingToSupabase('instagram_posts', INITIAL_INSTAGRAM_POSTS).catch(() => {});
+    }
   };
 
   // Orders (Starts completely empty for live production use)
@@ -938,6 +1077,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.removeItem('tws_active_user');
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_budget_tiles', JSON.stringify(budgetTiles));
+    } catch {}
+  }, [budgetTiles]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_home_sections', JSON.stringify(homeSections));
+    } catch {}
+  }, [homeSections]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_trust_features', JSON.stringify(trustFeatures));
+    } catch {}
+  }, [trustFeatures]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_customer_reviews', JSON.stringify(testimonials));
+    } catch {}
+  }, [testimonials]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_instagram_posts', JSON.stringify(instagramPosts));
+    } catch {}
+  }, [instagramPosts]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_instagram_handle', instagramHandle);
+    } catch {}
+  }, [instagramHandle]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_announcement', announcementText);
+    } catch {}
+  }, [announcementText]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tws_collection_filters', JSON.stringify(collectionFilters));
+    } catch {}
+  }, [collectionFilters]);
 
   // Real-time Supabase Auth Listener
   useEffect(() => {
