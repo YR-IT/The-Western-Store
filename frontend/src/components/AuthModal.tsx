@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { X, Lock, ShieldCheck, Sparkles, CheckCircle2, UserCheck, AlertCircle, Mail, User, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const AuthModal: React.FC = () => {
+  const navigate = useNavigate();
   const {
     isAuthModalOpen,
     setIsAuthModalOpen,
@@ -13,7 +15,6 @@ export const AuthModal: React.FC = () => {
     loginWithGoogle,
     loginAsAdmin,
     authModalMessage,
-    setView,
   } = useStore();
 
   const [customerTab, setCustomerTab] = useState<'signin' | 'signup'>('signin');
@@ -127,7 +128,7 @@ export const AuthModal: React.FC = () => {
     try {
       const success = await loginAsAdmin(adminEmail, adminPassword);
       if (success) {
-        setView('admin');
+        navigate('/admin');
         setIsAuthModalOpen(false);
       } else {
         setErrorMessage('Invalid admin credentials. Please check backend environment configuration.');

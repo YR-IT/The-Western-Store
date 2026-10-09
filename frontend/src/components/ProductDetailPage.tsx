@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { ProductCard } from './ProductCard';
 import { PDPSkeleton } from './Skeletons';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
+import { CartItem } from '../types';
 import {
   Heart,
   ShoppingBag,
@@ -17,6 +19,8 @@ import {
   ChevronDown,
   MessageSquare,
   Ruler,
+  Zap,
+  CreditCard,
   Check,
   Flame,
   ZoomIn,
@@ -112,6 +116,9 @@ const INITIAL_INDIAN_REVIEWS: ReviewItem[] = [
 ];
 
 export const ProductDetailPage: React.FC = () => {
+  const { slug } = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
+
   const {
     products,
     selectedProductId,
@@ -119,20 +126,29 @@ export const ProductDetailPage: React.FC = () => {
     toggleWishlist,
     isInWishlist,
     setIsSizeChartOpen,
-    setView,
     setSelectedCategory,
     navigateToCategory,
   } = useStore();
 
-  const product = products.find((p) => p.id === selectedProductId) || products[0];
+  // Find product by slug or id, fallback to selectedProductId or first product
+  const product = products.find((p) => (slug && (p.slug === slug || p.id === slug)) || p.id === selectedProductId) || products[0];
 
   // PDP State
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] || 'M');
-  const [selectedColor, setSelectedColor] = useState<string>(product.colors[0]?.name || 'Standard');
+  const [selectedSize, setSelectedSize] = useState<string>(product?.sizes?.[0] || 'Free Size');
+  const [selectedColor, setSelectedColor] = useState<string>(product?.colors?.[0]?.name || 'Standard');
   const [quantity, setQuantity] = useState(1);
   const [addedAnimation, setAddedAnimation] = useState(false);
+
+  // Sync size and color when product changes
+  useEffect(() => {
+    if (product) {
+      setSelectedSize(product.sizes?.[0] || 'Free Size');
+      setSelectedColor(product.colors?.[0]?.name || 'Standard');
+      setSelectedImageIdx(0);
+    }
+  }, [product?.id]);
 
   // Carousel ref
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -258,6 +274,20 @@ export const ProductDetailPage: React.FC = () => {
     addToCart(product, selectedSize, selectedColor, quantity);
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 1500);
+  };
+
+  const handleBuyNow = () => {
+    if (product.isSoldOut) return;
+    const buyNowItem: CartItem = {
+      id: `buynow-${product.id}-${Date.now()}`,
+      productId: product.id,
+      product,
+      size: selectedSize,
+      color: selectedColor,
+      quantity,
+      price: product.price,
+    };
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   const handleWhatsAppInquiry = () => {
@@ -407,7 +437,7 @@ export const ProductDetailPage: React.FC = () => {
             <nav className="flex items-center gap-2 text-xs text-[#8C8276] mb-6 sm:mb-8 overflow-x-auto whitespace-nowrap pb-1">
               <button
                 type="button"
-                onClick={() => setView('home')}
+                onClick={() => navigate('/')}
                 className="hover:text-[#721B29] transition-colors"
               >
                 Home
@@ -626,7 +656,7 @@ export const ProductDetailPage: React.FC = () => {
                             )}
                             <button
                               type="button"
-                              onClick={() => setView('policy-returns')}
+                              onClick={() => navigate('/policies/refund-policy')}
                               className="text-[11px] font-bold text-[#721B29] underline hover:text-[#52131D] inline-flex items-center gap-1 pt-1"
                             >
                               <span>Read Full Defect Claims & Store Policies →</span>
@@ -873,6 +903,25 @@ export const ProductDetailPage: React.FC = () => {
 
                   {/* CTA Buttons */}
                   <div className="mt-8 space-y-3">
+                    {/* Buy Now Button (1-Click Isolated Checkout) */}
+                    <motion.button
+                      id="pdp-buy-now-btn"
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={product.isSoldOut}
+                      whileHover={!product.isSoldOut ? { scale: 1.015 } : {}}
+                      whileTap={!product.isSoldOut ? { scale: 0.97 } : {}}
+                      className={`w-full py-4 px-6 rounded-sm font-bold text-sm tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                        product.isSoldOut
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-[#721B29] text-white hover:bg-[#52131D]'
+                      }`}
+                    >
+                      <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
+                      <span>{product.isSoldOut ? 'Sold Out' : 'Buy Now — Instant Checkout'}</span>
+                    </motion.button>
+
+                    {/* Add to Bag Button */}
                     <motion.button
                       id="pdp-add-to-cart-btn"
                       type="button"
@@ -880,12 +929,12 @@ export const ProductDetailPage: React.FC = () => {
                       disabled={product.isSoldOut}
                       whileHover={!product.isSoldOut ? { scale: 1.015 } : {}}
                       whileTap={!product.isSoldOut ? { scale: 0.97 } : {}}
-                      className={`w-full py-4 px-6 rounded-sm font-medium text-sm tracking-wide transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`w-full py-3.5 px-6 rounded-sm font-semibold text-sm tracking-wide transition-colors border-2 flex items-center justify-center gap-2 cursor-pointer ${
                         product.isSoldOut
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'border-gray-300 text-gray-400 cursor-not-allowed'
                           : addedAnimation
-                          ? 'bg-emerald-800 text-white'
-                          : 'bg-[#721B29] text-white hover:bg-[#852031]'
+                          ? 'border-emerald-800 bg-emerald-800 text-white'
+                          : 'border-[#721B29] text-[#721B29] bg-white hover:bg-[#721B29]/5'
                       }`}
                     >
                       <AnimatePresence mode="wait" initial={false}>
@@ -895,10 +944,10 @@ export const ProductDetailPage: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.7 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.7 }}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 text-white"
                           >
                             <Check className="w-5 h-5" />
-                            <span>Added to Bag!</span>
+                            <span>Added to Shopping Bag!</span>
                           </motion.span>
                         ) : (
                           <motion.span
@@ -908,8 +957,8 @@ export const ProductDetailPage: React.FC = () => {
                             exit={{ opacity: 0, scale: 0.7 }}
                             className="flex items-center gap-2"
                           >
-                            <ShoppingBag className="w-5 h-5" />
-                            <span>{product.isSoldOut ? 'Sold Out' : 'Add To Shopping Bag'}</span>
+                            <ShoppingBag className="w-4 h-4" />
+                            <span>Add To Shopping Bag</span>
                           </motion.span>
                         )}
                       </AnimatePresence>
@@ -1091,7 +1140,7 @@ export const ProductDetailPage: React.FC = () => {
                               )}
                               <button
                                 type="button"
-                                onClick={() => setView('policy-returns')}
+                                onClick={() => navigate('/policies/refund-policy')}
                                 className="text-[11px] font-bold text-[#721B29] underline hover:text-[#52131D] inline-flex items-center gap-1 pt-1"
                               >
                                 <span>Read Full Defect Claims & Store Policies →</span>

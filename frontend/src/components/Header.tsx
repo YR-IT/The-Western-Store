@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory } from '../types';
 import { STORE_INFO } from '../data/mockData';
@@ -27,9 +28,9 @@ import {
 import logoImg from '../assets/images/Logo_Final.jpg';
 
 export const Header: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
-    view,
-    setView,
     selectedCategory,
     navigateToCategory,
     cartCount,
@@ -81,7 +82,7 @@ export const Header: React.FC = () => {
 
 
   const handleLogoClick = () => {
-    setView('home');
+    navigate('/');
     setMobileMenuOpen(false);
     setActiveDropdown(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -142,7 +143,7 @@ export const Header: React.FC = () => {
               type="button"
               onClick={handleLogoClick}
               className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 cursor-pointer ${
-                view === 'home' && activeDropdown === null
+                location.pathname === '/' && activeDropdown === null
                   ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
                   : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
@@ -156,7 +157,7 @@ export const Header: React.FC = () => {
               type="button"
               onClick={() => handleCategoryClick('New Arrivals')}
               className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap cursor-pointer ${
-                view === 'plp' && (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival')
+                (location.pathname === '/category/New%20Arrivals' || location.pathname === '/category/New Arrivals' || (location.pathname === '/shop' && (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival')))
                   ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
                   : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
@@ -170,7 +171,7 @@ export const Header: React.FC = () => {
               type="button"
               onClick={() => handleCategoryClick('All')}
               className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-md shrink-0 whitespace-nowrap cursor-pointer ${
-                view === 'plp' && selectedCategory === 'All'
+                (location.pathname === '/shop' || location.pathname === '/category/All') && selectedCategory === 'All'
                   ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
                   : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
@@ -182,9 +183,9 @@ export const Header: React.FC = () => {
             <button
               id="nav-contact"
               type="button"
-              onClick={() => { setView('contact'); setActiveDropdown(null); }}
+              onClick={() => { navigate('/contact'); setActiveDropdown(null); }}
               className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 cursor-pointer ${
-                view === 'contact'
+                location.pathname === '/contact'
                   ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
                   : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
@@ -221,7 +222,7 @@ export const Header: React.FC = () => {
             <button
               id="header-wishlist-btn"
               type="button"
-              onClick={() => setView('wishlist')}
+              onClick={() => navigate('/wishlist')}
               className="p-1.5 xs:p-2 sm:p-2.5 relative text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full cursor-pointer"
               aria-label="Wishlist"
             >
@@ -294,7 +295,7 @@ export const Header: React.FC = () => {
                     id="header-order-history-btn"
                     type="button"
                     onClick={() => {
-                      setView('order-history');
+                      navigate('/account/orders');
                       setAccountMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
@@ -310,7 +311,7 @@ export const Header: React.FC = () => {
                     id="header-track-order-btn"
                     type="button"
                     onClick={() => {
-                      setView('track-order');
+                      navigate('/track-order');
                       setAccountMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
@@ -346,7 +347,7 @@ export const Header: React.FC = () => {
                         id="admin-portal-link"
                         type="button"
                         onClick={() => {
-                          setView('admin');
+                          navigate('/admin');
                           setAdminActiveTab('dashboard');
                           setAccountMenuOpen(false);
                         }}
@@ -472,7 +473,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setView('wishlist');
+                      navigate('/wishlist');
                       setMobileMenuOpen(false);
                     }}
                     className="flex items-center justify-center gap-2 p-2 rounded-lg bg-white border border-[#EAE4D9] text-[#242120] font-medium"
@@ -485,7 +486,7 @@ export const Header: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setView('track-order');
+                    navigate('/track-order');
                     setMobileMenuOpen(false);
                   }}
                   className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#721B29]/10 border border-[#721B29]/20 text-[#721B29] font-medium text-xs"
@@ -530,7 +531,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setView('order-history');
+                      navigate('/account/orders');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
@@ -545,7 +546,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setView('track-order');
+                      navigate('/track-order');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
@@ -562,7 +563,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setView('contact');
+                      navigate('/contact');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
@@ -613,7 +614,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setView('admin');
+                      navigate('/admin');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#721B29] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 shadow-sm"

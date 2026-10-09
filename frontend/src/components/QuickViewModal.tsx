@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
-import { X, ShoppingBag, Heart, ArrowRight, Check, Flame } from 'lucide-react';
+import { X, ShoppingBag, Heart, ArrowRight, Check, Flame, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
+import { CartItem } from '../types';
 
 export const QuickViewModal: React.FC = () => {
+  const navigate = useNavigate();
   const {
     quickViewProduct,
     setQuickViewProduct,
@@ -40,6 +43,21 @@ export const QuickViewModal: React.FC = () => {
       setAdded(false);
       setQuickViewProduct(null);
     }, 1200);
+  };
+
+  const handleBuyNow = () => {
+    if (quickViewProduct.isSoldOut) return;
+    const buyNowItem: CartItem = {
+      id: `buynow-${quickViewProduct.id}-${Date.now()}`,
+      productId: quickViewProduct.id,
+      product: quickViewProduct,
+      size: selectedSize,
+      color: selectedColor,
+      quantity,
+      price: quickViewProduct.price,
+    };
+    setQuickViewProduct(null);
+    navigate('/checkout', { state: { buyNowItem } });
   };
 
   const handleGoToPDP = () => {
@@ -204,16 +222,31 @@ export const QuickViewModal: React.FC = () => {
 
             {/* Actions */}
             <div className="mt-6 pt-4 border-t border-[#EAE4D9] space-y-2">
+              {/* Buy Now Button */}
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                disabled={quickViewProduct.isSoldOut}
+                className={`w-full py-2.5 text-xs font-bold rounded-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer ${
+                  quickViewProduct.isSoldOut
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#721B29] text-white hover:bg-[#52131D]'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                <span>{quickViewProduct.isSoldOut ? 'Sold Out' : 'Buy Now'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleAdd}
                 disabled={quickViewProduct.isSoldOut}
-                className={`w-full py-2.5 text-xs font-semibold rounded-xs shadow-xs flex items-center justify-center gap-2 ${
+                className={`w-full py-2 text-xs font-semibold rounded-xs border-2 flex items-center justify-center gap-2 cursor-pointer ${
                   quickViewProduct.isSoldOut
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
                     : added
-                    ? 'bg-emerald-800 text-white'
-                    : 'bg-[#721B29] text-white hover:bg-[#852031]'
+                    ? 'border-emerald-800 bg-emerald-800 text-white'
+                    : 'border-[#721B29] text-[#721B29] bg-white hover:bg-[#721B29]/5'
                 }`}
               >
                 {added ? (
@@ -224,7 +257,7 @@ export const QuickViewModal: React.FC = () => {
                 ) : (
                   <>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>{quickViewProduct.isSoldOut ? 'Sold Out' : 'Add To Bag'}</span>
+                    <span>Add To Shopping Bag</span>
                   </>
                 )}
               </button>

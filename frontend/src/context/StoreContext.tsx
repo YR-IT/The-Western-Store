@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import type { NavigateFunction } from 'react-router-dom';
 import {
   fetchProductsFromSupabase,
   fetchCategoriesFromSupabase,
@@ -55,10 +56,13 @@ interface CheckoutFormData {
 }
 
 interface StoreContextType {
-  // Navigation
+  // Navigation (legacy shim — prefer useNavigate() in components)
   view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
   currentView: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
-  setView: (view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy') => void;
+  /** @deprecated Use useNavigate() directly in components. This is a no-op shim kept for backward compatibility. */
+  setView: (view: string) => void;
+  /** Inject react-router navigate function so StoreContext can perform programmatic routing */
+  setRouterNavigate: (fn: NavigateFunction) => void;
   selectedCategory: ProductCategory | 'All';
   setSelectedCategory: (category: ProductCategory | 'All') => void;
   selectedBudgetTier: BudgetTier | 'all';
@@ -193,10 +197,28 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Navigation State
-  const [view, setView] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy'>(
-    () => (localStorage.getItem('tws_view') as any) || 'home'
-  );
+  // Router navigate ref — injected by RouterNavigationBridge in App.tsx
+  const routerNavigateRef = useRef<NavigateFunction | null>(null);
+  const setRouterNavigate = useCallback((fn: NavigateFunction) => {
+    routerNavigateRef.current = fn;
+  }, []);
+
+  // Internal helper that tries router first, falls back silently
+  const routerNavigate = useCallback((path: string) => {
+    if (routerNavigateRef.current) {
+      routerNavigateRef.current(path);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Legacy view shim — kept so components that still call setView() don't crash
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const setView = useCallback((_view: string) => {
+    // no-op: routing is now handled via react-router-dom
+  }, []);
+
+  // Navigation State (kept for filter/category state that PLP still reads)
+  const [view] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy'>('home');
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>(
     () => (localStorage.getItem('tws_selected_category') as ProductCategory | 'All') || 'All'
   );
@@ -212,9 +234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [trackingPrefill, setTrackingPrefill] = useState<{ orderNumber: string; phone: string } | null>(null);
 
   // Sync Navigation State to localStorage
-  useEffect(() => {
-    localStorage.setItem('tws_view', view);
-  }, [view]);
+  // (tws_view localStorage sync removed — URL is now the source of truth)
 
   useEffect(() => {
     localStorage.setItem('tws_selected_category', selectedCategory);
@@ -1104,7 +1124,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Auth Methods
   const openAuthModal = (mode: 'customer' | 'admin' = 'customer', message = '') => {
     if (mode === 'admin' && currentUser?.isAdmin) {
-      setView('admin');
+      routerNavigate('/admin');
       setAdminActiveTab('dashboard');
       setIsAuthModalOpen(false);
       return;
@@ -1156,7 +1176,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             sessionStorage.setItem('tws_admin_token', data.token);
           }
           sessionStorage.removeItem('tws_admin_secret');
-          setView('admin');
+          routerNavigate('/admin');
           setAdminActiveTab('dashboard');
           return true;
         }
@@ -1252,26 +1272,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const isInWishlist = (productId: string) => wishlist.includes(productId);
 
-  // Navigation helpers
-  const navigateToCategory = (category: ProductCategory) => {
+  // Navigation helpers — now use React Router
+  const navigateToCategory = useCallback((category: ProductCategory) => {
     setSelectedCategory(category);
     setSelectedBudgetTier('all');
-    setView('plp');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    routerNavigate(`/category/${encodeURIComponent(category)}`);
+  }, [routerNavigate]);
 
-  const navigateToBudget = (tier: BudgetTier) => {
+  const navigateToBudget = useCallback((tier: BudgetTier) => {
     setSelectedBudgetTier(tier);
     setSelectedCategory('All');
-    setView('plp');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    routerNavigate(`/shop?budget=${encodeURIComponent(tier)}`);
+  }, [routerNavigate]);
 
-  const navigateToProduct = (productId: string) => {
+  const navigateToProduct = useCallback((productId: string) => {
     setSelectedProductId(productId);
-    setView('pdp');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    // Find slug for the product if available, fall back to id
+    routerNavigate(`/product/${productId}`);
+  }, [routerNavigate]);
 
   // Orders & Admin Stock Management
   const isConfirmedState = (s: OrderStatus) => ['Confirmed', 'Shipped', 'Paid', 'Delivered'].includes(s);
@@ -1674,8 +1692,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (orderNumber || phone) {
       setTrackingPrefill({ orderNumber: orderNumber || '', phone: phone || '' });
     }
-    setView('track-order');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    routerNavigate('/track-order');
   };
 
   return (
@@ -1684,6 +1701,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         view,
         currentView: view,
         setView,
+        setRouterNavigate,
         selectedCategory,
         setSelectedCategory,
         selectedBudgetTier,

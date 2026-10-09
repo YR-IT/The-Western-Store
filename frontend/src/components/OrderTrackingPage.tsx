@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
@@ -26,7 +27,8 @@ import {
 } from 'lucide-react';
 
 export const OrderTrackingPage: React.FC = () => {
-  const { orders, setView, trackingPrefill, lastPlacedOrder } = useStore();
+  const { orders, trackingPrefill, lastPlacedOrder } = useStore();
+  const navigate = useNavigate();
 
   const [orderIdInput, setOrderIdInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
@@ -202,7 +204,7 @@ export const OrderTrackingPage: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <button
             type="button"
-            onClick={() => setView('home')}
+            onClick={() => navigate('/')}
             className="inline-flex items-center gap-1.5 text-xs text-[#736B63] hover:text-[#721B29] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />

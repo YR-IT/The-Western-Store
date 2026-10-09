@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
@@ -24,7 +25,8 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
   onViewAll,
   scrollable = true,
 }) => {
-  const { setView, setSelectedCategory } = useStore();
+  const navigate = useNavigate();
+  const { setSelectedCategory } = useStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -39,7 +41,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
       onViewAll();
     } else {
       setSelectedCategory('All');
-      setView('plp');
+      navigate('/shop');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };

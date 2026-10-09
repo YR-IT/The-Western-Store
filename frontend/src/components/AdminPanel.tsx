@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
@@ -117,6 +118,7 @@ const COURIER_PRESETS: CourierPreset[] = [
 ];
 
 export const AdminPanel: React.FC = () => {
+  const navigate = useNavigate();
   const {
     adminActiveTab,
     setAdminActiveTab,
@@ -134,7 +136,6 @@ export const AdminPanel: React.FC = () => {
     deleteCategory,
     reorderCategories,
     resetCategoriesToDefault,
-    setView,
     openOrderTracking,
     navigateToCategory,
     navigateToProduct,
@@ -572,7 +573,7 @@ export const AdminPanel: React.FC = () => {
         </p>
         <button
           type="button"
-          onClick={() => setView('home')}
+          onClick={() => navigate('/')}
           className="px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
         >
           Return to Storefront
@@ -601,7 +602,7 @@ export const AdminPanel: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setView('home')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-1.5 text-xs text-[#E6C280] hover:underline cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
@@ -27,14 +28,17 @@ interface PolicyPageProps {
 }
 
 export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }) => {
-  const { currentView, setView, setIsSizeChartOpen } = useStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { setIsSizeChartOpen } = useStore();
 
-  // Determine active tab from currentView or prop
+  // Determine active tab from URL pathname or initialTab prop
   const getActiveTab = (): PolicyTab => {
-    if (currentView === 'policy-returns') return 'returns';
-    if (currentView === 'policy-shipping') return 'shipping';
-    if (currentView === 'policy-terms') return 'terms';
-    if (currentView === 'policy-privacy') return 'privacy';
+    const path = location.pathname.toLowerCase();
+    if (path.includes('shipping')) return 'shipping';
+    if (path.includes('terms')) return 'terms';
+    if (path.includes('privacy')) return 'privacy';
+    if (path.includes('refund') || path.includes('return') || path.includes('exchange')) return 'returns';
     return initialTab as PolicyTab;
   };
 
@@ -43,16 +47,16 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
   const handleTabChange = (tab: PolicyTab) => {
     switch (tab) {
       case 'returns':
-        setView('policy-returns');
+        navigate('/policies/refund-policy');
         break;
       case 'shipping':
-        setView('policy-shipping');
+        navigate('/policies/shipping-policy');
         break;
       case 'terms':
-        setView('policy-terms');
+        navigate('/policies/terms-and-conditions');
         break;
       case 'privacy':
-        setView('policy-privacy');
+        navigate('/policies/privacy-policy');
         break;
     }
   };
@@ -426,7 +430,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                 </p>
                 <button
                   type="button"
-                  onClick={() => setView('track-order')}
+                  onClick={() => navigate('/track-order')}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl shadow-sm transition-all"
                 >
                   <Truck className="w-4 h-4" />
@@ -770,7 +774,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
           <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => setView('contact')}
+              onClick={() => navigate('/contact')}
               className="flex-1 sm:flex-initial px-4 py-2.5 bg-white border border-[#D9CEBF] text-[#242120] hover:bg-[#FAF8F3] text-xs font-semibold rounded-xl transition"
             >
               Contact Us

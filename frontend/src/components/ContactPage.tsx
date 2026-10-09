@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { MapPin, Phone, Instagram, Clock, Send, CheckCircle, MessageCircle, Mail } from 'lucide-react';
+import { MapPin, Phone, Instagram, Clock, Send, CheckCircle, MessageCircle, Mail, ShieldAlert } from 'lucide-react';
 import { STORE_INFO } from '../data/mockData';
 
 export const ContactPage: React.FC = () => {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', subject: '', message: '', hp_field: '' });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -12,18 +12,37 @@ export const ContactPage: React.FC = () => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    // Send via WhatsApp as primary channel
+
+    // 1. Post to backend to save in database
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+      await fetch(`${backendUrl}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          email: form.email || null,
+          subject: form.subject,
+          message: form.message,
+          hp_field: form.hp_field || undefined,
+        }),
+      });
+    } catch (err) {
+      console.warn('[ContactPage] Background message persistence notice:', err);
+    }
+
+    // 2. Open WhatsApp pre-filled
     const msg = encodeURIComponent(
       `Hi The Western Store! 👋\n\n*Name:* ${form.name}\n*Phone:* ${form.phone}\n*Subject:* ${form.subject}\n\n${form.message}`
     );
     window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${msg}`, '_blank');
-    setTimeout(() => {
-      setSending(false);
-      setSubmitted(true);
-    }, 800);
+
+    setSending(false);
+    setSubmitted(true);
   };
 
   const locations = STORE_INFO.storeLocations || [];
@@ -301,6 +320,33 @@ export const ContactPage: React.FC = () => {
               <Mail className="w-4 h-4 text-[#B8860B] mt-0.5 shrink-0" />
               <p className="text-xs text-[#5A4E3C] leading-relaxed">
                 <span className="font-bold text-[#B8860B]">Fastest replies via WhatsApp.</span> We typically respond within 1-2 hours during store hours. For urgent queries, please call or message us directly on WhatsApp.
+              </p>
+            </div>
+          </div>
+
+          {/* Grievance & Statutory Details */}
+          <div className="rounded-2xl border border-[#EAE4D9] bg-white p-5 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#721B29]">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Grievance & Legal Contact</span>
+            </div>
+            <div className="text-[11px] text-[#736B63] space-y-1 leading-relaxed">
+              <p>
+                <strong className="text-[#242120]">Operating Entity:</strong>{' '}
+                {STORE_INFO.legalName || 'The Western Store (Kurukshetra Boutique)'}
+              </p>
+              <p>
+                <strong className="text-[#242120]">Grievance Officer:</strong>{' '}
+                {STORE_INFO.grievanceOfficer || 'Store Operations Manager'}
+              </p>
+              <p>
+                <strong className="text-[#242120]">Email:</strong>{' '}
+                <a href={`mailto:${STORE_INFO.email}`} className="text-[#721B29] underline">
+                  {STORE_INFO.email}
+                </a>
+              </p>
+              <p>
+                <strong className="text-[#242120]">Turnaround Time:</strong> Grievances acknowledged within 48 hours and resolved within 30 days under the Consumer Protection (E-Commerce) Rules, 2020.
               </p>
             </div>
           </div>

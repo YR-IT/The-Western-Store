@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory, Product, BudgetTier } from '../types';
@@ -18,6 +19,10 @@ const BUDGET_TIER_LABELS: Record<string, string> = {
 };
 
 export const ProductListingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const params = useParams<{ slug?: string }>();
+  const [searchParams] = useSearchParams();
+
   const {
     products,
     categories,
@@ -26,8 +31,25 @@ export const ProductListingPage: React.FC = () => {
     selectedBudgetTier,
     setSelectedBudgetTier,
     collectionFilters,
-    setView,
   } = useStore();
+
+  // Sync category from URL path /category/:slug or ?category=...
+  useEffect(() => {
+    if (params.slug) {
+      const decoded = decodeURIComponent(params.slug);
+      setSelectedCategory(decoded as ProductCategory);
+    } else if (searchParams.get('category')) {
+      setSelectedCategory(decodeURIComponent(searchParams.get('category')!) as ProductCategory);
+    }
+  }, [params.slug, searchParams, setSelectedCategory]);
+
+  // Sync budget tier from ?budget=...
+  useEffect(() => {
+    const budgetParam = searchParams.get('budget');
+    if (budgetParam) {
+      setSelectedBudgetTier(budgetParam as BudgetTier);
+    }
+  }, [searchParams, setSelectedBudgetTier]);
 
   const [isGridLoading, setIsGridLoading] = useState(false);
 
@@ -244,7 +266,7 @@ export const ProductListingPage: React.FC = () => {
           <div className="flex items-center gap-2 text-xs text-[#8C8276] mb-2">
             <button
               type="button"
-              onClick={() => setView('home')}
+              onClick={() => navigate('/')}
               className="hover:text-[#721B29] transition-colors"
             >
               Home

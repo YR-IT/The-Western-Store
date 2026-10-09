@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import {
@@ -15,6 +16,7 @@ import {
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const CartPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     cart,
     cartSubtotal,
@@ -22,7 +24,6 @@ export const CartPage: React.FC = () => {
     updateQuantity,
     clearCart,
     setIsCheckoutModalOpen,
-    setView,
     navigateToProduct,
   } = useStore();
 
@@ -39,7 +40,7 @@ export const CartPage: React.FC = () => {
           <div>
             <button
               type="button"
-              onClick={() => setView('home')}
+              onClick={() => navigate('/')}
               className="inline-flex items-center gap-1.5 text-xs text-[#721B29] font-medium hover:underline mb-2"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -77,7 +78,7 @@ export const CartPage: React.FC = () => {
             </p>
             <button
               type="button"
-              onClick={() => setView('plp')}
+              onClick={() => navigate('/shop')}
               className="mt-6 px-6 py-3 bg-[#721B29] text-white text-xs font-semibold rounded-sm shadow-md hover:bg-[#852031] transition-colors"
             >
               Explore Catalog

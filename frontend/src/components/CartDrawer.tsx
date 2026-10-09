@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { X, ShoppingBag, Trash2, Send, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -6,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const CartDrawer: React.FC = () => {
+  const navigate = useNavigate();
   const {
     isCartOpen,
     setIsCartOpen,
@@ -14,7 +16,6 @@ export const CartDrawer: React.FC = () => {
     removeFromCart,
     updateQuantity,
     setIsCheckoutModalOpen,
-    setView,
   } = useStore();
 
   const handleProceedToCheckout = () => {
@@ -24,7 +25,7 @@ export const CartDrawer: React.FC = () => {
 
   const handleGoToFullCart = () => {
     setIsCartOpen(false);
-    setView('cart');
+    navigate('/cart');
   };
 
   return (
@@ -93,7 +94,7 @@ export const CartDrawer: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsCartOpen(false);
-                      setView('plp');
+                      navigate('/shop');
                     }}
                     className="mt-5 px-5 py-2.5 bg-[#721B29] text-white text-xs font-semibold rounded-xs shadow-xs hover:bg-[#852031] transition-colors active:scale-95"
                   >

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   Package,
@@ -25,12 +26,12 @@ import { STORE_INFO } from '../data/mockData';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
 export const OrderHistoryPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     currentUser,
     orders,
     openAuthModal,
     openOrderTracking,
-    setView,
     addToCart,
     setSelectedCategory,
   } = useStore();
@@ -248,7 +249,7 @@ export const OrderHistoryPage: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setSelectedCategory('All');
-                    setView('plp');
+                    navigate('/shop');
                   }}
                   className="px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2"
                 >

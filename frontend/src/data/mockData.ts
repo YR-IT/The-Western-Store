@@ -1,9 +1,51 @@
 import { Category, Product, Testimonial, InstagramPost, HomeSectionConfig, CollectionFilterConfig, BudgetTileConfig, TrustFeatureConfig } from '../types';
 
-export const STORE_INFO = {
+export interface StoreInfo {
+  name: string;
+  legalName: string | null;
+  gstin: string | null;
+  tagline: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  phone: string;
+  phoneFormatted: string;
+  whatsappNumber: string;
+  instagram: string;
+  instagramUrl: string;
+  instagramGlamifyUrl: string;
+  email: string;
+  grievanceOfficer: string | null;
+  grievanceEmail: string | null;
+  announcement: string;
+  operatingHours: string;
+  shippingFlatRate: number;
+  freeShippingThreshold: number;
+  currency: string;
+  storeLocations: {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+    hours: string;
+    mapUrl: string;
+  }[];
+}
+
+export const STORE_INFO: StoreInfo = {
   name: 'The Western Store',
-  tagline: "Kurukshetra\u2019s Premier Ethnic & Western Wardrobe",
-  address: 'Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank, Kurukshetra - 136118, Haryana',
+  // [OWNER: Provide exact legal registered business name matching bank / PAN / GST]
+  legalName: null,
+  // [OWNER: Provide 15-digit GSTIN or confirm business is currently unregistered]
+  gstin: null,
+  tagline: 'Kurukshetra\u2019s Premier Ethnic & Western Wardrobe',
+  address: 'Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank',
+  city: 'Kurukshetra',
+  state: 'Haryana',
+  pincode: '136118',
+  country: 'India',
   phone: '9729515288',
   phoneFormatted: '+91 97295 15288',
   whatsappNumber: '919729515288',
@@ -11,8 +53,15 @@ export const STORE_INFO = {
   instagramUrl: 'https://instagram.com/the_western_store_kkr',
   instagramGlamifyUrl: 'https://www.instagram.com/the_western_store_glamify?stkn=ZDNlZDc0MzIxNw==',
   email: 'thewesternstorekkr@gmail.com',
-  announcement: '\u{1F4E6} Worldwide Shipping | \u{1F4F2} 9729515288 | DM us on Instagram @the_western_store_kkr to Order',
+  // [OWNER: Provide designated Grievance Officer name under Consumer Protection Rules, 2020]
+  grievanceOfficer: null,
+  // [OWNER: Provide designated Grievance Officer email address]
+  grievanceEmail: null,
+  announcement: '🚚 Fast Pan-India Dispatch | 📲 WhatsApp Concierge: +91 97295 15288',
   operatingHours: '10:30 AM \u2013 9:00 PM (Mon-Sun)',
+  shippingFlatRate: 0,
+  freeShippingThreshold: 0,
+  currency: 'INR',
   storeLocations: [
     {
       id: 'loc-1',
@@ -29,316 +78,129 @@ export const INITIAL_CATEGORIES: Category[] = [];
 
 export const INITIAL_PRODUCTS: Product[] = [];
 
-// Testimonials use DiceBear avatars as placeholders until the admin adds
-// real customer reviews via the Admin Panel.
-export const INITIAL_TESTIMONIALS: Testimonial[] = [
-  {
-    id: 't-1',
-    name: 'Pooja Verma',
-    location: 'Sector 7, Kurukshetra',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PoojaVerma',
-    rating: 5,
-    comment: "The pre-stitched ruby saree was a lifesaver for my cousin\u2019s wedding at Hotel Pearl Marc! Took literally 45 seconds to wear and everyone in Kurukshetra asked me where I bought it. Customer service on WhatsApp was super quick!",
-    date: '3 days ago',
-    outfitPurchased: 'Pre-Stitched Royal Ruby Georgette Saree',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 24,
-    tag: 'Wedding Drape',
-  },
-  {
-    id: 't-2',
-    name: 'Ananya Sharma',
-    location: 'University Campus, KUK',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AnanyaSharma',
-    rating: 5,
-    comment: 'Ordered via WhatsApp through their Instagram bio. The denim quality and cord set are unbelievable for the price. Fast delivery right to our hostel gate in Kurukshetra!',
-    date: '1 week ago',
-    outfitPurchased: 'Retro High-Waist Wide Leg Jeans',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 19,
-    tag: 'Campus Style',
-  },
-  {
-    id: 't-3',
-    name: 'Simranjeet Kaur',
-    location: 'Ambala Cantt',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SimranjeetKaur',
-    rating: 5,
-    comment: 'Super fast WhatsApp confirmation. The suit fabric is pure soft cotton and the farshi salwar fall is so elegant. Genuine boutique quality at genuine prices.',
-    date: '2 weeks ago',
-    outfitPurchased: 'Vintage Ivory Farshi Salwar Suit Set',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 31,
-    tag: 'Ethnic Elegance',
-  },
-  {
-    id: 't-4',
-    name: 'Ritu Grover',
-    location: 'Model Town, Karnal',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RituGrover',
-    rating: 5,
-    comment: 'I usually hesitate to buy ethnic wear online, but seeing the real video proofs on their WhatsApp gave me total confidence. The fit is 100% true to their size chart!',
-    date: '3 weeks ago',
-    outfitPurchased: 'Oasis Printed Ethnic Cord Set',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 15,
-    tag: 'Boutique Finish',
-  },
-  {
-    id: 't-5',
-    name: 'Meenakshi Aggarwal',
-    location: 'Railway Road, Kurukshetra',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=MeenakshiAggarwal',
-    rating: 5,
-    comment: "Visited their physical boutique near Theme Park first, and now regularly order online. The Gulmohar Brocade Lehenga felt regal for my sister-in-law\u2019s reception.",
-    date: '1 month ago',
-    outfitPurchased: 'Gulmohar Brocade Banarasi Semi-Stitched Lehenga',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 42,
-    tag: 'Bridal & Festive',
-  },
-  {
-    id: 't-6',
-    name: 'Divya Chawla',
-    location: 'Panipat',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DivyaChawla',
-    rating: 5,
-    comment: 'The smocked midi dress is so breezy for weekend trips! I love that The Western Store offers both trendy western outfits and ethnic drapes under one roof.',
-    date: '1 month ago',
-    outfitPurchased: 'Bohemian Floral Smocked Tiered Midi Dress',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 27,
-    tag: 'Western Wear',
-  },
-  {
-    id: 't-7',
-    name: 'Harpreet Dhiman',
-    location: 'Shahbad Markanda',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HarpreetDhiman',
-    rating: 5,
-    comment: 'The Kashmiri Tilla Embroidered Kurti under \u20b9999 is unbelievable quality. Even after 3 washes the gold thread embroidery is shiny and intact. Highly recommended!',
-    date: '1 month ago',
-    outfitPurchased: 'Kashmiri Tilla Embroidered Straight Kurti',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 18,
-    tag: 'Budget Edit',
-  },
-  {
-    id: 't-8',
-    name: 'Tanvi Malik',
-    location: 'Sector 13, Urban Estate, Kurukshetra',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TanviMalik',
-    rating: 5,
-    comment: 'Very polite team on WhatsApp. They shared a 360-degree video of the outfit before packing and shipped it within 2 hours. Love supporting our local Kurukshetra boutique!',
-    date: '2 months ago',
-    outfitPurchased: 'Pre-Stitched Royal Ruby Georgette Saree',
-    productId: '',
-    productImage: '',
-    verified: true,
-    helpfulCount: 36,
-    tag: 'VIP Service',
-  },
-];
+export const INITIAL_TESTIMONIALS: Testimonial[] = [];
 
-// Instagram posts start empty — real posts are managed from the Admin Panel
-// and stored in the database.
 export const INITIAL_INSTAGRAM_POSTS: InstagramPost[] = [];
-
-export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
-  {
-    id: 'hero',
-    type: 'hero',
-    title: 'Hero Banner Carousel',
-    tagline: 'Main Homepage Spotlight',
-    subtitle: 'Featured seasonal collections, offers, and high-impact store banners',
-    enabled: true,
-    order: 1,
-    images: [],
-  },
-  {
-    id: 'new-arrivals',
-    type: 'new-arrivals',
-    title: 'New Arrivals',
-    tagline: 'Fresh Off The Loom',
-    subtitle: 'Latest festive drapes, co-ords, and everyday separates curated for the season.',
-    enabled: true,
-    order: 2,
-    images: [],
-  },
-  {
-    id: 'budget-edit',
-    type: 'budget-edit',
-    title: 'Shop By Budget',
-    tagline: 'Pocket-Friendly Fashion',
-    subtitle: 'High-end style crafted for every price segment',
-    enabled: true,
-    order: 3,
-    images: [],
-  },
-  {
-    id: 'best-sellers',
-    type: 'best-sellers',
-    title: 'Best Sellers',
-    tagline: 'Most Loved in Haryana',
-    subtitle: 'Customer favorites repeatedly restocked due to overwhelming demand.',
-    enabled: true,
-    order: 4,
-    images: [],
-  },
-  {
-    id: 'lookbook',
-    type: 'lookbook',
-    title: 'HANDBAGS',
-    tagline: 'Min. 60% Off',
-    subtitle: 'Curated luxury collection crafted for every modern silhouette.',
-    enabled: true,
-    order: 5,
-    images: [],
-    buttonText: '+ Explore',
-    buttonLink: 'plp',
-  },
-  {
-    id: 'testimonials',
-    type: 'testimonials',
-    title: 'Customer Stories',
-    tagline: 'Loved By 10,000+ Women',
-    subtitle: 'Real reviews from our boutique shoppers across Haryana & beyond.',
-    enabled: true,
-    order: 6,
-    images: [],
-  },
-  {
-    id: 'instagram',
-    type: 'instagram',
-    title: 'Follow Us On Instagram',
-    tagline: '@the_western_store_kkr',
-    subtitle: 'Tag us in your fits to get featured on our official store feed!',
-    enabled: true,
-    order: 7,
-    images: [],
-  },
-];
-
-export const INITIAL_COLLECTION_FILTERS: CollectionFilterConfig = {
-  fabrics: [
-    { id: 'f-1', label: 'Georgette & Chiffon', value: 'Georgette', enabled: true },
-    { id: 'f-2', label: 'Silk Blend & Organza', value: 'Silk', enabled: true },
-    { id: 'f-3', label: 'Pure Cotton & Linen', value: 'Cotton', enabled: true },
-    { id: 'f-4', label: 'Lycra & Stretch Denim', value: 'Denim', enabled: true },
-    { id: 'f-5', label: 'Velvet & Brocade', value: 'Velvet', enabled: true },
-    { id: 'f-6', label: 'Rayon & Viscose', value: 'Rayon', enabled: true },
-  ],
-  occasions: [
-    { id: 'o-1', label: 'Wedding & Sangeet', value: 'Wedding', enabled: true },
-    { id: 'o-2', label: 'Festive & Puja', value: 'Festive', enabled: true },
-    { id: 'o-3', label: 'Casual & Daily Wear', value: 'Casual', enabled: true },
-    { id: 'o-4', label: 'Office & Campus', value: 'Office', enabled: true },
-    { id: 'o-5', label: 'Party & Evening Soir\u00e9e', value: 'Party', enabled: true },
-  ],
-  sizes: [
-    { id: 's-1', label: 'XS (32)', value: 'XS', enabled: true },
-    { id: 's-2', label: 'S (34)', value: 'S', enabled: true },
-    { id: 's-3', label: 'M (36)', value: 'M', enabled: true },
-    { id: 's-4', label: 'L (38)', value: 'L', enabled: true },
-    { id: 's-5', label: 'XL (40)', value: 'XL', enabled: true },
-    { id: 's-6', label: 'XXL (42)', value: 'XXL', enabled: true },
-    { id: 's-7', label: 'Free Size', value: 'Free Size', enabled: true },
-  ],
-  colors: [
-    { id: 'c-1', name: 'Maroon / Wine', enabled: true },
-    { id: 'c-2', name: 'Champagne Gold', enabled: true },
-    { id: 'c-3', name: 'Royal Navy Blue', enabled: true },
-    { id: 'c-4', name: 'Emerald Green', enabled: true },
-    { id: 'c-5', name: 'Mustard Yellow', enabled: true },
-    { id: 'c-6', name: 'Pastel Pink / Rose', enabled: true },
-    { id: 'c-7', name: 'Midnight Black', enabled: true },
-    { id: 'c-8', name: 'Soft Ivory / White', enabled: true },
-  ],
-  budgetTiers: [
-    { id: 'bt-1', label: 'Under \u20b9999', minPrice: 0, maxPrice: 999, enabled: true },
-    { id: 'bt-2', label: 'Under \u20b91,499', minPrice: 0, maxPrice: 1499, enabled: true },
-    { id: 'bt-3', label: 'Under \u20b91,999', minPrice: 0, maxPrice: 1999, enabled: true },
-    { id: 'bt-4', label: 'Under \u20b92,499', minPrice: 0, maxPrice: 2499, enabled: true },
-    { id: 'bt-5', label: 'Luxury & Bridal (\u20b92,500+)', minPrice: 2500, maxPrice: 100000, enabled: true },
-  ],
-  sortOptions: [
-    { id: 'sort-1', label: 'Featured & Popular', value: 'featured', enabled: true },
-    { id: 'sort-2', label: 'Price: Low to High', value: 'price-asc', enabled: true },
-    { id: 'sort-3', label: 'Price: High to Low', value: 'price-desc', enabled: true },
-    { id: 'sort-4', label: 'Newest Arrivals First', value: 'newest', enabled: true },
-  ],
-};
 
 export const INITIAL_BUDGET_TILES: BudgetTileConfig[] = [
   {
     tier: 'under_999',
-    title: 'Pocket Friendly Chic',
-    priceLabel: 'Under \u20b9999',
-    subtitle: 'Daily cotton kurtis, Korean crop tops & chic summer co-ords',
-    itemsPreview: '15+ styles available',
+    title: 'Under ₹999',
+    priceLabel: 'Under ₹999',
+    subtitle: 'Daily & Casual Wear',
+    itemsPreview: 'Kurtis, Tops & Everyday Separates',
     image: '',
-    badge: 'College & Daily Edit',
+    badge: 'Starting ₹499',
   },
   {
     tier: 'under_1499',
-    title: 'Mid-Tier Elegance',
-    priceLabel: 'Under \u20b91,499',
-    subtitle: 'Flowy anarkali suits, tiered dresses & vintage wide-leg jeans',
-    itemsPreview: '28+ styles available',
+    title: '₹999 – ₹1,499',
+    priceLabel: '₹999 – ₹1,499',
+    subtitle: 'Workwear & Co-Ords',
+    itemsPreview: 'Chic Co-Ords & Office Drapes',
     image: '',
-    badge: 'Most Popular',
+    badge: 'Popular Choice',
   },
   {
     tier: 'under_1999',
-    title: 'Festive & Premium',
-    priceLabel: 'Under \u20b91,999',
-    subtitle: 'Pre-stitched georgette sarees, fusion capes & embroidered sets',
-    itemsPreview: '22+ styles available',
+    title: '₹1,499 – ₹1,999',
+    priceLabel: '₹1,499 – ₹1,999',
+    subtitle: 'Festive & Party Wear',
+    itemsPreview: 'Anarkalis & Embellished Suits',
     image: '',
-    badge: 'Wedding Guest Favorite',
+    badge: 'Festive Edit',
   },
   {
-    tier: 'under_2499',
-    title: 'Royal Celebration',
-    priceLabel: 'Under \u20b92,499',
-    subtitle: 'Heavy embroidered organza suits, bridal co-ords & festive drapes',
-    itemsPreview: '18+ styles available',
+    tier: 'premium',
+    title: 'Above ₹2,000',
+    priceLabel: 'Above ₹2,000',
+    subtitle: 'Luxury & Heritage',
+    itemsPreview: 'Handloom Silks & Bridal Sets',
     image: '',
-    badge: 'Grand Festive Edit',
+    badge: 'Exclusive Craft',
   },
 ];
 
 export const INITIAL_TRUST_FEATURES: TrustFeatureConfig[] = [
   {
     id: 'tf-1',
-    title: 'WORLDWIDE SHIPPING',
-    description: '(No Cash On Delivery)',
-    iconType: 'cart',
+    title: 'PAN-INDIA DISPATCH',
+    description: 'Tracked courier delivery across all Indian pin codes',
+    iconType: 'truck',
   },
   {
     id: 'tf-2',
-    title: 'NO RETURN / NO EXCHANGE',
-    description: '(No Refunds)',
-    iconType: 'support',
+    title: 'AUTHENTIC QUALITY',
+    description: 'Handpicked textiles & artisan embroidery',
+    iconType: 'shield',
   },
   {
     id: 'tf-3',
-    title: 'SECURE PAYMENT',
-    description: '(We accept Debit/Credit Card and UPI Payments)',
+    title: 'DIRECT WHATSAPP SUPPORT',
+    description: 'Live size & styling assistance before purchase',
+    iconType: 'whatsapp',
+  },
+  {
+    id: 'tf-4',
+    title: 'TRANSPARENT VALUE',
+    description: 'All prices in INR with zero hidden checkout fees',
     iconType: 'wallet',
   },
 ];
+
+export const INITIAL_HOME_SECTIONS: HomeSectionConfig[] = [
+  { id: 'sec-hero', title: 'Hero Carousel', type: 'hero', enabled: true, order: 1, images: [] },
+  { id: 'sec-new', title: 'New Arrivals', type: 'new-arrivals', tagline: 'Fresh Off The Loom', subtitle: 'Curated seasonal drapes & co-ords', enabled: true, order: 2, images: [] },
+  { id: 'sec-budget', title: 'Shop By Budget', type: 'budget-edit', enabled: true, order: 3, images: [] },
+  { id: 'sec-bestsellers', title: 'Best Sellers', type: 'best-sellers', tagline: 'Most Loved in Kurukshetra', subtitle: 'Customer favorites repeatedly restocked', enabled: true, order: 4, images: [] },
+  { id: 'sec-trust', title: 'Trust Features', type: 'trust-strip', enabled: true, order: 5, images: [] },
+  { id: 'sec-instagram', title: 'Instagram Community', type: 'instagram', enabled: true, order: 6, images: [] },
+];
+
+export const INITIAL_COLLECTION_FILTERS: CollectionFilterConfig = {
+  fabrics: [
+    { id: 'f-cotton', label: 'Pure Cotton', value: 'Cotton', enabled: true },
+    { id: 'f-georgette', label: 'Georgette', value: 'Georgette', enabled: true },
+    { id: 'f-chanderi', label: 'Chanderi Silk', value: 'Chanderi', enabled: true },
+    { id: 'f-rayon', label: 'Rayon / Viscose', value: 'Rayon', enabled: true },
+    { id: 'f-silk', label: 'Silk Blend', value: 'Silk', enabled: true },
+    { id: 'f-organza', label: 'Organza', value: 'Organza', enabled: true },
+  ],
+  occasions: [
+    { id: 'o-casual', label: 'Casual & Daily Wear', value: 'Casual', enabled: true },
+    { id: 'o-festive', label: 'Festive & Puja', value: 'Festive', enabled: true },
+    { id: 'o-party', label: 'Party & Evening', value: 'Party', enabled: true },
+    { id: 'o-wedding', label: 'Wedding & Sangeet', value: 'Wedding', enabled: true },
+    { id: 'o-work', label: 'Work / Office', value: 'Office', enabled: true },
+  ],
+  sizes: [
+    { id: 's-free', label: 'Free Size', value: 'Free Size', enabled: true },
+    { id: 's-xs', label: 'XS (34)', value: 'XS', enabled: true },
+    { id: 's-s', label: 'S (36)', value: 'S', enabled: true },
+    { id: 's-m', label: 'M (38)', value: 'M', enabled: true },
+    { id: 's-l', label: 'L (40)', value: 'L', enabled: true },
+    { id: 's-xl', label: 'XL (42)', value: 'XL', enabled: true },
+    { id: 's-xxl', label: 'XXL (44)', value: 'XXL', enabled: true },
+  ],
+  colors: [
+    { id: 'c-red', name: 'Ruby Red', enabled: true },
+    { id: 'c-pink', name: 'Rose Pink', enabled: true },
+    { id: 'c-green', name: 'Emerald Green', enabled: true },
+    { id: 'c-blue', name: 'Royal Blue', enabled: true },
+    { id: 'c-yellow', name: 'Mustard Gold', enabled: true },
+    { id: 'c-black', name: 'Classic Black', enabled: true },
+    { id: 'c-white', name: 'Ivory / White', enabled: true },
+  ],
+  budgetTiers: [
+    { id: 'b-under999', label: 'Under ₹999', minPrice: 0, maxPrice: 999, enabled: true },
+    { id: 'b-999-1499', label: '₹999 – ₹1,499', minPrice: 999, maxPrice: 1499, enabled: true },
+    { id: 'b-1499-2499', label: '₹1,499 – ₹2,499', minPrice: 1499, maxPrice: 2499, enabled: true },
+    { id: 'b-above2499', label: 'Above ₹2,499', minPrice: 2499, maxPrice: 99999, enabled: true },
+  ],
+  sortOptions: [
+    { id: 'sort-featured', label: 'Featured & Trending', value: 'featured', enabled: true },
+    { id: 'sort-newest', label: 'Newest Arrivals', value: 'newest', enabled: true },
+    { id: 'sort-low-high', label: 'Price: Low to High', value: 'price_asc', enabled: true },
+    { id: 'sort-high-low', label: 'Price: High to Low', value: 'price_desc', enabled: true },
+  ],
+};

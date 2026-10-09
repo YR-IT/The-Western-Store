@@ -1,20 +1,14 @@
 import React from 'react';
-import { useStore } from '../context/StoreContext';
+import { Link } from 'react-router-dom';
 import { STORE_INFO } from '../data/mockData';
-
 import {
   MapPin,
   Phone,
   Instagram,
   Clock,
-  Mail,
-  CreditCard,
-  Heart,
   ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-
-
 
 const footerContainerVariants = {
   hidden: { opacity: 0 },
@@ -34,8 +28,6 @@ const footerColVariants = {
 };
 
 export const Footer: React.FC = () => {
-  const { setView } = useStore();
-
   return (
     <footer className="bg-[#1C1717] text-[#E8E1D5] border-t border-[#332A2B] pt-14 pb-8 w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -62,7 +54,7 @@ export const Footer: React.FC = () => {
               </div>
             </div>
             <p className="text-xs text-[#BFB5A5] leading-relaxed mb-6 max-w-md font-light">
-              Crafting accessible, high-finish Indian ethnic outfits and trendsetting western silhouettes for girls and women. Proudly rooted in Haryana, shipping worldwide.
+              Crafting accessible, high-finish Indian ethnic outfits and trendsetting silhouettes for women. Handcrafted and dispatched with love from our Kurukshetra boutique across India.
             </p>
 
             {/* Address Box */}
@@ -70,7 +62,7 @@ export const Footer: React.FC = () => {
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#E6C280] flex-shrink-0 mt-0.5" />
                 <span className="leading-relaxed">
-                  {STORE_INFO.address}
+                  {STORE_INFO.address}, {STORE_INFO.city}, {STORE_INFO.state} - {STORE_INFO.pincode}
                 </span>
               </div>
 
@@ -105,126 +97,136 @@ export const Footer: React.FC = () => {
             </div>
           </motion.div>
 
+          {/* Col 1: Store & Quick Links */}
+          <motion.div variants={footerColVariants}>
+            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
+              Explore
+            </h4>
+            <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
+              <li>
+                <Link
+                  to="/"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Home</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/shop"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>All Collections</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>About Us</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/pricing"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Transparent Pricing</span>
+                </Link>
+              </li>
+            </ul>
+          </motion.div>
 
-          {/* Right: Store Locator + Policies + Customer Care (rendered inline in the parent grid) */}
-          <div className="contents">
-            {/* Col 1: Store Locator */}
-            <motion.div variants={footerColVariants}>
-              <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-                Store Locator
-              </h4>
-              <ul className="space-y-3.5 text-xs">
-                {(STORE_INFO.storeLocations || []).map((loc) => (
-                  <li key={loc.id} className="space-y-0.5">
-                    <a
-                      href={loc.mapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#E8E1D5] hover:text-[#E6C280] transition-colors text-left flex items-start gap-1.5 group font-medium"
-                    >
-                      <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform mt-0.5 flex-shrink-0" />
-                      <span className="leading-snug">{loc.name}</span>
-                    </a>
-                    <p className="text-[11px] text-[#A3998C] pl-4 leading-relaxed font-light">
-                      {loc.address}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+          {/* Col 2: Policies */}
+          <motion.div variants={footerColVariants}>
+            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
+              Policies
+            </h4>
+            <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
+              <li>
+                <Link
+                  to="/policies/refund-policy"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Refund & Cancellation Policy</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/policies/shipping-policy"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Shipping & Delivery Policy</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/policies/terms"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Terms & Conditions</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/policies/privacy-policy"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Privacy Policy</span>
+                </Link>
+              </li>
+            </ul>
+          </motion.div>
 
-            {/* Col 2: Policies */}
-            <motion.div variants={footerColVariants}>
-              <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-                Policies
-              </h4>
-              <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('policy-returns')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>No Exchange & Return</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('policy-shipping')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Shipping & Delivery</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('policy-terms')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Terms & Conditions</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('policy-privacy')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Privacy Policy</span>
-                  </button>
-                </li>
-              </ul>
-            </motion.div>
-
-            {/* Col 3: Customer Care */}
-            <motion.div variants={footerColVariants}>
-              <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-                Customer Care
-              </h4>
-              <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('track-order')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Track Order Status</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setView('contact')}
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Contact Us</span>
-                  </button>
-                </li>
-                <li>
-                  <a
-                    href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20need%20assistance%20with%20sizing%20and%20orders.`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 group"
-                  >
-                    <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                    <span>Direct WhatsApp Order</span>
-                  </a>
-                </li>
-                <li>
-                  <span className="block text-[#8E8378] pl-4">Pan-India & Global Courier</span>
-                </li>
-              </ul>
-            </motion.div>
-          </div>
+          {/* Col 3: Customer Care & Grievance */}
+          <motion.div variants={footerColVariants}>
+            <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
+              Customer Care
+            </h4>
+            <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
+              <li>
+                <Link
+                  to="/track-order"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Track Order Status</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Contact Us & Grievance Redressal</span>
+                </Link>
+              </li>
+              <li>
+                <a
+                  href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20need%20assistance%20with%20sizing%20and%20orders.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Direct WhatsApp Order</span>
+                </a>
+              </li>
+              <li>
+                <span className="block text-[#8E8378] pl-4">Pan-India Express Dispatch</span>
+              </li>
+            </ul>
+          </motion.div>
         </motion.div>
 
         {/* Bottom Bar: Copyright & Payment/Trust Badges */}
@@ -238,21 +240,10 @@ export const Footer: React.FC = () => {
           <p className="flex items-center gap-1">
             <span>© {new Date().getFullYear()} The Western Store, Kurukshetra. All rights reserved.</span>
           </p>
-          <p className="text-[11px] text-[#5A534F]">
-            Designed by{' '}
-            <a
-              href="https://www.yritsolutions.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#B8860B] hover:text-[#E6C280] hover:underline transition-colors"
-            >
-              YR IT Solutions
-            </a>
-          </p>
 
           {/* Payment & WhatsApp ordering badges */}
           <div className="flex items-center flex-wrap gap-2 text-[11px]">
-            {['UPI / QR', 'Google Pay', 'PhonePe', 'Paytm'].map((method, idx) => (
+            {['UPI / QR', 'Cards & NetBanking', 'Razorpay Secure'].map((method, idx) => (
               <motion.span
                 key={method}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -271,7 +262,7 @@ export const Footer: React.FC = () => {
               transition={{ delay: 0.59 }}
               className="px-2 py-1 bg-[#721B29]/30 rounded-xs border border-[#721B29]/60 text-[#E6C280] font-medium flex items-center gap-1"
             >
-              <span>📲 WhatsApp Checkout</span>
+              <span>📲 WhatsApp Support</span>
             </motion.span>
           </div>
         </motion.div>

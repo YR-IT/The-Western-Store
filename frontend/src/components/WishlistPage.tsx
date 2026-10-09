@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from './ProductCard';
 import { Heart, ArrowLeft } from 'lucide-react';
 
 export const WishlistPage: React.FC = () => {
-  const { wishlist, products, setView } = useStore();
+  const navigate = useNavigate();
+  const { wishlist, products } = useStore();
 
   const wishlistedProducts = products.filter((p) => wishlist.includes(p.id));
 
@@ -21,7 +23,7 @@ export const WishlistPage: React.FC = () => {
         <div className="mb-6 sm:mb-8 pb-4 border-b border-[#EAE4D9]">
           <button
             type="button"
-            onClick={() => setView('home')}
+            onClick={() => navigate('/')}
             className="inline-flex items-center gap-1.5 text-xs text-[#721B29] font-medium hover:underline mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -53,7 +55,7 @@ export const WishlistPage: React.FC = () => {
             </p>
             <button
               type="button"
-              onClick={() => setView('plp')}
+              onClick={() => navigate('/shop')}
               className="px-5 py-2.5 bg-[#721B29] text-white text-xs font-semibold rounded-xs hover:bg-[#852031] transition-colors"
             >
               Explore Collections
