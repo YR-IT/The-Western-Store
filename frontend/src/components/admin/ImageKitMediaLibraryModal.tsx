@@ -7,11 +7,8 @@ import {
   Check,
   Image as ImageIcon,
   Folder,
-  Layers,
   AlertTriangle,
   Loader2,
-  ExternalLink,
-  PlusCircle,
   HardDrive,
   Play,
   Video,
@@ -61,24 +58,25 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const adminSecret =
-    sessionStorage.getItem('tws_admin_secret') ||
-    ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
-    'westernstore_admin_2026';
+  const getAdminToken = () => {
+    return typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
+  };
 
   const fetchMediaLibrary = async () => {
     setIsLoading(true);
     setErrorMsg(null);
+    const adminToken = getAdminToken();
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/imagekit/files?limit=100`, {
         headers: {
-          'x-admin-secret': adminSecret,
+          ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
         },
       });
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to fetch ImageKit media library.');
+        throw new Error(errJson.error || 'Failed to fetch ImageKit media library. Ensure you are logged in as admin.');
       }
 
       const data = await res.json();
@@ -113,11 +111,13 @@ export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps>
 
   const handleDeleteFile = async (fileId: string) => {
     setDeletingFileId(fileId);
+    const adminToken = getAdminToken();
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/imagekit/files/${fileId}`, {
         method: 'DELETE',
         headers: {
-          'x-admin-secret': adminSecret,
+          ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
         },
       });
 

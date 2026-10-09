@@ -1,12 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import {
   fetchProductsFromSupabase,
   fetchCategoriesFromSupabase,
-  fetchOrdersFromSupabase,
   syncCartToSupabase,
   syncWishlistToSupabase,
-  saveOrderToSupabase,
-  deleteOrderFromSupabase,
   upsertProductToSupabase,
   deleteProductFromSupabase,
   upsertCategoryToSupabase,
@@ -122,6 +119,7 @@ interface StoreContextType {
 
   // Modals & Drawers
   currentUser: UserAccount | null;
+  adminToken: string | null;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   authModalMode: 'customer' | 'admin';
@@ -811,8 +809,72 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
-  // Initial Fetch from Supabase (if configured)
-  // Initial Fetch & Realtime Subscriptions from Supabase (if configured)
+  // Admin JWT Auth Token
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('tws_admin_token');
+    }
+    return null;
+  });
+
+  const fetchAdminOrders = useCallback(async () => {
+    const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
+    if (!token) return;
+
+    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${backendUrl}/api/admin/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const mapped: Order[] = data.map((row: any) => ({
+            id: row.id,
+            orderNumber: row.order_number || row.orderNumber || row.id,
+            createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+            customerName: row.customer_name || row.customerName || 'Customer',
+            phone: row.customer_phone || row.phone || '',
+            email: row.customer_email || row.email || undefined,
+            address: row.shipping_address?.address || row.address || '',
+            pincode: row.shipping_address?.pincode || row.pincode || '',
+            city: row.shipping_address?.city || row.city || '',
+            state: row.shipping_address?.state || row.state || '',
+            notes: row.notes || row.shipping_address?.notes || undefined,
+            items: Array.isArray(row.items) ? row.items : [],
+            subtotal: Number(row.total_amount ?? row.subtotal ?? row.total ?? 0),
+            shippingFee: 0,
+            total: Number(row.total_amount ?? row.total ?? row.subtotal ?? 0),
+            status: (row.status as OrderStatus) || 'Pending WhatsApp',
+            courierName: row.courier_name || row.courierName || undefined,
+            trackingNumber: row.tracking_number || row.trackingNumber || undefined,
+            trackingLink: row.tracking_number || row.trackingNumber
+              ? `https://delhivery.com/track/package/${row.tracking_number || row.trackingNumber}`
+              : (row.tracking_link || row.trackingLink || undefined),
+            userId: row.user_id || row.userId || undefined,
+          }));
+          setOrders(mapped);
+          try {
+            localStorage.setItem('tws_orders', JSON.stringify(mapped));
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.warn('[Admin Orders Sync Notice]', err);
+    }
+  }, [adminToken]);
+
+  // 25-Second Polling for Admin Orders when logged in
+  useEffect(() => {
+    if (!adminToken) return;
+    fetchAdminOrders();
+    const interval = setInterval(fetchAdminOrders, 25000);
+    return () => clearInterval(interval);
+  }, [adminToken, fetchAdminOrders]);
+
+  // Initial Fetch from Supabase (Catalog & Categories)
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
@@ -830,123 +892,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     });
 
-    const syncOrders = async () => {
-      try {
-        const fetchedOrders: Order[] = [];
-        let hasRemoteData = false;
+    // Initial load of admin orders if token is already present
+    if (adminToken || (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token'))) {
+      fetchAdminOrders();
+    }
 
-        // 1. Try Supabase
-        const remoteOrders = await fetchOrdersFromSupabase();
-        if (remoteOrders !== null && remoteOrders.length > 0) {
-          fetchedOrders.push(...remoteOrders);
-          hasRemoteData = true;
-        }
-
-        // 2. Fetch from backend API
-        try {
-          const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-          const res = await fetch(`${backendUrl}/api/orders`);
-          if (res.ok) {
-            const apiOrders = await res.json();
-            if (Array.isArray(apiOrders) && apiOrders.length > 0) {
-              const mappedOrders: Order[] = apiOrders.map((row: any) => ({
-                id: row.id,
-                orderNumber: row.order_number || row.orderNumber || row.id,
-                createdAt: row.created_at || row.createdAt || new Date().toISOString(),
-                customerName: row.customer_name || row.customerName || 'Customer',
-                phone: row.customer_phone || row.phone || '',
-                email: row.customer_email || row.email || undefined,
-                address: row.shipping_address?.address || row.address || '',
-                pincode: row.shipping_address?.pincode || row.pincode || '',
-                city: row.shipping_address?.city || row.city || '',
-                state: row.shipping_address?.state || row.state || '',
-                notes: row.notes || row.shipping_address?.notes || undefined,
-                items: Array.isArray(row.items) ? row.items : [],
-                subtotal: Number(row.total_amount ?? row.subtotal ?? row.total ?? 0),
-                shippingFee: 0,
-                total: Number(row.total_amount ?? row.total ?? row.subtotal ?? 0),
-                status: (row.status as OrderStatus) || 'Pending WhatsApp',
-                courierName: row.courier_name || row.courierName || undefined,
-                trackingNumber: row.tracking_number || row.trackingNumber || undefined,
-                trackingLink: row.tracking_number || row.trackingNumber
-                  ? `https://delhivery.com/track/package/${row.tracking_number || row.trackingNumber}`
-                  : (row.tracking_link || row.trackingLink || undefined),
-                userId: row.user_id || row.userId || undefined,
-              }));
-
-              const existingIds = new Set(fetchedOrders.map((o) => o.id));
-              for (const o of mappedOrders) {
-                if (!existingIds.has(o.id)) {
-                  fetchedOrders.push(o);
-                  existingIds.add(o.id);
-                }
-              }
-              hasRemoteData = true;
-            }
-          }
-        } catch (backendErr) {
-          console.warn('[Backend Orders Sync Notice]', backendErr);
-        }
-
-        // 3. Merge with current local state / storage so local orders are never accidentally lost
-        setOrders((prev) => {
-          const map = new Map<string, Order>();
-          fetchedOrders.forEach((o) => {
-            if (o && o.id) map.set(o.id, o);
-          });
-          prev.forEach((o) => {
-            if (o && o.id) {
-              if (!map.has(o.id)) {
-                map.set(o.id, o);
-              } else {
-                const existing = map.get(o.id)!;
-                map.set(o.id, {
-                  ...existing,
-                  ...o,
-                  status: o.status || existing.status,
-                  trackingNumber: o.trackingNumber || existing.trackingNumber,
-                  courierName: o.courierName || existing.courierName,
-                  trackingLink: o.trackingLink || existing.trackingLink,
-                });
-              }
-            }
-          });
-
-          const merged = Array.from(map.values())
-            .filter((o) => o && o.id && o.orderNumber && !['order-1001', 'order-1002'].includes(o.id))
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-          if (merged.length > 0 || hasRemoteData) {
-            try {
-              localStorage.setItem('tws_orders', JSON.stringify(merged));
-            } catch {}
-            return merged;
-          }
-          return prev;
-        });
-      } catch (err) {
-        console.warn('[Orders Sync Notice]', err);
-      }
-    };
-    syncOrders();
     try {
       localStorage.removeItem('tws_hero_slides');
     } catch {}
 
-    // Load every homepage setting straight from Supabase. Whatever is (or
-    // isn't) saved there is the truth — there is no local fallback and
-    // nothing here ever writes a stale value back to Supabase.
     fetchStoreSettingsFromSupabase().then((settings) => {
-      if (settings) {
-        if (settings.instagram_posts && Array.isArray(settings.instagram_posts) && settings.instagram_posts.length > 0) {
-          setInstagramPosts(settings.instagram_posts);
-        }
-        if (settings.hero_slides !== undefined && Array.isArray(settings.hero_slides)) {
-          // Filter out any IDs that were explicitly deleted in this session.
+      if (settings && typeof settings === 'object') {
+        if (settings.hero_slides && Array.isArray(settings.hero_slides)) {
           const filtered = (settings.hero_slides as HeroSlide[]).filter(
             (s) => !deletedSlideIds.current.has(s.id)
           );
           setHeroSlides(filtered);
+        }
+        if (settings.instagram_posts && Array.isArray(settings.instagram_posts) && settings.instagram_posts.length > 0) {
+          setInstagramPosts(settings.instagram_posts);
         }
         if (settings.testimonials && Array.isArray(settings.testimonials) && settings.testimonials.length > 0) {
           setTestimonials(settings.testimonials);
@@ -976,34 +940,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     if (supabase) {
-      const ordersChannel = supabase
-        .channel('public-orders-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          () => {
-            fetchOrdersFromSupabase().then((remoteOrders) => {
-              if (remoteOrders !== null && remoteOrders.length > 0) {
-                setOrders((prev) => {
-                  const map = new Map<string, Order>();
-                  remoteOrders.forEach((o) => o && o.id && map.set(o.id, o));
-                  prev.forEach((o) => {
-                    if (o && o.id && !map.has(o.id)) map.set(o.id, o);
-                  });
-                  const merged = Array.from(map.values())
-                    .filter((o) => o && o.id && o.orderNumber && !['order-1001', 'order-1002'].includes(o.id))
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-                  try {
-                    localStorage.setItem('tws_orders', JSON.stringify(merged));
-                  } catch {}
-                  return merged;
-                });
-              }
-            });
-          }
-        )
-        .subscribe();
-
       const settingsChannel = supabase
         .channel('public-settings-changes')
         .on(
@@ -1017,8 +953,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (key === 'instagram_posts' && Array.isArray(val)) {
               setInstagramPosts((prev) => JSON.stringify(prev) === JSON.stringify(val) ? prev : val);
             } else if (key === 'hero_slides' && Array.isArray(val)) {
-              // Filter out tombstoned IDs so a stale concurrent save can't
-              // undo a deletion the user just performed.
               const filtered = (val as HeroSlide[]).filter(
                 (s) => !deletedSlideIds.current.has(s.id)
               );
@@ -1043,11 +977,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         .subscribe();
 
       return () => {
-        supabase.removeChannel(ordersChannel);
         supabase.removeChannel(settingsChannel);
       };
     }
-  }, []);
+  }, [adminToken, fetchAdminOrders]);
 
   // Sync state to localStorage & Supabase
   useEffect(() => {
@@ -1218,9 +1151,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const data = await res.json();
         if (data.success && data.user) {
           setCurrentUser(data.user);
-          if (data.adminSecret) {
-            sessionStorage.setItem('tws_admin_secret', data.adminSecret);
+          if (data.token) {
+            setAdminToken(data.token);
+            sessionStorage.setItem('tws_admin_token', data.token);
           }
+          sessionStorage.removeItem('tws_admin_secret');
           setView('admin');
           setAdminActiveTab('dashboard');
           return true;
@@ -1239,6 +1174,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isSupabaseConfigured() && supabase) {
       supabase.auth.signOut().catch(() => {});
     }
+    setAdminToken(null);
+    sessionStorage.removeItem('tws_admin_token');
+    sessionStorage.removeItem('tws_admin_secret');
     setCurrentUser(null);
     setCart([]);
   };
@@ -1373,9 +1311,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders((prev) => {
       const updatedList = prev.map((order) => {
         if (order.id !== orderId) return order;
-        const updated = { ...order, status };
-        saveOrderToSupabase(updated, updated.userId).catch(() => {});
-        return updated;
+        return { ...order, status };
       });
       try {
         localStorage.setItem('tws_orders', JSON.stringify(updatedList));
@@ -1383,12 +1319,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return updatedList;
     });
 
+    const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-    fetch(`${backendUrl}/api/orders/${orderId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    }).catch(() => {});
+    if (token) {
+      fetch(`${backendUrl}/api/admin/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      }).catch(() => {});
+    }
   };
 
   const updateOrderTracking = (
@@ -1403,11 +1345,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...tracking,
           ...(tracking.status ? { status: tracking.status } : {}),
         };
-        if (tracking.status) {
-          updateOrderStatus(orderId, tracking.status);
-        } else {
-          saveOrderToSupabase(updated, updated.userId).catch(() => {});
-        }
         return updated;
       });
       try {
@@ -1416,20 +1353,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return updatedList;
     });
 
+    const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-    fetch(`${backendUrl}/api/orders/${orderId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        courier_name: tracking.courierName,
-        courierName: tracking.courierName,
-        tracking_number: tracking.trackingNumber,
-        trackingNumber: tracking.trackingNumber,
-        tracking_link: tracking.trackingLink,
-        trackingLink: tracking.trackingLink,
-        status: tracking.status,
-      }),
-    }).catch(() => {});
+    if (token) {
+      fetch(`${backendUrl}/api/admin/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          courier_name: tracking.courierName,
+          tracking_number: tracking.trackingNumber,
+          status: tracking.status,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const deleteOrder = (id: string) => {
@@ -1440,9 +1379,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch {}
       return updated;
     });
-    deleteOrderFromSupabase(id).catch((err) => console.warn('[Supabase] Delete order notice:', err));
+    const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-    fetch(`${backendUrl}/api/orders/${id}`, { method: 'DELETE' }).catch(() => {});
+    if (token) {
+      fetch(`${backendUrl}/api/admin/orders/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).catch(() => {});
+    }
   };
 
   const submitWhatsAppOrder = async (formData: CheckoutFormData) => {
@@ -1482,7 +1428,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
     };
 
-    // 1. Immediately store order in local store state & localStorage & Supabase
+    // 1. Immediately store order in local store state & localStorage
     setOrders((prev) => {
       const updated = [newOrder, ...prev.filter((o) => o.id !== newOrder.id)];
       try {
@@ -1492,18 +1438,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     setLastPlacedOrder(newOrder);
 
-    try {
-      saveOrderToSupabase(newOrder, currentUser?.id).catch((err) =>
-        console.warn('[Supabase Order Insert Notice]', err)
-      );
-    } catch (err) {
-      console.warn('[Supabase Order Call Notice]', err);
-    }
-
-    // 2. Send to backend API in background
+    // 2. Send to backend API
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const response = await fetch(`${backendUrl}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1795,6 +1733,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateCollectionFilters,
         resetCollectionFilters,
         currentUser,
+        adminToken,
         isAuthModalOpen,
         setIsAuthModalOpen,
         authModalMode,

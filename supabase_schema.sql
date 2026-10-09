@@ -1,19 +1,13 @@
 -- ==============================================================================
 -- THE WESTERN STORE KURUKSHETRA — SUPABASE PRODUCTION SQL DATABASE SCHEMA
 -- ==============================================================================
--- Paste this entire script into your Supabase Dashboard → SQL Editor → Run.
+-- ⚠️ WARNING: DO NOT RUN THIS ON AN EXISTING PRODUCTION DATABASE WITH LIVE DATA.
+-- This file defines the full schema for a fresh setup. For existing databases,
+-- apply sequential migrations from the `supabase/migrations/` directory.
+-- ==============================================================================
 
 -- 1. EXTENSIONS & SETUP
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Safe cleanup for re-running in Supabase SQL Editor
-DROP TABLE IF EXISTS public.orders CASCADE;
-DROP TABLE IF EXISTS public.wishlist_items CASCADE;
-DROP TABLE IF EXISTS public.cart_items CASCADE;
-DROP TABLE IF EXISTS public.products CASCADE;
-DROP TABLE IF EXISTS public.categories CASCADE;
-DROP TABLE IF EXISTS public.profiles CASCADE;
-DROP TABLE IF EXISTS public.store_settings CASCADE;
 
 -- 2. PROFILES TABLE (Extends Supabase Auth users)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -58,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
   name TEXT UNIQUE NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   subtitle TEXT,
-  image TEXT NOT NULL,
+  image TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -66,52 +60,29 @@ CREATE TABLE IF NOT EXISTS public.categories (
 CREATE TABLE IF NOT EXISTS public.products (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
-  slug TEXT UNIQUE,
+  slug TEXT UNIQUE NOT NULL,
   category TEXT NOT NULL,
-  price NUMERIC NOT NULL,
-  original_price NUMERIC,
+  price NUMERIC(10, 2) NOT NULL,
+  original_price NUMERIC(10, 2),
   sale_discount TEXT,
   on_sale BOOLEAN DEFAULT false,
   is_bestseller BOOLEAN DEFAULT false,
-  is_new BOOLEAN DEFAULT true,
+  is_new BOOLEAN DEFAULT false,
   is_sold_out BOOLEAN DEFAULT false,
   in_stock_count INT DEFAULT 15,
   budget_tier TEXT DEFAULT 'under_1499',
   description TEXT,
   fabric_care JSONB DEFAULT '{}'::jsonb,
-  sizes TEXT[] DEFAULT ARRAY['Free Size', 'S', 'M', 'L', 'XL'],
+  sizes JSONB DEFAULT '[]'::jsonb,
   colors JSONB DEFAULT '[]'::jsonb,
-  images TEXT[] DEFAULT ARRAY[]::text[],
-  rating NUMERIC DEFAULT 4.9,
-  review_count INT DEFAULT 24,
+  images JSONB DEFAULT '[]'::jsonb,
+  rating NUMERIC(2, 1) DEFAULT 5.0,
+  review_count INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. CART ITEMS TABLE
-CREATE TABLE IF NOT EXISTS public.cart_items (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  product_id TEXT REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
-  size TEXT NOT NULL,
-  color_name TEXT,
-  color_hex TEXT,
-  quantity INT NOT NULL DEFAULT 1,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, product_id, size)
-);
-
--- 6. WISHLIST ITEMS TABLE
-CREATE TABLE IF NOT EXISTS public.wishlist_items (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  product_id TEXT REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, product_id)
-);
-
--- 7. ORDERS TABLE
+-- 5. ORDERS TABLE (Unified Single Source of Truth)
 CREATE TABLE IF NOT EXISTS public.orders (
   id TEXT PRIMARY KEY,
   order_number TEXT UNIQUE NOT NULL,
@@ -120,104 +91,134 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_phone TEXT NOT NULL,
   customer_email TEXT,
   shipping_address JSONB NOT NULL,
-  total_amount NUMERIC NOT NULL,
+  total_amount NUMERIC(10, 2) NOT NULL,
   status TEXT DEFAULT 'Pending WhatsApp',
   payment_method TEXT DEFAULT 'whatsapp_cod',
-  items JSONB NOT NULL,
-  tracking_number TEXT,
+  payment_status TEXT DEFAULT 'pending',
+  razorpay_order_id TEXT,
+  razorpay_payment_id TEXT,
+  razorpay_signature TEXT,
+  refund_status TEXT,
+  refund_id TEXT,
+  refund_amount NUMERIC(10, 2),
+  paid_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  status_history JSONB DEFAULT '[]'::jsonb,
   courier_name TEXT,
-  timeline JSONB DEFAULT '[]'::jsonb,
+  tracking_number TEXT,
+  tracking_link TEXT,
+  items JSONB NOT NULL,
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. STORE SETTINGS TABLE (Hero slides, Reels, Testimonials, Home Sections)
+CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order_id ON public.orders (razorpay_order_id);
+
+-- 6. USER CARTS & WISHLISTS
+CREATE TABLE IF NOT EXISTS public.cart_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES public.products(id) ON DELETE CASCADE,
+  size TEXT NOT NULL,
+  color_name TEXT,
+  quantity INT NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.wishlist_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES public.products(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. STORE SETTINGS & CONFIGS
 CREATE TABLE IF NOT EXISTS public.store_settings (
   key TEXT PRIMARY KEY,
   value JSONB NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Explicitly grant table permissions to PostgREST roles
-GRANT ALL ON TABLE public.store_settings TO anon, authenticated, service_role;
-GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+-- 8. CONTACT MESSAGES
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  subject TEXT DEFAULT 'General Inquiry',
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'unread',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
--- ==============================================================================
--- 9. ROW LEVEL SECURITY (RLS) POLICIES & HELPER FUNCTIONS
--- ==============================================================================
+-- 9. ROW LEVEL SECURITY (RLS) POLICIES
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
+-- Security helper for Supabase authenticated admin users
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (
-    (auth.jwt() ->> 'role' = 'service_role') OR
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wishlist_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+-- Profiles: Users manage own profile
+CREATE POLICY "Users view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
--- Categories: Public Read, Admin Write
-CREATE POLICY "Public Categories Read" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Admin Categories Insert" ON public.categories FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admin Categories Update" ON public.categories FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admin Categories Delete" ON public.categories FOR DELETE USING (public.is_admin());
+-- Categories: Public read, Admin manage
+CREATE POLICY "Public read categories" ON public.categories FOR SELECT USING (true);
+CREATE POLICY "Admin manage categories" ON public.categories FOR ALL USING (public.is_admin());
+GRANT SELECT ON TABLE public.categories TO anon, authenticated;
 
--- Products: Public Read, Admin Write
-CREATE POLICY "Public Products Read" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Admin Products Insert" ON public.products FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admin Products Update" ON public.products FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admin Products Delete" ON public.products FOR DELETE USING (public.is_admin());
+-- Products: Public read, Admin manage
+CREATE POLICY "Public read products" ON public.products FOR SELECT USING (true);
+CREATE POLICY "Admin manage products" ON public.products FOR ALL USING (public.is_admin());
+GRANT SELECT ON TABLE public.products TO anon, authenticated;
 
--- Store Settings: Public Read, Admin Write
-CREATE POLICY "Public Store Settings Read" ON public.store_settings FOR SELECT USING (true);
-CREATE POLICY "Admin Store Settings Insert" ON public.store_settings FOR INSERT WITH CHECK (public.is_admin());
-CREATE POLICY "Admin Store Settings Update" ON public.store_settings FOR UPDATE USING (public.is_admin());
-CREATE POLICY "Admin Store Settings Delete" ON public.store_settings FOR DELETE USING (public.is_admin());
+-- Store Settings: Public read, Admin manage
+CREATE POLICY "Public read store settings" ON public.store_settings FOR SELECT USING (true);
+CREATE POLICY "Admin manage store settings" ON public.store_settings FOR ALL USING (public.is_admin());
+GRANT SELECT ON TABLE public.store_settings TO anon, authenticated;
 
--- Profiles: Users read/write their own profile
-CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id OR public.is_admin());
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin());
-
--- Cart Items: Users manage their own cart
+-- Cart & Wishlist: Authenticated user owns rows
 CREATE POLICY "Users manage own cart select" ON public.cart_items FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own cart insert" ON public.cart_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users manage own cart update" ON public.cart_items FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own cart delete" ON public.cart_items FOR DELETE USING (auth.uid() = user_id);
 
--- Wishlist Items: Users manage their own wishlist
 CREATE POLICY "Users manage own wishlist select" ON public.wishlist_items FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own wishlist insert" ON public.wishlist_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users manage own wishlist delete" ON public.wishlist_items FOR DELETE USING (auth.uid() = user_id);
 
--- Orders: Public Insert for checkout, Read for user/tracking, Admin Update/Delete
-CREATE POLICY "Customer Orders Insert" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Customer and Admin Orders Read" ON public.orders FOR SELECT USING (true);
-CREATE POLICY "Admin Orders Update" ON public.orders FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "Admin Orders Delete" ON public.orders FOR DELETE USING (true);
-GRANT ALL ON TABLE public.orders TO anon, authenticated, service_role;
+-- Orders: Strict backend service_role control + Customer own order read
+REVOKE ALL ON TABLE public.orders FROM anon;
+REVOKE UPDATE, DELETE, TRUNCATE ON TABLE public.orders FROM authenticated;
+GRANT ALL ON TABLE public.orders TO service_role;
 
--- ==============================================================================
--- 10. REALTIME PUBLICATIONS
--- ==============================================================================
+CREATE POLICY "Users Read Own Orders" ON public.orders
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+-- Contact Messages: Service role only (protects customer PII)
+REVOKE ALL ON TABLE public.contact_messages FROM anon, authenticated;
+GRANT ALL ON TABLE public.contact_messages TO service_role;
+
+-- 10. REALTIME PUBLICATIONS (Catalog & Store Settings only — NO orders)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables 
-    WHERE pubname = 'supabase_realtime' AND tablename = 'orders'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
-  END IF;
   IF NOT EXISTS (
     SELECT 1 FROM pg_publication_tables 
     WHERE pubname = 'supabase_realtime' AND tablename = 'products'
@@ -238,9 +239,7 @@ BEGIN
   END IF;
 END $$;
 
--- ==============================================================================
 -- 11. SUPABASE STORAGE BUCKET FOR REELS & VIDEOS
--- ==============================================================================
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'videos',

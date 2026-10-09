@@ -1,5 +1,5 @@
 import React, { useState, useRef, useId } from 'react';
-import { Upload, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { compressAndResizeImage } from '../../utils/imageUtils';
 
 interface ImageKitUploaderProps {
@@ -51,15 +51,12 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       }
       setProgress(30);
 
-      const adminSecretToUse =
-        sessionStorage.getItem('tws_admin_secret') ||
-        ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
-        'westernstore_admin_2026';
+      const adminToken = sessionStorage.getItem('tws_admin_token');
 
       // Step 1: Fetch authentication params from Express backend
       const authRes = await fetch(`${BACKEND_URL}/api/imagekit/auth`, {
         headers: {
-          'x-admin-secret': adminSecretToUse,
+          ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
         },
       });
 
@@ -67,7 +64,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         const errorData = await authRes.json().catch(() => ({}));
         throw new Error(
           errorData.error ||
-            'Failed to get upload signature from server. Ensure backend server is running.'
+            'Failed to get upload signature from server. Ensure you are logged in as admin.'
         );
       }
 

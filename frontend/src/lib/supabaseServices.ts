@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Product, Category, CartItem, Order } from '../types';
+import { Product, Category, CartItem } from '../types';
 
 // ─── PRODUCTS ──────────────────────────────────────────────────────────────
 export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
@@ -98,154 +98,135 @@ export async function syncCartToSupabase(userId: string, items: CartItem[]): Pro
     }));
 
     const { error } = await supabase.from('cart_items').insert(rows);
-    if (error) console.warn('[Supabase] Sync cart error:', error.message);
-    return !error;
-  } catch (err) {
-    console.error('[Supabase] Cart sync failed:', err);
-    return false;
-  }
-}
-
-// ─── WISHLIST SYNC ─────────────────────────────────────────────────────────
-export async function syncWishlistToSupabase(userId: string, productIds: string[]): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase || !userId) return false;
-
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-  if (!isUuid) return false; // Non-UUID mock/admin IDs shouldn't query Supabase auth-bound wishlist table
-
-  try {
-    await supabase.from('wishlist_items').delete().eq('user_id', userId);
-    if (productIds.length === 0) return true;
-
-    const rows = productIds.map((pid) => ({
-      user_id: userId,
-      product_id: pid,
-    }));
-
-    const { error } = await supabase.from('wishlist_items').insert(rows);
-    if (error) console.warn('[Supabase] Sync wishlist error:', error.message);
-    return !error;
-  } catch (err) {
-    console.error('[Supabase] Wishlist sync failed:', err);
-    return false;
-  }
-}
-
-// ─── ORDERS ───────────────────────────────────────────────────────────────
-export async function saveOrderToSupabase(order: Order, userId?: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false;
-
-  try {
-    const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
-
-    const row: any = {
-      id: order.id,
-      order_number: order.orderNumber,
-      user_id: isUuid ? userId : null,
-      customer_name: order.customerName,
-      customer_phone: order.phone,
-      customer_email: order.email || order.userEmail || null,
-      shipping_address: {
-        address: order.address || '',
-        city: order.city || '',
-        state: order.state || '',
-        pincode: order.pincode || '',
-        notes: order.notes || '',
-      },
-      total_amount: order.total,
-      status: order.status,
-      payment_method: 'whatsapp_cod',
-      items: order.items,
-      tracking_number: order.trackingNumber || null,
-      courier_name: order.courierName || null,
-    };
-
-    // Try direct insert first
-    const { error: insertError } = await supabase.from('orders').insert([row]);
-    if (insertError) {
-      // If order already exists, attempt update
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: order.status,
-          tracking_number: order.trackingNumber || null,
-          courier_name: order.courierName || null,
-          shipping_address: row.shipping_address,
-          total_amount: order.total,
-        })
-        .eq('id', order.id);
-
-      if (updateError) {
-        console.warn('[Supabase] Order save failed:', updateError.message, updateError.details);
-        return false;
-      }
-    }
-    return true;
-  } catch (err) {
-    console.error('[Supabase] Save order exception:', err);
-    return false;
-  }
-}
-
-export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
-  if (!isSupabaseConfigured() || !supabase) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-
     if (error) {
-      console.warn('[Supabase] Fetch orders failed:', error.message);
-      return null;
-    }
-
-    return (data || [])
-      .filter((row: any) => row && (row.order_number || row.id) && row.id !== 'order-1001' && row.id !== 'order-1002')
-      .map((row: any) => ({
-        id: row.id,
-        orderNumber: row.order_number || row.id,
-        createdAt: row.created_at || new Date().toISOString(),
-        customerName: row.customer_name || 'Customer',
-        phone: row.customer_phone || '',
-        email: row.customer_email || undefined,
-        address: row.shipping_address?.address || '',
-        pincode: row.shipping_address?.pincode || '',
-        city: row.shipping_address?.city || '',
-        state: row.shipping_address?.state || '',
-        notes: row.notes || row.shipping_address?.notes || undefined,
-        items: Array.isArray(row.items) ? row.items : [],
-        subtotal: Number(row.total_amount) || 0,
-        shippingFee: 0,
-        total: Number(row.total_amount) || 0,
-        status: row.status || 'Pending WhatsApp',
-        courierName: row.courier_name || undefined,
-        trackingNumber: row.tracking_number || undefined,
-        trackingLink: row.tracking_number
-          ? `https://delhivery.com/track/package/${row.tracking_number}`
-          : (row.tracking_link || undefined),
-        userId: row.user_id || undefined,
-      }));
-  } catch (err) {
-    console.error('[Supabase] Fetch orders exception:', err);
-    return null;
-  }
-}
-
-export async function deleteOrderFromSupabase(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false;
-
-  try {
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-    if (error) {
-      console.warn('[Supabase] Delete order failed:', error.message);
+      console.warn('[Supabase] Cart sync error:', error.message);
       return false;
     }
     return true;
   } catch (err) {
-    console.error('[Supabase] Delete order exception:', err);
+    console.error('[Supabase] Cart sync exception:', err);
     return false;
+  }
+}
+
+export async function fetchCartFromSupabase(userId: string): Promise<CartItem[] | null> {
+  if (!isSupabaseConfigured() || !supabase || !userId) return null;
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('cart_items')
+      .select('product_id, size, color_name, quantity, products(*)')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.warn('[Supabase] Cart fetch error:', error.message);
+      return null;
+    }
+    if (!data) return [];
+
+    return data.map((row: any) => {
+      const p = row.products;
+      const fc = (typeof p.fabric_care === 'object' && p.fabric_care) ? p.fabric_care : {};
+      const product: Product = {
+        id: p.id,
+        title: p.title,
+        slug: p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        category: p.category,
+        price: Number(p.price),
+        originalPrice: p.original_price ? Number(p.original_price) : Number(p.price),
+        saleDiscount: p.sale_discount || undefined,
+        onSale: !!p.on_sale,
+        isBestSeller: !!p.is_bestseller,
+        isNew: !!p.is_new,
+        isSoldOut: !!p.is_sold_out,
+        inStockCount: p.in_stock_count !== undefined ? Number(p.in_stock_count) : 15,
+        budgetTier: p.budget_tier || 'under_1499',
+        description: p.description || '',
+        fabricCare: {
+          fabric: fc.fabric || '',
+          washCare: fc.washCare || '',
+          fit: fc.fit || '',
+          occasion: fc.occasion || '',
+        },
+        customReturnPolicy: p.custom_return_policy || fc.custom_return_policy || undefined,
+        customWashCareNotes: p.custom_wash_care_notes || fc.custom_wash_care_notes || undefined,
+        customDeliveryTimeline: p.custom_delivery_timeline || fc.custom_delivery_timeline || undefined,
+        customReviews: p.custom_reviews || fc.custom_reviews || undefined,
+        sizes: Array.isArray(p.sizes) ? p.sizes : [],
+        colors: Array.isArray(p.colors) ? p.colors : [],
+        images: Array.isArray(p.images) ? p.images : [],
+        rating: Number(p.rating || 5.0),
+        reviewCount: Number(p.review_count || 0),
+      };
+
+      return {
+        id: `${p.id}-${row.size}-${row.color_name || ''}`,
+        productId: p.id,
+        product,
+        size: row.size,
+        color: row.color_name || 'Standard',
+        quantity: row.quantity,
+        price: Number(p.price),
+      };
+    });
+  } catch (err) {
+    console.error('[Supabase] Cart fetch exception:', err);
+    return null;
+  }
+}
+
+// ─── WISHLIST SYNC ────────────────────────────────────────────────────────
+export async function syncWishlistToSupabase(userId: string, productIds: string[]): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase || !userId) return false;
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid) return false;
+
+  try {
+    await supabase.from('wishlists').delete().eq('user_id', userId);
+    if (productIds.length === 0) return true;
+
+    const rows = productIds.map((productId) => ({
+      user_id: userId,
+      product_id: productId,
+    }));
+
+    const { error } = await supabase.from('wishlists').insert(rows);
+    if (error) {
+      console.warn('[Supabase] Wishlist sync error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Wishlist sync exception:', err);
+    return false;
+  }
+}
+
+export async function fetchWishlistFromSupabase(userId: string): Promise<string[] | null> {
+  if (!isSupabaseConfigured() || !supabase || !userId) return null;
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  if (!isUuid) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('wishlists')
+      .select('product_id')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.warn('[Supabase] Wishlist fetch error:', error.message);
+      return null;
+    }
+    if (!data) return [];
+    return data.map((r: any) => r.product_id);
+  } catch (err) {
+    console.error('[Supabase] Wishlist fetch exception:', err);
+    return null;
   }
 }
 
@@ -346,7 +327,7 @@ export async function deleteCategoryFromSupabase(categoryId: string): Promise<bo
 const rawBackendUrl = ((import.meta as any).env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
 const BACKEND_URL = rawBackendUrl || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : '');
 
-// ─── STORE SETTINGS & HOMEPAGE CONFIGS (REELS, HERO, REVIEWS, ETC.) ───────────
+// ─── STORE SETTINGS & HOMEPAGE CONFIGS ────────────────────────────────────
 export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, any> | null> {
   // 1. Direct Supabase Query FIRST (sub-100ms ultra fast edge query)
   if (isSupabaseConfigured() && supabase) {
@@ -388,21 +369,17 @@ export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, a
 }
 
 export async function saveStoreSettingToSupabase(key: string, value: any): Promise<boolean> {
-  const adminSecret =
-    sessionStorage.getItem('tws_admin_secret') ||
-    ((import.meta as any).env?.VITE_ADMIN_SECRET) ||
-    'westernstore_admin_2026';
-
+  const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
   let savedToBackend = false;
 
   // 1. Persist to Backend Server API first
-  if (BACKEND_URL) {
+  if (BACKEND_URL && adminToken) {
     try {
       const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(adminSecret ? { 'x-admin-secret': adminSecret } : {}),
+          'Authorization': `Bearer ${adminToken}`,
         },
         body: JSON.stringify({ key, value }),
       });
@@ -433,4 +410,3 @@ export async function saveStoreSettingToSupabase(key: string, value: any): Promi
 
   return savedToBackend;
 }
-
