@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Testimonial } from '../types';
 import { useStore } from '../context/StoreContext';
+import { INITIAL_TESTIMONIALS } from '../data/mockData';
 import {
   Star,
   CheckCircle2,
@@ -48,12 +49,17 @@ export const Testimonials: React.FC = () => {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // Effective testimonials list (uses INITIAL_TESTIMONIALS if state is empty)
+  const displayTestimonials = useMemo(() => {
+    return testimonials && testimonials.length > 0 ? testimonials : INITIAL_TESTIMONIALS;
+  }, [testimonials]);
+
   // Filtered reviews based on tag
   const filteredReviews = useMemo(() => {
     return activeTag === 'All'
-      ? testimonials
-      : testimonials.filter((t) => t.tag === activeTag);
-  }, [testimonials, activeTag]);
+      ? displayTestimonials
+      : displayTestimonials.filter((t) => t.tag === activeTag);
+  }, [displayTestimonials, activeTag]);
 
   // Update scroll arrow states
   const checkScrollPosition = () => {
@@ -143,8 +149,8 @@ export const Testimonials: React.FC = () => {
             {FILTER_TAGS.map((tag) => {
               const isSelected = activeTag === tag;
               const count = tag === 'All'
-                ? testimonials.length
-                : testimonials.filter((t) => t.tag === tag).length;
+                ? displayTestimonials.length
+                : displayTestimonials.filter((t) => t.tag === tag).length;
 
               return (
                 <button

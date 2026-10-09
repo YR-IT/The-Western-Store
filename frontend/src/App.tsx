@@ -65,7 +65,7 @@ const AppLayout: React.FC = () => {
       )}
 
       {/* Main Content & Page Routing */}
-      <div className="flex-1">
+      <main className={`flex-1 w-full ${!isAdminRoute ? 'pt-[98px] sm:pt-[114px]' : ''}`}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<ProductListingPage />} />
@@ -118,12 +118,13 @@ const AppLayout: React.FC = () => {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/policies/refund-policy" element={<PolicyPage initialTab="returns" />} />
           <Route path="/policies/shipping-policy" element={<PolicyPage initialTab="shipping" />} />
+          <Route path="/policies/terms-and-conditions" element={<PolicyPage initialTab="terms" />} />
           <Route path="/policies/terms" element={<PolicyPage initialTab="terms" />} />
           <Route path="/policies/privacy-policy" element={<PolicyPage initialTab="privacy" />} />
           <Route path="/policies/:policyType" element={<PolicyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </div>
+      </main>
 
       {/* Public Footer & WhatsApp Help Float */}
       {!isAdminRoute && (

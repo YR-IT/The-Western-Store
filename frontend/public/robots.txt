@@ -3,5 +3,9 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/*
 Disallow: /api/*
+Disallow: /cart
+Disallow: /checkout
+Disallow: /account
+Disallow: /account/*
 
 Sitemap: https://www.thewesternstore.in/sitemap.xml

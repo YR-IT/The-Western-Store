@@ -21,6 +21,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
+import { SEOHead } from './common/SEOHead';
+
 export type PolicyTab = 'returns' | 'shipping' | 'terms' | 'privacy';
 
 interface PolicyPageProps {
@@ -88,8 +90,45 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
     },
   ];
 
+  const getSeoMetadata = () => {
+    switch (activeTab) {
+      case 'shipping':
+        return {
+          title: 'Shipping & Delivery Policy',
+          description: 'Read the official Pan-India shipping and dispatch guidelines for The Western Store Kurukshetra.',
+          canonical: '/policies/shipping-policy',
+        };
+      case 'terms':
+        return {
+          title: 'Terms & Conditions',
+          description: 'Terms of service and user agreements for shopping at The Western Store Kurukshetra online boutique.',
+          canonical: '/policies/terms-and-conditions',
+        };
+      case 'privacy':
+        return {
+          title: 'Privacy Policy',
+          description: 'How The Western Store protects and handles your personal information, data, and security.',
+          canonical: '/policies/privacy-policy',
+        };
+      case 'returns':
+      default:
+        return {
+          title: 'Return & Exchange Policy',
+          description: 'Guidelines for damage claims, parcel unboxing video requirements, and exchange terms at The Western Store.',
+          canonical: '/policies/refund-policy',
+        };
+    }
+  };
+
+  const seo = getSeoMetadata();
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-16">
+      <SEOHead
+        title={seo.title}
+        description={seo.description}
+        canonical={seo.canonical}
+      />
       {/* Hero Header */}
       <div className="relative bg-gradient-to-b from-[#F6F0E6] via-[#EFE5D5] to-[#FDFBF7] border-b border-[#E3D6C5] overflow-hidden pt-12 sm:pt-16 pb-6 sm:pb-8">
         <div

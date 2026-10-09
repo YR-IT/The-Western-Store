@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Mail, Lock, Loader2, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { SEOHead } from '../components/common/SEOHead';
 
+// Safe relative redirect helper to protect against open redirects
+function getSafeRedirectUrl(rawUrl?: string): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '/account/orders';
+  const trimmed = rawUrl.trim();
+  // Must start with a single slash and not double slash, backslash, or protocol
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\') && !trimmed.includes('://')) {
+    return trimmed;
+  }
+  return '/account/orders';
+}
+
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle, currentUser } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,10 +28,16 @@ export const LoginPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const redirectTarget = (location.state as any)?.from?.pathname || '/account/orders';
+  const rawRedirect = searchParams.get('redirect') || (location.state as any)?.from?.pathname;
+  const redirectTarget = getSafeRedirectUrl(rawRedirect);
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [currentUser, redirectTarget, navigate]);
 
   if (currentUser) {
-    navigate(redirectTarget, { replace: true });
     return null;
   }
 

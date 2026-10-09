@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ShieldCheck, Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
@@ -13,8 +13,15 @@ export const AdminLoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  if (adminToken || (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token'))) {
-    navigate('/admin', { replace: true });
+  const hasToken = Boolean(adminToken || (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token')));
+
+  useEffect(() => {
+    if (hasToken) {
+      navigate('/admin', { replace: true });
+    }
+  }, [hasToken, navigate]);
+
+  if (hasToken) {
     return null;
   }
 

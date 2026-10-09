@@ -38,7 +38,7 @@ const requireUser = createRequireUser(supabase);
 // ─── Rate Limiters ────────────────────────────────────────────────────────
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 20, // Limit each IP to 20 requests per windowMs
   message: { error: 'Too many login attempts, please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -248,7 +248,12 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     if (updates.tracking_number !== undefined || updates.trackingNumber !== undefined) {
       dbUpdates.tracking_number = updates.tracking_number || updates.trackingNumber;
     }
-    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+    if (updates.notes !== undefined) {
+      // Notes are stored in shipping_address JSONB object to match Supabase schema
+      const { data: currentOrder } = await supabase.from('orders').select('shipping_address').eq('id', id).single();
+      const currentAddr = currentOrder?.shipping_address || {};
+      dbUpdates.shipping_address = { ...currentAddr, notes: updates.notes };
+    }
     if (updates.payment_status !== undefined) dbUpdates.payment_status = updates.payment_status;
 
     if (Object.keys(dbUpdates).length > 0) {
@@ -491,20 +496,32 @@ app.post('/api/orders', orderCreateLimiter, async (req, res) => {
       }
     }
 
-    // 2. Validate items and compute authoritative subtotal
+    // 2. Validate items and compute authoritative subtotal strictly from DB
     let calculatedSubtotal = 0;
-    const validatedItems = items.map((item: any) => {
+    const validatedItems = [];
+
+    for (const item of items) {
       const pId = item.productId || item.id;
       const matched = dbProducts.find((p) => p.id === pId);
 
-      const unitPrice = matched ? Number(matched.price) : Number(item.price || 0);
+      if (!matched) {
+        res.status(400).json({ error: `Product '${item.title || pId}' is not available in our boutique catalog.` });
+        return;
+      }
+
+      const unitPrice = Number(matched.price);
+      if (unitPrice <= 0) {
+        res.status(400).json({ error: 'Invalid product pricing detected.' });
+        return;
+      }
+
       const title = matched ? matched.title : (item.title || 'Boutique Item');
       const image = matched && matched.images?.[0] ? matched.images[0] : (item.image || '');
-      const quantity = Math.max(1, Number(item.quantity) || 1);
+      const quantity = Math.max(1, Math.min(Number(item.quantity) || 1, 10));
 
       calculatedSubtotal += unitPrice * quantity;
 
-      return {
+      validatedItems.push({
         productId: pId,
         title,
         image,
@@ -512,8 +529,13 @@ app.post('/api/orders', orderCreateLimiter, async (req, res) => {
         color: item.color || '',
         quantity,
         price: unitPrice,
-      };
-    });
+      });
+    }
+
+    if (calculatedSubtotal <= 0) {
+      res.status(400).json({ error: 'Invalid order amount.' });
+      return;
+    }
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const orderNumber = clientOrderNumber || `TWS-2026-${randomSuffix}`;
@@ -537,9 +559,7 @@ app.post('/api/orders', orderCreateLimiter, async (req, res) => {
       total_amount: calculatedSubtotal,
       status: 'Pending WhatsApp',
       payment_method: 'whatsapp_cod',
-      payment_status: 'pending',
       items: validatedItems,
-      notes: formData.notes || '',
     };
 
     const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
@@ -598,14 +618,19 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
     const productPriceMap = new Map((dbProducts || []).map((p: any) => [p.id, p.price]));
 
     let calculatedSubtotal = 0;
-    const validatedItems = items.map((item: any) => {
+    const validatedItems = [];
+    for (const item of items) {
       const pId = item.productId || item.product?.id;
       const verifiedPrice = productPriceMap.get(pId);
-      const unitPrice = verifiedPrice !== undefined ? verifiedPrice : (item.product?.price || 0);
+      if (verifiedPrice === undefined) {
+        res.status(400).json({ error: `Product '${item.product?.title || pId}' is not found in store catalog.` });
+        return;
+      }
+      const unitPrice = Number(verifiedPrice);
       const qty = Math.max(1, Math.min(item.quantity || 1, 10));
       calculatedSubtotal += unitPrice * qty;
 
-      return {
+      validatedItems.push({
         id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         product: {
           id: pId,
@@ -619,8 +644,8 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
         color: item.color || 'Standard',
         quantity: qty,
         price: unitPrice,
-      };
-    });
+      });
+    }
 
     if (calculatedSubtotal <= 0) {
       res.status(400).json({ error: 'Invalid order total amount.' });
@@ -666,7 +691,6 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       payment_status: 'awaiting_payment',
       razorpay_order_id: rzpOrder.id,
       items: validatedItems,
-      notes: formData.notes || '',
     };
 
     const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { MapPin, Phone, Instagram, Clock, Send, CheckCircle, MessageCircle, Mail, ShieldAlert } from 'lucide-react';
 import { STORE_INFO } from '../data/mockData';
+import { SEOHead } from './common/SEOHead';
 
 export const ContactPage: React.FC = () => {
   const [form, setForm] = useState({ name: '', phone: '', email: '', subject: '', message: '', hp_field: '' });
@@ -18,7 +19,7 @@ export const ContactPage: React.FC = () => {
 
     // 1. Post to backend to save in database
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
       await fetch(`${backendUrl}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,6 +50,11 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
+      <SEOHead
+        title="Contact Us & Visit Boutique"
+        description="Visit The Western Store boutique at Railway Road & Mohan Nagar Kurukshetra or reach our stylists on WhatsApp."
+        canonical="/contact"
+      />
       {/* Hero Banner */}
       <div className="relative bg-gradient-to-b from-[#F6F0E6] via-[#EFE5D5] to-[#FDFBF7] border-b border-[#E3D6C5] overflow-hidden">
         <div

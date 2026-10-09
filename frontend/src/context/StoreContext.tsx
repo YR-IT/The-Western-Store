@@ -217,40 +217,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // no-op: routing is now handled via react-router-dom
   }, []);
 
-  // Navigation State (kept for filter/category state that PLP still reads)
-  const [view] = useState<'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy'>('home');
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>(
-    () => (localStorage.getItem('tws_selected_category') as ProductCategory | 'All') || 'All'
-  );
-  const [selectedBudgetTier, setSelectedBudgetTier] = useState<BudgetTier | 'all'>(
-    () => (localStorage.getItem('tws_selected_budget_tier') as BudgetTier | 'all') || 'all'
-  );
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    () => localStorage.getItem('tws_selected_product_id') || null
-  );
+  // Navigation & Filter State (URL is the single source of truth)
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
+  const [selectedBudgetTier, setSelectedBudgetTier] = useState<BudgetTier | 'all'>('all');
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [adminActiveTab, setAdminActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'homepage' | 'sections' | 'filters'>(
     () => (localStorage.getItem('tws_admin_active_tab') as any) || 'dashboard'
   );
   const [trackingPrefill, setTrackingPrefill] = useState<{ orderNumber: string; phone: string } | null>(null);
 
-  // Sync Navigation State to localStorage
-  // (tws_view localStorage sync removed — URL is now the source of truth)
-
+  // Clear legacy navigation keys on startup to prevent session leaks
   useEffect(() => {
-    localStorage.setItem('tws_selected_category', selectedCategory);
-  }, [selectedCategory]);
-
-  useEffect(() => {
-    localStorage.setItem('tws_selected_budget_tier', selectedBudgetTier);
-  }, [selectedBudgetTier]);
-
-  useEffect(() => {
-    if (selectedProductId) {
-      localStorage.setItem('tws_selected_product_id', selectedProductId);
-    } else {
+    try {
+      localStorage.removeItem('tws_selected_category');
+      localStorage.removeItem('tws_selected_budget_tier');
       localStorage.removeItem('tws_selected_product_id');
-    }
-  }, [selectedProductId]);
+      localStorage.removeItem('tws_view');
+    } catch {}
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('tws_admin_active_tab', adminActiveTab);
@@ -348,7 +332,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('tws_home_sections');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: HomeSectionConfig[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasTestimonials = parsed.some((s) => s.type === 'testimonials' || s.id === 'sec-testimonials');
+          if (!hasTestimonials) {
+            const testimonialsSec: HomeSectionConfig = {
+              id: 'sec-testimonials',
+              title: 'Customer Stories & Reviews',
+              type: 'testimonials',
+              tagline: 'Voices of Kurukshetra',
+              subtitle: 'Honest reflections and style stories from over 10,000 discerning patrons across Haryana and worldwide.',
+              enabled: true,
+              order: 6,
+              images: [],
+            };
+            return [...parsed, testimonialsSec].sort((a, b) => a.order - b.order);
+          }
+          return parsed;
+        }
       } catch {
         return INITIAL_HOME_SECTIONS;
       }
@@ -886,6 +887,59 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [adminToken]);
 
+  // Customer Orders Fetch from Supabase on Login
+  const fetchUserOrders = useCallback(async () => {
+    if (!currentUser || !currentUser.id || !isSupabaseConfigured() || !supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const mapped: Order[] = data.map((row: any) => ({
+          id: row.id || row.order_number,
+          orderNumber: row.order_number || row.id,
+          date: row.created_at || new Date().toISOString(),
+          createdAt: row.created_at || new Date().toISOString(),
+          customerName: row.customer_name || 'Customer',
+          phone: row.customer_phone || '',
+          email: row.customer_email || undefined,
+          address: row.shipping_address?.address || row.address || '',
+          pincode: row.shipping_address?.pincode || row.pincode || '',
+          city: row.shipping_address?.city || row.city || '',
+          state: row.shipping_address?.state || row.state || '',
+          notes: row.notes || row.shipping_address?.notes || undefined,
+          items: Array.isArray(row.items) ? row.items : [],
+          subtotal: Number(row.total_amount ?? row.subtotal ?? row.total ?? 0),
+          shippingFee: 0,
+          total: Number(row.total_amount ?? row.total ?? row.subtotal ?? 0),
+          status: (row.status as OrderStatus) || 'Pending WhatsApp',
+          courierName: row.courier_name || undefined,
+          trackingNumber: row.tracking_number || undefined,
+          trackingLink: row.tracking_number ? `https://delhivery.com/track/package/${row.tracking_number}` : undefined,
+          userId: row.user_id || undefined,
+        }));
+
+        setOrders((prev) => {
+          const remoteIds = new Set(mapped.map((o) => o.id));
+          const uniqueLocal = prev.filter((o) => !remoteIds.has(o.id));
+          return [...mapped, ...uniqueLocal];
+        });
+      }
+    } catch (err) {
+      console.warn('[Customer Orders Sync Notice]', err);
+    }
+  }, [currentUser]);
+
+  // Sync customer orders when logged in
+  useEffect(() => {
+    if (currentUser?.id && !currentUser.isAdmin) {
+      fetchUserOrders();
+    }
+  }, [currentUser?.id, currentUser?.isAdmin, fetchUserOrders]);
+
   // 25-Second Polling for Admin Orders when logged in
   useEffect(() => {
     if (!adminToken) return;
@@ -936,7 +990,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setTestimonials(settings.testimonials);
         }
         if (settings.home_sections && Array.isArray(settings.home_sections) && settings.home_sections.length > 0) {
-          setHomeSections(settings.home_sections);
+          const secs = settings.home_sections as HomeSectionConfig[];
+          const hasTestimonials = secs.some((s) => s.type === 'testimonials' || s.id === 'sec-testimonials');
+          if (!hasTestimonials) {
+            const testimonialsSec: HomeSectionConfig = {
+              id: 'sec-testimonials',
+              title: 'Customer Stories & Reviews',
+              type: 'testimonials',
+              tagline: 'Voices of Kurukshetra',
+              subtitle: 'Honest reflections and style stories from over 10,000 discerning patrons across Haryana and worldwide.',
+              enabled: true,
+              order: 6,
+              images: [],
+            };
+            setHomeSections([...secs, testimonialsSec].sort((a, b) => a.order - b.order));
+          } else {
+            setHomeSections(secs);
+          }
         }
         if (settings.budget_tiles && Array.isArray(settings.budget_tiles) && settings.budget_tiles.length > 0) {
           setBudgetTiles(settings.budget_tiles);
@@ -1170,7 +1240,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
-          setCurrentUser(data.user);
+          // Map role:'admin' → isAdmin:true so AdminPanel and Header checks work
+          setCurrentUser({
+            ...data.user,
+            isAdmin: data.user.role === 'admin',
+          });
           if (data.token) {
             setAdminToken(data.token);
             sessionStorage.setItem('tws_admin_token', data.token);
@@ -1287,9 +1361,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const navigateToProduct = useCallback((productId: string) => {
     setSelectedProductId(productId);
-    // Find slug for the product if available, fall back to id
-    routerNavigate(`/product/${productId}`);
-  }, [routerNavigate]);
+    const prod = products.find((p) => p.id === productId || p.slug === productId);
+    const target = prod?.slug || productId;
+    routerNavigate(`/product/${encodeURIComponent(target)}`);
+  }, [products, routerNavigate]);
 
   // Orders & Admin Stock Management
   const isConfirmedState = (s: OrderStatus) => ['Confirmed', 'Shipped', 'Paid', 'Delivered'].includes(s);
@@ -1698,8 +1773,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <StoreContext.Provider
       value={{
-        view,
-        currentView: view,
+        view: 'home',
+        currentView: 'home',
         setView,
         setRouterNavigate,
         selectedCategory,

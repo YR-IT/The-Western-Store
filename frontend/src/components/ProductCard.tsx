@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { useStore } from '../context/StoreContext';
 import { Heart, ShoppingBag, Eye, Flame } from 'lucide-react';
@@ -9,9 +10,11 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { navigateToProduct, toggleWishlist, isInWishlist, setQuickViewProduct } = useStore();
+  const { toggleWishlist, isInWishlist, setQuickViewProduct } = useStore();
   const [isHovered, setIsHovered] = useState(false);
   const inWishlist = isInWishlist(product.id);
+
+  const productUrl = `/product/${product.slug || product.id}`;
 
   const rawPrimary = (product.images && product.images[0]) || '';
   const rawSecondary = (product.images && product.images[1]) || rawPrimary;
@@ -27,9 +30,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Product Image Stage */}
-      <div
-        className="relative w-full aspect-[3/4] overflow-hidden bg-[#F4EFE6] cursor-pointer"
-        onClick={() => navigateToProduct(product.id)}
+      <Link
+        to={productUrl}
+        className="relative block w-full aspect-[3/4] overflow-hidden bg-[#F4EFE6] cursor-pointer"
+        aria-label={`View details for ${product.title}`}
       >
         {/* Primary Image */}
         <img
@@ -88,6 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <button
           type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             toggleWishlist(product.id);
           }}
@@ -105,6 +110,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <button
           type="button"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             setQuickViewProduct(product);
           }}
@@ -128,6 +134,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <button
             type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               setQuickViewProduct(product);
             }}
@@ -138,7 +145,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <span>Select Options</span>
           </button>
         </div>
-      </div>
+      </Link>
 
       {/* Product Info */}
       <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between">
@@ -149,12 +156,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </p>
 
           {/* Title */}
-          <h4
-            onClick={() => navigateToProduct(product.id)}
-            className="font-serif text-sm sm:text-base font-semibold text-[#242120] hover:text-[#721B29] line-clamp-2 transition-colors cursor-pointer leading-snug"
+          <Link
+            to={productUrl}
+            className="block font-serif text-sm sm:text-base font-semibold text-[#242120] hover:text-[#721B29] line-clamp-2 transition-colors cursor-pointer leading-snug"
           >
             {product.title}
-          </h4>
+          </Link>
         </div>
 
         {/* Pricing & Mobile Select Button */}

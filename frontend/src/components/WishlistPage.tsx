@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from './ProductCard';
 import { Heart, ArrowLeft } from 'lucide-react';
+import { SEOHead } from './common/SEOHead';
 
 export const WishlistPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,12 +13,14 @@ export const WishlistPage: React.FC = () => {
   const wishlistedProducts = products.filter((p) => wishlist.includes(p.id));
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="min-h-screen bg-[#FDFBF7] py-6 sm:py-14 w-full max-w-full overflow-hidden"
-    >
+    <>
+      <SEOHead title="My Wishlist" description="View and manage your saved favourite outfits and collections." noIndex />
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="min-h-screen bg-[#FDFBF7] py-6 sm:py-14 w-full max-w-full overflow-hidden"
+      >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Header */}
         <div className="mb-6 sm:mb-8 pb-4 border-b border-[#EAE4D9]">
@@ -70,5 +73,6 @@ export const WishlistPage: React.FC = () => {
         )}
       </div>
     </motion.div>
+    </>
   );
 };

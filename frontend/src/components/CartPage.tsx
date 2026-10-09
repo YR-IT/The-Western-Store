@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
+import { SEOHead } from './common/SEOHead';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,12 +29,14 @@ export const CartPage: React.FC = () => {
   } = useStore();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="min-h-screen bg-[#FDFBF7] py-6 sm:py-14 w-full max-w-full overflow-hidden"
-    >
+    <>
+      <SEOHead title="Shopping Bag" description="Review your selected items and proceed to secure checkout." noIndex />
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="min-h-screen bg-[#FDFBF7] py-6 sm:py-14 w-full max-w-full overflow-hidden"
+      >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Header & Back Link */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[#EAE4D9]">
@@ -255,5 +258,6 @@ export const CartPage: React.FC = () => {
         )}
       </div>
     </motion.div>
+    </>
   );
 };

@@ -320,14 +320,10 @@ export const AuthModal: React.FC = () => {
               </form>
 
               <div className="pt-2 text-center border-t border-[#EAE4D9]">
-                <button
-                  type="button"
-                  onClick={() => setAuthModalMode('admin')}
-                  className="text-xs text-[#736B63] hover:text-[#721B29] font-medium hover:underline flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#721B29]" />
-                  <span>Boutique Admin Panel</span>
-                </button>
+                <p className="text-[11px] text-[#8C8276] flex items-center justify-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>256-bit Secure Customer Authentication</span>
+                </p>
               </div>
             </div>
           ) : (

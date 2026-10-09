@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory, Product, BudgetTier } from '../types';
 import { ProductCard } from './ProductCard';
 import { PLPSkeleton, ProductCardSkeleton } from './Skeletons';
 import { Filter, X, SlidersHorizontal, ArrowUpDown, Sparkles, ChevronDown } from 'lucide-react';
+import { SEOHead } from './common/SEOHead';
 
 const SIZES = ['Free Size', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '28', '30', '32', '34'];
 
@@ -20,6 +21,7 @@ const BUDGET_TIER_LABELS: Record<string, string> = {
 
 export const ProductListingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const params = useParams<{ slug?: string }>();
   const [searchParams] = useSearchParams();
 
@@ -33,23 +35,64 @@ export const ProductListingPage: React.FC = () => {
     collectionFilters,
   } = useStore();
 
-  // Sync category from URL path /category/:slug or ?category=...
+  // Sync category & budget tier from URL path (/category/:slug, /collection/:slug) or query (?category=..., ?budget=...)
   useEffect(() => {
-    if (params.slug) {
-      const decoded = decodeURIComponent(params.slug);
-      setSelectedCategory(decoded as ProductCategory);
+    const isCategoryRoute = location.pathname.startsWith('/category/');
+    const isCollectionRoute = location.pathname.startsWith('/collection/');
+    const rawSlug = params.slug ? decodeURIComponent(params.slug).trim() : null;
+
+    if (isCategoryRoute && rawSlug) {
+      const matchedCat = categories.find(
+        (c) =>
+          c.slug?.toLowerCase() === rawSlug.toLowerCase() ||
+          c.id.toLowerCase() === rawSlug.toLowerCase() ||
+          c.name.toLowerCase() === rawSlug.toLowerCase()
+      );
+      if (matchedCat) {
+        setSelectedCategory(matchedCat.name as ProductCategory);
+      } else {
+        setSelectedCategory(rawSlug as ProductCategory);
+      }
+      setSelectedBudgetTier('all');
+    } else if (isCollectionRoute && rawSlug) {
+      const slugLower = rawSlug.toLowerCase();
+      if (slugLower === 'under-999' || slugLower === 'under_999') {
+        setSelectedBudgetTier('under_999');
+        setSelectedCategory('All');
+      } else if (slugLower === 'under-1499' || slugLower === 'under_1499') {
+        setSelectedBudgetTier('under_1499');
+        setSelectedCategory('All');
+      } else if (slugLower === 'under-1999' || slugLower === 'under_1999') {
+        setSelectedBudgetTier('under_1999');
+        setSelectedCategory('All');
+      } else if (slugLower === 'under-2499' || slugLower === 'under_2499') {
+        setSelectedBudgetTier('under_2499');
+        setSelectedCategory('All');
+      } else if (slugLower === 'luxury' || slugLower === 'premium') {
+        setSelectedBudgetTier('premium');
+        setSelectedCategory('All');
+      } else if (slugLower === 'new-arrivals' || slugLower === 'new-arrival') {
+        setSelectedCategory('New Arrivals' as ProductCategory);
+        setSelectedBudgetTier('all');
+      } else {
+        const matchedCat = categories.find(
+          (c) =>
+            c.slug?.toLowerCase() === slugLower ||
+            c.name.toLowerCase() === slugLower
+        );
+        if (matchedCat) {
+          setSelectedCategory(matchedCat.name as ProductCategory);
+        }
+      }
     } else if (searchParams.get('category')) {
       setSelectedCategory(decodeURIComponent(searchParams.get('category')!) as ProductCategory);
+    } else if (searchParams.get('budget')) {
+      setSelectedBudgetTier(searchParams.get('budget') as BudgetTier);
+    } else if (location.pathname === '/shop' && !searchParams.get('category') && !searchParams.get('budget')) {
+      setSelectedCategory('All');
+      setSelectedBudgetTier('all');
     }
-  }, [params.slug, searchParams, setSelectedCategory]);
-
-  // Sync budget tier from ?budget=...
-  useEffect(() => {
-    const budgetParam = searchParams.get('budget');
-    if (budgetParam) {
-      setSelectedBudgetTier(budgetParam as BudgetTier);
-    }
-  }, [searchParams, setSelectedBudgetTier]);
+  }, [location.pathname, params.slug, searchParams, categories, setSelectedCategory, setSelectedBudgetTier]);
 
   const [isGridLoading, setIsGridLoading] = useState(false);
 
@@ -160,8 +203,18 @@ export const ProductListingPage: React.FC = () => {
         // Category filter
         if (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival') {
           if (!p.isNew) return false;
-        } else if (selectedCategory !== 'All' && p.category !== selectedCategory) {
-          return false;
+        } else if (selectedCategory !== 'All') {
+          const selCatLower = selectedCategory.toLowerCase().trim();
+          const prodCatLower = (p.category || '').toLowerCase().trim();
+          const isDirectMatch = prodCatLower === selCatLower;
+          const isSlugMatch = categories.some(
+            (c) =>
+              (c.name.toLowerCase() === selCatLower || c.slug?.toLowerCase() === selCatLower || c.id.toLowerCase() === selCatLower) &&
+              c.name.toLowerCase() === prodCatLower
+          );
+          if (!isDirectMatch && !isSlugMatch) {
+            return false;
+          }
         }
 
         // Budget & Price Filter
@@ -260,6 +313,12 @@ export const ProductListingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden">
+      <SEOHead
+        title={selectedCategory === 'All' ? (selectedBudgetTier !== 'all' ? BUDGET_TIER_LABELS[selectedBudgetTier] || 'Collection' : 'All Collections') : selectedCategory}
+        description={`Explore ${selectedCategory === 'All' ? 'exclusive ethnic and western wear' : selectedCategory} from The Western Store Kurukshetra. Handcrafted boutique collection with Pan-India delivery.`}
+        canonical={location.pathname}
+      />
+
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
         {/* Breadcrumb & Header */}
         <div className="mb-6">

@@ -81,7 +81,7 @@ export const CheckoutPage: React.FC = () => {
       throw new Error('Razorpay SDK could not be loaded. Please check your internet connection or use WhatsApp checkout.');
     }
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
     // 1. Create order on backend
     const res = await fetch(`${backendUrl}/api/payments/create-order`, {
@@ -189,7 +189,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const handleWhatsAppCheckout = async (orderId: string, orderNumber: string) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
     // 1. Post to backend to record order
     try {

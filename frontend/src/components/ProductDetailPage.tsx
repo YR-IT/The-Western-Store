@@ -7,6 +7,7 @@ import { ProductCard } from './ProductCard';
 import { PDPSkeleton } from './Skeletons';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 import { CartItem } from '../types';
+import { SEOHead } from './common/SEOHead';
 import {
   Heart,
   ShoppingBag,
@@ -130,8 +131,10 @@ export const ProductDetailPage: React.FC = () => {
     navigateToCategory,
   } = useStore();
 
-  // Find product by slug or id, fallback to selectedProductId or first product
-  const product = products.find((p) => (slug && (p.slug === slug || p.id === slug)) || p.id === selectedProductId) || products[0];
+  // Find product by slug or id, or fallback to selectedProductId if no slug provided
+  const product = slug
+    ? products.find((p) => p.slug === slug || p.id === slug)
+    : (products.find((p) => p.id === selectedProductId) || products[0]);
 
   // PDP State
   const [isLoading, setIsLoading] = useState(true);
@@ -164,7 +167,7 @@ export const ProductDetailPage: React.FC = () => {
     name: '',
     location: 'Kurukshetra, Haryana',
     rating: 5,
-    size: product.sizes[0] || 'M',
+    size: product?.sizes?.[0] || 'M',
     title: '',
     comment: '',
   });
@@ -175,14 +178,14 @@ export const ProductDetailPage: React.FC = () => {
     setIsLoading(true);
     setSelectedImageIdx(0);
     setReviewPage(1);
-    setSelectedSize(product.sizes?.[0] || 'Free Size');
-    setSelectedColor(product.colors?.[0]?.name || '');
+    setSelectedSize(product?.sizes?.[0] || 'Free Size');
+    setSelectedColor(product?.colors?.[0]?.name || '');
     setQuantity(1);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 350);
     return () => clearTimeout(timer);
-  }, [selectedProductId, product]);
+  }, [selectedProductId, product?.id]);
 
   useEffect(() => {
     setReviewPage(1);
@@ -258,6 +261,39 @@ export const ProductDetailPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [product.images]);
+
+  if (!product) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-16 text-center bg-[#FDFBF7]">
+        <SEOHead
+          title="Product Not Found"
+          description="The product you are looking for is no longer available or does not exist at The Western Store."
+          noIndex
+        />
+        <div className="w-16 h-16 bg-[#F3EEEA] rounded-full flex items-center justify-center mb-6 text-[#721B29]">
+          <ShoppingBag className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-serif text-[#1C1618] mb-3">Product Not Found</h1>
+        <p className="text-[#8C8276] max-w-md mb-8 text-sm sm:text-base">
+          The item you are searching for might have been moved, renamed, or is currently out of stock.
+        </p>
+        <div className="flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={() => navigate('/collections')}
+            className="px-6 py-3 bg-[#721B29] text-white rounded-lg text-sm font-medium hover:bg-[#5B1520] transition shadow-sm"
+          >
+            Explore All Collections
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 border border-[#D1C7BD] text-[#1C1618] rounded-lg text-sm font-medium hover:bg-white transition"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Accordions (closed by default)
   const [accordionOpen, setAccordionOpen] = useState<{ fabric: boolean; returnPolicy: boolean; shipping: boolean; care: boolean }>({
@@ -373,7 +409,7 @@ export const ProductDetailPage: React.FC = () => {
       name: '',
       location: 'Kurukshetra, Haryana',
       rating: 5,
-      size: product.sizes[0] || 'M',
+      size: product.sizes?.[0] || 'M',
       title: '',
       comment: '',
     });
@@ -412,8 +448,47 @@ export const ProductDetailPage: React.FC = () => {
     { stars: 1, percent: Math.round((count1 / totalR) * 100) },
   ];
 
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    image: product.images && product.images.length > 0 ? product.images : [FALLBACK_PRODUCT_IMAGE],
+    description: product.description,
+    sku: product.id,
+    brand: {
+      '@type': 'Brand',
+      name: 'The Western Store',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `https://www.thewesternstore.in/product/${product.slug || product.id}`,
+      priceCurrency: 'INR',
+      price: product.price,
+      availability: product.isSoldOut ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Organization',
+        name: 'The Western Store',
+      },
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: avgScore,
+      reviewCount: (activeReviewsList.length || 1).toString(),
+    },
+  };
+
   return (
-    <AnimatePresence mode="wait">
+    <>
+      <SEOHead
+        title={product.title}
+        description={product.description || `Buy ${product.title} at The Western Store Kurukshetra. Premium quality, best price.`}
+        canonical={`/product/${product.slug || product.id}`}
+        ogImage={product.images?.[0] || FALLBACK_PRODUCT_IMAGE}
+        ogType="product"
+        jsonLd={productJsonLd}
+      />
+      <AnimatePresence mode="wait">
       {isLoading ? (
         <motion.div
           key="pdp-skeleton"
@@ -1666,6 +1741,7 @@ export const ProductDetailPage: React.FC = () => {
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 };
 

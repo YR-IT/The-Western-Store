@@ -5,6 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
+import { SEOHead } from './common/SEOHead';
 import {
   Search,
   Package,
@@ -24,6 +25,7 @@ import {
   ArrowLeft,
   Sparkles,
   ShoppingBag,
+  Loader2,
 } from 'lucide-react';
 
 export const OrderTrackingPage: React.FC = () => {
@@ -33,6 +35,7 @@ export const OrderTrackingPage: React.FC = () => {
   const [orderIdInput, setOrderIdInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
   const [searched, setSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [matchedOrder, setMatchedOrder] = useState<Order | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export const OrderTrackingPage: React.FC = () => {
     return clean;
   };
 
-  const performSearch = (orderNum: string, phone: string) => {
+  const performSearch = async (orderNum: string, phone: string) => {
     const cleanOrderNum = orderNum.trim().toUpperCase().replace('#', '');
     const cleanPhone = normalizePhone(phone);
 
@@ -75,8 +78,10 @@ export const OrderTrackingPage: React.FC = () => {
 
     setErrorMessage(null);
     setSearched(true);
+    setIsSearching(true);
 
-    const found = orders.find((o) => {
+    // 1. Check local state first
+    const foundLocal = orders.find((o) => {
       const matchOrder =
         o.orderNumber.toUpperCase() === cleanOrderNum ||
         o.id.toUpperCase() === cleanOrderNum ||
@@ -86,14 +91,75 @@ export const OrderTrackingPage: React.FC = () => {
       return matchOrder && matchPhone;
     });
 
-    if (found) {
-      setMatchedOrder(found);
+    if (foundLocal) {
+      setMatchedOrder(foundLocal);
       setErrorMessage(null);
-    } else {
+      setIsSearching(false);
+      return;
+    }
+
+    // 2. Query backend tracking API
+    try {
+      const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+      const res = await fetch(`${backendUrl}/api/orders/track?orderNumber=${encodeURIComponent(cleanOrderNum)}&phone=${encodeURIComponent(cleanPhone)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const mappedOrder: Order = {
+          id: data.orderNumber || cleanOrderNum,
+          orderNumber: data.orderNumber || cleanOrderNum,
+          customerName: 'Valued Customer',
+          phone: cleanPhone,
+          address: 'Verified Delivery Address',
+          city: 'Kurukshetra',
+          state: 'Haryana',
+          pincode: '136118',
+          items: Array.isArray(data.items) ? data.items.map((i: any, idx: number) => ({
+            id: `item-${idx}`,
+            productId: `prod-${idx}`,
+            product: {
+              id: `prod-${idx}`,
+              title: i.title || 'Boutique Outfit',
+              price: 0,
+              images: i.image ? [i.image] : [],
+              category: 'Ethnic Wear',
+              description: '',
+              fabricCare: {},
+              sizes: [],
+              colors: [],
+              rating: 5,
+              reviewCount: 1,
+            },
+            size: i.size || 'Free Size',
+            color: 'Standard',
+            quantity: i.quantity || 1,
+            price: 0,
+          })) : [],
+          subtotal: data.totalAmount || 0,
+          shipping: 0,
+          discount: 0,
+          total: data.totalAmount || 0,
+          paymentMethod: 'whatsapp',
+          status: data.status as OrderStatus,
+          createdAt: data.createdAt || new Date().toISOString(),
+          courierName: data.courierName || undefined,
+          trackingNumber: data.trackingNumber || undefined,
+        };
+        setMatchedOrder(mappedOrder);
+        setErrorMessage(null);
+      } else {
+        setMatchedOrder(null);
+        setErrorMessage(
+          `We could not find an order matching "${orderNum.trim()}" with phone ending in "${cleanPhone.slice(-4)}". Please verify your details or contact our Kurukshetra boutique directly.`
+        );
+      }
+    } catch (err) {
+      console.warn('[Tracking API Notice]', err);
       setMatchedOrder(null);
       setErrorMessage(
-        `We could not find an order matching "${orderNum.trim()}" with phone ending in "${cleanPhone.slice(-4)}". Please check the details or reach out directly to our Kurukshetra showroom team.`
+        `We could not verify the order at this moment. Please reach out to our team at +91 ${STORE_INFO.phone} for instant updates.`
       );
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -199,6 +265,11 @@ export const OrderTrackingPage: React.FC = () => {
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="bg-[#FAF7F0] min-h-screen py-6 sm:py-12 w-full max-w-full overflow-hidden"
     >
+      <SEOHead
+        title="Track Order Status"
+        description="Self-service live tracking for your handcrafted outfits and boutique orders from The Western Store Kurukshetra."
+        canonical="/track-order"
+      />
       <div className="max-w-4xl mx-auto px-3 sm:px-6 w-full">
         {/* Navigation Back & Breadcrumb */}
         <div className="flex items-center justify-between mb-6">

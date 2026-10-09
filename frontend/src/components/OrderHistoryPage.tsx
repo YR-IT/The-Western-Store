@@ -24,6 +24,7 @@ import {
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
+import { SEOHead } from './common/SEOHead';
 
 export const OrderHistoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -122,13 +123,15 @@ export const OrderHistoryPage: React.FC = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.3 }}
-      className="py-8 sm:py-12 bg-[#FAF8F3] min-h-[80vh]"
-    >
+    <>
+      <SEOHead title="My Orders" description="View and track your previous and active orders." noIndex />
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.3 }}
+        className="py-8 sm:py-12 bg-[#FAF8F3] min-h-[80vh]"
+      >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Breadcrumb & Title */}
         <div className="mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#EAE4D9] pb-6">
@@ -440,5 +443,6 @@ export const OrderHistoryPage: React.FC = () => {
         )}
       </div>
     </motion.div>
+    </>
   );
 };

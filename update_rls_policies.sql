@@ -125,29 +125,20 @@ DROP POLICY IF EXISTS "Customer and Admin Orders Read" ON public.orders;
 DROP POLICY IF EXISTS "Customer Orders Insert" ON public.orders;
 DROP POLICY IF EXISTS "Admin Orders Update" ON public.orders;
 DROP POLICY IF EXISTS "Admin Orders Delete" ON public.orders;
+DROP POLICY IF EXISTS "Users Read Own Orders" ON public.orders;
 
--- Customers can insert new orders during checkout
-CREATE POLICY "Customer Orders Insert"
-  ON public.orders FOR INSERT
-  WITH CHECK (true);
+-- Revoke all direct permissions from public anonymous access
+REVOKE ALL ON TABLE public.orders FROM anon;
+REVOKE UPDATE, DELETE, TRUNCATE ON TABLE public.orders FROM authenticated;
 
--- Customers and Admins can read orders for order history and tracking
-CREATE POLICY "Public Orders Read"
-  ON public.orders FOR SELECT
-  USING (true);
+-- Grant full access to service_role (backend API server)
+GRANT ALL ON TABLE public.orders TO service_role;
 
--- Admins and Store can update order status and tracking info
-CREATE POLICY "Admin Orders Update"
-  ON public.orders FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
-
--- Admins can delete orders
-CREATE POLICY "Admin Orders Delete"
-  ON public.orders FOR DELETE
-  USING (true);
-
-GRANT ALL ON TABLE public.orders TO anon, authenticated, service_role;
+-- Strict User Access Policy: Logged-in customers can only read their OWN orders
+CREATE POLICY "Users Read Own Orders" ON public.orders
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
 
 
 -- 6. Storage Bucket & Policies for 'videos'
@@ -188,14 +179,14 @@ CREATE POLICY "Admin Delete Videos"
   USING (bucket_id = 'videos' AND public.is_admin());
 
 
--- 7. Realtime Publications
+-- 7. Realtime Publications (Catalog & Store Settings only — NO orders)
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
     SELECT 1 FROM pg_publication_tables 
     WHERE pubname = 'supabase_realtime' AND tablename = 'orders'
   ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+    ALTER PUBLICATION supabase_realtime DROP TABLE public.orders;
   END IF;
   IF NOT EXISTS (
     SELECT 1 FROM pg_publication_tables 

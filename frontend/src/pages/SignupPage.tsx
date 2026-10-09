@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -16,8 +16,13 @@ export const SignupPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/account/orders', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   if (currentUser) {
-    navigate('/account/orders', { replace: true });
     return null;
   }
 

@@ -141,7 +141,7 @@ export const HeroCarousel: React.FC = () => {
   return (
     <section
       id="hero-carousel"
-      className="relative w-full overflow-hidden bg-[#0D0809] select-none cursor-pointer h-[min(calc(100svh-98px),740px)] min-h-[420px] md:h-auto md:min-h-0 md:aspect-[16/9]"
+      className="relative w-full overflow-hidden bg-[#0D0809] select-none cursor-pointer aspect-[9/16] md:aspect-[16/9]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onClick={handleSlideClick}
