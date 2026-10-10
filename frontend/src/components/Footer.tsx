@@ -237,9 +237,22 @@ export const Footer: React.FC = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#8C8276]"
         >
-          <p className="flex items-center gap-1">
-            <span>© {new Date().getFullYear()} The Western Store, Kurukshetra. All rights reserved.</span>
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="flex items-center gap-1">
+              <span>© {new Date().getFullYear()} The Western Store, Kurukshetra. All rights reserved.</span>
+            </p>
+            <p className="text-[11px] text-[#6E6560]">
+              Designed and Developed by{' '}
+              <a
+                href="https://www.yritsolutions.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E6C280]/70 hover:text-[#E6C280] transition-colors"
+              >
+                YR IT Solutions
+              </a>
+            </p>
+          </div>
 
           {/* Payment & WhatsApp ordering badges */}
           <div className="flex items-center flex-wrap gap-2 text-[11px]">
