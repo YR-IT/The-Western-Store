@@ -4,17 +4,8 @@ import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Mail, Lock, Loader2, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { SEOHead } from '../components/common/SEOHead';
-
-// Safe relative redirect helper to protect against open redirects
-function getSafeRedirectUrl(rawUrl?: string): string {
-  if (!rawUrl || typeof rawUrl !== 'string') return '/account/orders';
-  const trimmed = rawUrl.trim();
-  // Must start with a single slash and not double slash, backslash, or protocol
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\') && !trimmed.includes('://')) {
-    return trimmed;
-  }
-  return '/account/orders';
-}
+import { GoogleSignInButton } from '../components/common/GoogleSignInButton';
+import { resolveReturnUrl } from '../utils/authNavigation';
 
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle, currentUser } = useStore();
@@ -28,8 +19,10 @@ export const LoginPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const rawRedirect = searchParams.get('redirect') || (location.state as any)?.from?.pathname;
-  const redirectTarget = getSafeRedirectUrl(rawRedirect);
+  const redirectTarget = resolveReturnUrl(
+    searchParams.get('redirect'),
+    (location.state as any)?.from
+  );
 
   useEffect(() => {
     if (currentUser) {
@@ -66,9 +59,8 @@ export const LoginPage: React.FC = () => {
           name: data.user.user_metadata?.full_name || email.split('@')[0],
           email: email.trim(),
         });
-        setTimeout(() => {
-          navigate(redirectTarget, { replace: true });
-        }, 800);
+        // Direct, instant redirection back to wherever user came from
+        navigate(redirectTarget, { replace: true });
       }
     } catch (err: any) {
       console.error('[Login Error]', err);
@@ -112,6 +104,22 @@ export const LoginPage: React.FC = () => {
             <span>{successMessage}</span>
           </div>
         )}
+
+        {/* Google OAuth */}
+        <GoogleSignInButton
+          label="Sign in with Google"
+          returnUrl={redirectTarget}
+          onError={(msg) => setErrorMessage(msg)}
+        />
+
+        {/* Divider */}
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 h-px bg-[#EAE4D9]" />
+          <span className="text-[10px] uppercase tracking-widest font-semibold text-[#8C8276] whitespace-nowrap">
+            or continue with email
+          </span>
+          <div className="flex-1 h-px bg-[#EAE4D9]" />
+        </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <div>
@@ -167,7 +175,10 @@ export const LoginPage: React.FC = () => {
         <div className="text-center pt-2 border-t border-[#EAE4D9]">
           <p className="text-xs text-[#736B63]">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-[#721B29] font-bold hover:underline">
+            <Link
+              to={redirectTarget && redirectTarget !== '/' ? `/signup?redirect=${encodeURIComponent(redirectTarget)}` : '/signup'}
+              className="text-[#721B29] font-bold hover:underline"
+            >
               Create an account
             </Link>
           </p>

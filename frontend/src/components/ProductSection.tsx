@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
@@ -74,14 +74,14 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
 
           {/* Right Action: Scroll Arrows + View All */}
           <div className="flex items-center gap-4">
-            <button
-              type="button"
+            <Link
+              to="/shop"
               onClick={handleDefaultViewAll}
               className="text-xs font-semibold text-[#721B29] hover:text-[#52131D] flex items-center gap-1 group"
             >
               <span>View Collection</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
 
             {scrollable && (
               <div className="hidden sm:flex items-center gap-2">

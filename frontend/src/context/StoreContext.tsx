@@ -383,8 +383,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Supabase before we've actually loaded what's really saved there.
   const isInitialSettingsSyncDone = useRef(false);
 
+  // Helper to verify admin privileges before attempting any settings auto-saves
+  const isAdminUser = () => {
+    if (typeof window === 'undefined') return false;
+    if (sessionStorage.getItem('tws_admin_token')) return true;
+    try {
+      const saved = localStorage.getItem('tws_active_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u?.isAdmin) return true;
+      }
+    } catch {}
+    return false;
+  };
+
   useEffect(() => {
-    if (!isInitialSettingsSyncDone.current || !isSupabaseConfigured()) return;
+    if (!isAdminUser() || !isInitialSettingsSyncDone.current || !isSupabaseConfigured()) return;
     const timer = setTimeout(() => {
       saveStoreSettingToSupabase('hero_slides', heroSlides).catch(() => {});
     }, 350);
@@ -392,49 +406,49 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [heroSlides]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('announcement_text', announcementText).catch(() => {});
     }
   }, [announcementText]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('budget_tiles', budgetTiles).catch(() => {});
     }
   }, [budgetTiles]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('trust_features', trustFeatures).catch(() => {});
     }
   }, [trustFeatures]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('testimonials', testimonials).catch(() => {});
     }
   }, [testimonials]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('instagram_posts', instagramPosts).catch(() => {});
     }
   }, [instagramPosts]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('instagram_handle', instagramHandle).catch(() => {});
     }
   }, [instagramHandle]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('home_sections', homeSections).catch(() => {});
     }
   }, [homeSections]);
 
   useEffect(() => {
-    if (isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
+    if (isAdminUser() && isInitialSettingsSyncDone.current && isSupabaseConfigured()) {
       saveStoreSettingToSupabase('collection_filters', collectionFilters).catch(() => {});
     }
   }, [collectionFilters]);
@@ -784,6 +798,57 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'customer' | 'admin'>('customer');
   const [authModalMessage, setAuthModalMessage] = useState('');
+
+  // ── Supabase auth state listener ──────────────────────────────────────────
+  // Hydrates currentUser whenever a Supabase session is established or cleared.
+  // This covers:
+  //   • Google OAuth callback (SIGNED_IN event after redirect)
+  //   • Email/password sign-in already handled inline in components
+  //   • Page refresh — Supabase restores the session from storage and fires
+  //     INITIAL_SESSION so the user stays logged in without re-authenticating.
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const user = session.user;
+        const meta = user.user_metadata || {};
+
+        // Only update if this is a provider-based sign-in (Google, etc.)
+        // or if the user is not already tracked (avoids double-set for email/pw flow).
+        const isOAuthProvider = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+
+        setCurrentUser((prev) => {
+          // Already have this user stored — don't overwrite (avoids loops)
+          if (prev?.id === user.id) return prev;
+
+          // For email/password sign-ins the components set the user directly.
+          // Only auto-hydrate for OAuth providers or when there's no current user.
+          if (!isOAuthProvider && prev !== null) return prev;
+
+          return {
+            id: user.id,
+            name: meta.full_name || meta.name || user.email?.split('@')[0] || 'Customer',
+            email: user.email || '',
+            avatar: meta.avatar_url || meta.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(meta.full_name || 'Customer')}`,
+            authProvider: (user.app_metadata?.provider as any) || 'google',
+            isAdmin: false,
+          };
+        });
+      } else if (event === 'SIGNED_OUT') {
+        // Let the explicit logout() function handle local cleanup;
+        // this just ensures remote sign-out also clears the user.
+        setCurrentUser((prev) => {
+          if (prev && !prev.isAdmin) return null;
+          return prev;
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -1216,16 +1281,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setCurrentUser(newUser);
 
-    const savedAccountCart = localStorage.getItem(`tws_cart_${newUser.id}`);
-    if (savedAccountCart) {
-      try {
-        setCart(JSON.parse(savedAccountCart));
-      } catch {
-        // keep current
+    setCart((currentGuestCart) => {
+      let merged = [...currentGuestCart];
+      const savedAccountCart = localStorage.getItem(`tws_cart_${newUser.id}`);
+      if (savedAccountCart) {
+        try {
+          const parsed: CartItem[] = JSON.parse(savedAccountCart);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((savedItem) => {
+              const existingIdx = merged.findIndex(
+                (i) =>
+                  i.productId === savedItem.productId &&
+                  i.size === savedItem.size &&
+                  (i.color || '') === (savedItem.color || '')
+              );
+              if (existingIdx >= 0) {
+                merged[existingIdx] = {
+                  ...merged[existingIdx],
+                  quantity: merged[existingIdx].quantity + savedItem.quantity,
+                };
+              } else {
+                merged.push(savedItem);
+              }
+            });
+          }
+        } catch {}
       }
-    } else if (cart.length > 0) {
-      localStorage.setItem(`tws_cart_${newUser.id}`, JSON.stringify(cart));
-    }
+      localStorage.setItem(`tws_cart_${newUser.id}`, JSON.stringify(merged));
+      return merged;
+    });
   };
 
   const loginAsAdmin = async (email: string, pass: string): Promise<boolean> => {

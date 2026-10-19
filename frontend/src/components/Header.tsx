@@ -23,6 +23,7 @@ import {
   MessageCircle,
   LogOut,
   UserCheck,
+  Share2,
 } from 'lucide-react';
 
 import logoImg from '../assets/images/Logo_Final.jpg';
@@ -72,6 +73,26 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleShareStore = async () => {
+    const shareData = {
+      title: "The Western Store | Women's Ethnic Wear Kurukshetra",
+      text: "Shop handpicked ethnic suits, festive co-ords & designer wear at The Western Store Kurukshetra!",
+      url: typeof window !== 'undefined' ? window.location.origin : 'https://www.thewesternstore.in',
+    };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // User cancelled or share dismissed
+      }
+    } else {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(
+        `${shareData.title}\n${shareData.text}\n${shareData.url}`
+      )}`;
+      window.open(waUrl, '_blank');
+    }
+  };
 
   const handleCategoryClick = (cat: ProductCategory) => {
     navigateToCategory(cat);
@@ -232,6 +253,18 @@ export const Header: React.FC = () => {
                   {wishlist.length}
                 </span>
               )}
+            </button>
+
+            {/* Share Boutique */}
+            <button
+              id="header-share-btn"
+              type="button"
+              onClick={handleShareStore}
+              className="p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full cursor-pointer"
+              aria-label="Share Store"
+              title="Share The Western Store"
+            >
+              <Share2 className="w-4 h-4 xs:w-5 xs:h-5" />
             </button>
 
             {/* Account Menu Dropdown */}

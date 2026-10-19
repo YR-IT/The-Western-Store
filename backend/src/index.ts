@@ -248,6 +248,9 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     if (updates.tracking_number !== undefined || updates.trackingNumber !== undefined) {
       dbUpdates.tracking_number = updates.tracking_number || updates.trackingNumber;
     }
+    if (updates.tracking_link !== undefined || updates.trackingLink !== undefined) {
+      dbUpdates.tracking_link = updates.tracking_link || updates.trackingLink;
+    }
     if (updates.notes !== undefined) {
       // Notes are stored in shipping_address JSONB object to match Supabase schema
       const { data: currentOrder } = await supabase.from('orders').select('shipping_address').eq('id', id).single();
@@ -255,6 +258,17 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
       dbUpdates.shipping_address = { ...currentAddr, notes: updates.notes };
     }
     if (updates.payment_status !== undefined) dbUpdates.payment_status = updates.payment_status;
+
+    if (updates.status !== undefined) {
+      const { data: currentOrder } = await supabase.from('orders').select('status_history').eq('id', id).single();
+      const hist = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
+      hist.push({
+        status: updates.status,
+        timestamp: new Date().toISOString(),
+        note: updates.notes || `Order status updated to ${updates.status}`,
+      });
+      dbUpdates.status_history = hist;
+    }
 
     if (Object.keys(dbUpdates).length > 0) {
       const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
@@ -282,6 +296,211 @@ app.delete('/api/admin/orders/:id', requireAdmin, async (req, res) => {
   } catch (err: any) {
     console.error('[Admin Delete Order Error]', err);
     res.status(500).json({ success: false, error: err.message || 'Failed to delete order.' });
+  }
+});
+
+// ─── Secure Admin Catalog (Products & Categories) Endpoints ───────────────
+app.get('/api/admin/products', requireAdmin, async (_req, res) => {
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, products: data || [] });
+  } catch (err: any) {
+    console.error('[Admin Get Products Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to fetch products.' });
+  }
+});
+
+app.post('/api/admin/products', requireAdmin, async (req, res) => {
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const p = req.body || {};
+    const row = {
+      id: p.id || `prod-${Date.now()}`,
+      title: p.title || 'Untitled Product',
+      slug: p.slug || (p.title || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      category: p.category || 'Ethnic Wear',
+      price: Number(p.price) || 0,
+      original_price: Number(p.originalPrice) || Number(p.price) || 0,
+      sale_discount: p.saleDiscount || null,
+      on_sale: !!p.onSale,
+      is_bestseller: !!p.isBestSeller,
+      is_new: !!p.isNew,
+      is_sold_out: !!p.isSoldOut,
+      in_stock_count: p.inStockCount !== undefined ? Number(p.inStockCount) : 15,
+      budget_tier: p.budgetTier || 'under_1499',
+      description: p.description || '',
+      fabric_care: {
+        ...(p.fabricCare || {}),
+        custom_return_policy: p.customReturnPolicy || null,
+        custom_wash_care_notes: p.customWashCareNotes || null,
+        custom_delivery_timeline: p.customDeliveryTimeline || null,
+        custom_reviews: p.customReviews || null,
+      },
+      sizes: Array.isArray(p.sizes) ? p.sizes : ['Free Size'],
+      colors: Array.isArray(p.colors) ? p.colors : [{ name: 'Deep Maroon' }],
+      images: Array.isArray(p.images) ? p.images : [],
+      rating: Number(p.rating || 5.0),
+      review_count: Number(p.reviewCount || 0),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase.from('products').upsert(row).select().single();
+    if (error) throw error;
+    res.json({ success: true, product: data, message: 'Product saved successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Add Product Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to save product.' });
+  }
+});
+
+app.put('/api/admin/products/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const p = req.body || {};
+    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+
+    if (p.title !== undefined) updates.title = p.title;
+    if (p.slug !== undefined) updates.slug = p.slug;
+    if (p.category !== undefined) updates.category = p.category;
+    if (p.price !== undefined) updates.price = Number(p.price);
+    if (p.originalPrice !== undefined) updates.original_price = Number(p.originalPrice);
+    if (p.saleDiscount !== undefined) updates.sale_discount = p.saleDiscount;
+    if (p.onSale !== undefined) updates.on_sale = !!p.onSale;
+    if (p.isBestSeller !== undefined) updates.is_bestseller = !!p.isBestSeller;
+    if (p.isNew !== undefined) updates.is_new = !!p.isNew;
+    if (p.isSoldOut !== undefined) updates.is_sold_out = !!p.isSoldOut;
+    if (p.inStockCount !== undefined) updates.in_stock_count = Number(p.inStockCount);
+    if (p.budgetTier !== undefined) updates.budget_tier = p.budgetTier;
+    if (p.description !== undefined) updates.description = p.description;
+    if (p.fabricCare !== undefined || p.customReturnPolicy !== undefined || p.customWashCareNotes !== undefined || p.customDeliveryTimeline !== undefined || p.customReviews !== undefined) {
+      const { data: cur } = await supabase.from('products').select('fabric_care').eq('id', id).single();
+      const existingFc = (typeof cur?.fabric_care === 'object' && cur?.fabric_care) ? cur.fabric_care : {};
+      updates.fabric_care = {
+        ...existingFc,
+        ...(p.fabricCare || {}),
+        ...(p.customReturnPolicy !== undefined ? { custom_return_policy: p.customReturnPolicy } : {}),
+        ...(p.customWashCareNotes !== undefined ? { custom_wash_care_notes: p.customWashCareNotes } : {}),
+        ...(p.customDeliveryTimeline !== undefined ? { custom_delivery_timeline: p.customDeliveryTimeline } : {}),
+        ...(p.customReviews !== undefined ? { custom_reviews: p.customReviews } : {}),
+      };
+    }
+    if (p.sizes !== undefined) updates.sizes = p.sizes;
+    if (p.colors !== undefined) updates.colors = p.colors;
+    if (p.images !== undefined) updates.images = p.images;
+    if (p.rating !== undefined) updates.rating = Number(p.rating);
+    if (p.reviewCount !== undefined) updates.review_count = Number(p.reviewCount);
+
+    const { error } = await supabase.from('products').update(updates).eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Product updated successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Update Product Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to update product.' });
+  }
+});
+
+app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Product deleted successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Delete Product Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to delete product.' });
+  }
+});
+
+app.get('/api/admin/categories', requireAdmin, async (_req, res) => {
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const { data, error } = await supabase.from('categories').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, categories: data || [] });
+  } catch (err: any) {
+    console.error('[Admin Get Categories Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to fetch categories.' });
+  }
+});
+
+app.post('/api/admin/categories', requireAdmin, async (req, res) => {
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const c = req.body || {};
+    const row = {
+      id: c.id || `cat-${Date.now()}`,
+      name: c.name,
+      slug: c.slug || (c.name || 'category').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      subtitle: c.subtitle || null,
+      image: c.image || '',
+    };
+    const { data, error } = await supabase.from('categories').upsert(row).select().single();
+    if (error) throw error;
+    res.json({ success: true, category: data, message: 'Category saved successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Add Category Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to save category.' });
+  }
+});
+
+app.put('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const c = req.body || {};
+    const updates: Record<string, any> = {};
+    if (c.name !== undefined) updates.name = c.name;
+    if (c.slug !== undefined) updates.slug = c.slug;
+    if (c.subtitle !== undefined) updates.subtitle = c.subtitle;
+    if (c.image !== undefined) updates.image = c.image;
+
+    const { error } = await supabase.from('categories').update(updates).eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Category updated successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Update Category Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to update category.' });
+  }
+});
+
+app.delete('/api/admin/categories/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!supabase) {
+    res.status(503).json({ success: false, error: 'Database service is unavailable.' });
+    return;
+  }
+  try {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, message: 'Category deleted successfully.' });
+  } catch (err: any) {
+    console.error('[Admin Delete Category Error]', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to delete category.' });
   }
 });
 
@@ -613,32 +832,39 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
     }
 
     // Validate prices against catalog in database
-    const productIds = items.map((i: any) => i.productId || i.product?.id).filter(Boolean);
-    const { data: dbProducts } = await supabase.from('products').select('id, price, title, images').in('id', productIds);
+    const productIds = items.map((i: any) => i.productId || i.product?.id || i.id).filter(Boolean);
+    const { data: dbProducts } = await supabase.from('products').select('id, price, title, images, sizes, colors').in('id', productIds);
     const productPriceMap = new Map((dbProducts || []).map((p: any) => [p.id, p.price]));
 
     let calculatedSubtotal = 0;
     const validatedItems = [];
     for (const item of items) {
-      const pId = item.productId || item.product?.id;
+      const pId = item.productId || item.product?.id || item.id;
       const verifiedPrice = productPriceMap.get(pId);
       if (verifiedPrice === undefined) {
-        res.status(400).json({ error: `Product '${item.product?.title || pId}' is not found in store catalog.` });
+        res.status(400).json({ error: `Product '${item.product?.title || item.title || pId}' is not found in store catalog.` });
         return;
       }
       const unitPrice = Number(verifiedPrice);
       const qty = Math.max(1, Math.min(item.quantity || 1, 10));
       calculatedSubtotal += unitPrice * qty;
 
+      const matched = (dbProducts || []).find((p: any) => p.id === pId);
+      const title = matched ? matched.title : (item.product?.title || item.title || 'Boutique Item');
+      const image = matched && matched.images?.[0] ? matched.images[0] : (item.image || item.product?.images?.[0] || '');
+
       validatedItems.push({
         id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        productId: pId,
+        title,
+        image,
         product: {
           id: pId,
-          title: item.product?.title || 'Boutique Apparel',
+          title,
           price: unitPrice,
-          images: item.product?.images || [],
-          sizes: item.product?.sizes || [],
-          colors: item.product?.colors || [],
+          images: matched?.images || item.product?.images || (image ? [image] : []),
+          sizes: matched?.sizes || item.product?.sizes || [],
+          colors: matched?.colors || item.product?.colors || [],
         },
         size: item.size || 'Free Size',
         color: item.color || 'Standard',
@@ -691,6 +917,13 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       payment_status: 'awaiting_payment',
       razorpay_order_id: rzpOrder.id,
       items: validatedItems,
+      status_history: [
+        {
+          status: 'Pending Payment',
+          timestamp: new Date().toISOString(),
+          note: 'Online checkout initiated via Razorpay',
+        },
+      ],
     };
 
     const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
@@ -749,6 +982,27 @@ app.post('/api/payments/verify', async (req, res) => {
       return;
     }
 
+    // Determine target order id
+    let targetOrderId = order_id;
+    if (!targetOrderId) {
+      const { data: matchedOrder } = await supabase.from('orders').select('id').eq('razorpay_order_id', razorpay_order_id).single();
+      if (matchedOrder?.id) targetOrderId = matchedOrder.id;
+    }
+
+    // Retrieve existing status_history to append
+    let currentHistory = [];
+    if (targetOrderId) {
+      const { data: existing } = await supabase.from('orders').select('status_history, items').eq('id', targetOrderId).single();
+      if (Array.isArray(existing?.status_history)) {
+        currentHistory = existing.status_history;
+      }
+    }
+    currentHistory.push({
+      status: 'Paid',
+      timestamp: new Date().toISOString(),
+      note: `Payment verified via Razorpay ID: ${razorpay_payment_id}`,
+    });
+
     // Update order status to paid in Supabase
     const updateData: any = {
       status: 'Paid',
@@ -757,16 +1011,31 @@ app.post('/api/payments/verify', async (req, res) => {
       razorpay_signature,
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      status_history: currentHistory,
     };
 
-    let targetOrderId = order_id;
-    if (order_id) {
-      await supabase.from('orders').update(updateData).eq('id', order_id);
-    } else {
-      const { data: matchedOrder } = await supabase.from('orders').select('id').eq('razorpay_order_id', razorpay_order_id).single();
-      if (matchedOrder?.id) {
-        targetOrderId = matchedOrder.id;
-        await supabase.from('orders').update(updateData).eq('id', matchedOrder.id);
+    if (targetOrderId) {
+      await supabase.from('orders').update(updateData).eq('id', targetOrderId);
+
+      // Decrement inventory stock on products
+      const { data: orderWithItems } = await supabase.from('orders').select('items').eq('id', targetOrderId).single();
+      if (orderWithItems && Array.isArray(orderWithItems.items)) {
+        for (const itm of orderWithItems.items) {
+          const prodId = itm.productId || itm.product?.id;
+          const qty = Number(itm.quantity) || 1;
+          if (prodId) {
+            const { data: prodData } = await supabase.from('products').select('in_stock_count').eq('id', prodId).single();
+            if (prodData && prodData.in_stock_count !== null && prodData.in_stock_count !== undefined) {
+              const currentStock = Number(prodData.in_stock_count);
+              const newStock = Math.max(0, currentStock - qty);
+              await supabase.from('products').update({
+                in_stock_count: newStock,
+                is_sold_out: newStock <= 0,
+                updated_at: new Date().toISOString(),
+              }).eq('id', prodId);
+            }
+          }
+        }
       }
     }
 

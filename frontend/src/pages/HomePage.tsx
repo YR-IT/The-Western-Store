@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { HeroCarousel } from '../components/HeroCarousel';
 import { ProductSection } from '../components/ProductSection';
@@ -10,7 +10,7 @@ import { InstagramFeed } from '../components/InstagramFeed';
 import { SEOHead } from '../components/common/SEOHead';
 
 export const HomePage: React.FC = () => {
-  const { products, homeSections } = useStore();
+  const { products, homeSections, categories } = useStore();
   const navigate = useNavigate();
 
   const newArrivals = products.filter((p) => p.isNew);
@@ -26,7 +26,31 @@ export const HomePage: React.FC = () => {
       case 'hero':
         return <HeroCarousel key={sec.id} />;
       case 'categories':
-        return null;
+        return categories.length > 0 ? (
+          <section key={sec.id} className="py-8 bg-[#FAF8F3] border-b border-[#EAE4D9]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#242120]">
+                  {sec.title || 'Curated Boutique Categories'}
+                </h2>
+                <Link to="/shop" className="text-xs font-semibold text-[#721B29] hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+                {categories.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/category/${c.slug || c.id}`}
+                    className="px-4 py-2 bg-white rounded-full border border-[#D9CEBF] text-xs font-medium text-[#242120] hover:border-[#721B29] hover:text-[#721B29] whitespace-nowrap shadow-xs transition-colors"
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null;
       case 'new-arrivals':
         return (
           <ProductSection
@@ -97,10 +121,16 @@ export const HomePage: React.FC = () => {
   return (
     <main>
       <SEOHead
-        title="The Western Store | Women's Boutique Fashion & Ethnic Wear Kurukshetra"
-        description="Explore exclusive women's fashion, ethnic suits, designer co-ords, and festive wear from The Western Store Kurukshetra. Premium fabrics, fast dispatch, and Pan-India delivery."
+        title="The Western Store | Women's Ethnic Wear Kurukshetra"
+        description="Shop handpicked ethnic suits, festive co-ords & designer wear at The Western Store Kurukshetra. Premium fabrics, custom fits & Pan-India delivery."
+        keywords="The Western Store Kurukshetra, women boutique Kurukshetra, ethnic suits, festive co-ords, boutique fashion Haryana"
         canonical="/"
       />
+
+      {/* Primary Semantic H1 Heading for SEO & Screen Readers */}
+      <h1 className="sr-only">
+        The Western Store — Handcrafted Women's Ethnic Wear &amp; Boutique Fashion Kurukshetra
+      </h1>
 
       {activeSections.length > 0 ? (
         activeSections.map(renderSection)

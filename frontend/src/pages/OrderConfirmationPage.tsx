@@ -181,35 +181,22 @@ export const OrderConfirmationPage: React.FC = () => {
         </motion.div>
 
         {/* Action Buttons */}
-        <div className="space-y-3">
-          {/* WhatsApp Direct Confirmation Button */}
-          <a
-            href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${waMessage}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3.5 px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            to={`/track-order?orderId=${targetOrderNumber}`}
+            className="py-3.5 px-4 bg-white border border-[#D9CEBF] hover:border-[#721B29] text-[#242120] hover:text-[#721B29] text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-2xs"
           >
-            <MessageCircle className="w-4 h-4 fill-white" />
-            <span>Confirm Order Details on WhatsApp</span>
-          </a>
+            <Truck className="w-4 h-4 text-[#721B29]" />
+            <span>Track Live Delivery Status</span>
+          </Link>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link
-              to={`/track-order?orderId=${targetOrderNumber}`}
-              className="py-3 px-4 bg-white border border-[#D9CEBF] hover:border-[#721B29] text-[#242120] hover:text-[#721B29] text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-2xs"
-            >
-              <Truck className="w-4 h-4 text-[#721B29]" />
-              <span>Track Live Delivery Status</span>
-            </Link>
-
-            <Link
-              to="/shop"
-              className="py-3 px-4 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-xs"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Continue Shopping</span>
-            </Link>
-          </div>
+          <Link
+            to="/shop"
+            className="py-3.5 px-4 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-xs"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Continue Shopping</span>
+          </Link>
         </div>
 
         {/* Quality Check Guarantee */}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Search, X, ArrowRight, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +22,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
 }
 
 export const SearchModal: React.FC = () => {
+  const navigate = useNavigate();
   const {
     isSearchOpen,
     setIsSearchOpen,
@@ -34,6 +36,16 @@ export const SearchModal: React.FC = () => {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleViewAllResults = useCallback(() => {
+    const q = (query || rawQuery).trim();
+    if (q) {
+      navigate(`/shop?q=${encodeURIComponent(q)}`);
+    } else {
+      navigate('/shop');
+    }
+    setIsSearchOpen(false);
+  }, [query, rawQuery, navigate, setIsSearchOpen]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -139,6 +151,12 @@ export const SearchModal: React.FC = () => {
             placeholder="Search sarees, kurtis, suits, lehengas, jeans…"
             value={rawQuery}
             onChange={handleInputChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleViewAllResults();
+              }
+            }}
             className="flex-1 text-sm sm:text-base text-[#242120] placeholder-[#9B9285] bg-transparent focus:outline-none"
           />
           {rawQuery && (
@@ -326,12 +344,7 @@ export const SearchModal: React.FC = () => {
                     {searchResults.length >= 5 && (
                       <button
                         type="button"
-                        onClick={() => {
-                          if (matchedCategories.length > 0) {
-                            navigateToCategory(matchedCategories[0].name as any);
-                          }
-                          setIsSearchOpen(false);
-                        }}
+                        onClick={handleViewAllResults}
                         className="w-full mt-3 py-2.5 text-xs font-semibold text-[#721B29] border border-[#721B29]/30 rounded-lg hover:bg-[#721B29] hover:text-white transition-colors flex items-center justify-center gap-2"
                       >
                         View all results

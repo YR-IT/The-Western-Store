@@ -143,6 +143,138 @@ Customer reviews/testimonials section was not rendering on the homepage.
 
 ---
 
+## Bug #007 — WhatsApp Checkout Redirection Replaced by Direct Razorpay
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Checkout and cart actions redirected to WhatsApp messages rather than processing actual credit/debit card, UPI, or net banking transactions.
+
+### Root Cause
+Initial prototype utilized WhatsApp ordering (`WhatsAppCheckoutModal`) as an interim solution.
+
+### Fix
+- Removed WhatsApp checkout triggers from `CartDrawer.tsx` and `CartPage.tsx`, replacing them with direct navigation to `/checkout`.
+- Updated `CheckoutPage.tsx` to process payments exclusively via Razorpay modal and verify HMAC signatures via `/api/payments/verify`.
+- Cleaned up `OrderConfirmationPage.tsx` to provide live tracking links rather than WhatsApp verification prompts.
+
+---
+
+## Bug #008 — Product Detail Page WhatsApp Inquiry Button Removal
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+PDP displayed an "Ask Store Stylist on WhatsApp" button alongside "Buy Now" and "Add to Bag", diverting checkout focus.
+
+### Fix
+- Removed `pdp-whatsapp-inquire-btn` button element and unused `handleWhatsAppInquiry` helper from `ProductDetailPage.tsx`.
+- Standardized PDP to strictly expose **"Buy Now — Instant Checkout"** and **"Add to Shopping Bag"** action buttons.
+
+---
+
+## Bug #009 — Admin Catalog Mutations Blocked by Supabase RLS
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Product and category additions/edits/deletions performed by the admin were rejected with HTTP 401/403 RLS policy errors because the frontend uses the Supabase `anon` key.
+
+### Root Cause
+Admin authentication is handled via Express JWT, which is unknown to Supabase client-side RLS unless service_role privileges are used.
+
+### Fix
+- Implemented secure Express endpoints in `backend/src/index.ts`:
+  - `POST /api/admin/products`, `PUT /api/admin/products/:id`, `DELETE /api/admin/products/:id`
+  - `POST /api/admin/categories`, `PUT /api/admin/categories/:id`, `DELETE /api/admin/categories/:id`
+- Protected all catalog endpoints with `requireAdmin` middleware and executed operations via `supabaseAdmin` (`service_role` client).
+- Updated `frontend/src/lib/supabaseServices.ts` to proxy requests to backend admin endpoints when `adminToken` is present in `sessionStorage`.
+
+---
+
+## Bug #010 — Wishlist Table Name Schema Mismatch
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Wishlist operations failed to sync with Supabase or threw 404 / relation does not exist errors.
+
+### Root Cause
+Database migration defined `public.wishlist_items`, whereas `frontend/src/lib/supabaseServices.ts` attempted to query `public.wishlists`.
+
+### Fix
+Updated `supabaseServices.ts` table queries from `from('wishlists')` to `from('wishlist_items')`.
+
+---
+
+## Bug #011 — Guest-to-Customer Cart Overwrite on Login
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Items added to cart by a guest were completely overwritten by user's previous saved cart upon Google login.
+
+### Fix
+Updated `loginWithGoogle` in `frontend/src/context/StoreContext.tsx` to non-destructively merge guest cart items with remote saved items, summing quantities for identical composite keys (`productId + size + color`).
+
+---
+
+## Bug #012 — Search Query Not Filtered on PLP
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Entering a query in `SearchModal.tsx` and pressing Enter or clicking "View all results" did not filter products on `/shop`.
+
+### Fix
+- Added `?q=` / `?search=` extraction and matching across product title, category, description, fabric, and occasion in `ProductListingPage.tsx`.
+- Added active search chip with clear button and dynamic heading: `Search: "${searchQuery}"`.
+- Connected `SearchModal.tsx` enter key and "View all results" button to navigate to `/shop?q=${encodeURIComponent(query)}`.
+
+---
+
+## Bug #013 — Inventory Stock Decrement Missing Post-Payment
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Product stock remained static even after successful payments, leading to potential overselling.
+
+### Fix
+In `backend/src/index.ts` within `POST /api/payments/verify`:
+- Decremented `in_stock_count` in `products` table for each purchased item using service_role client.
+- Automatically set `is_sold_out: true` when `in_stock_count` reaches 0 or below.
+
+---
+
+## Bug #014 — Pricing Page Tier Link & Key Mismatch
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Clicking "Shop Tier" on `/pricing` led to unselected budget filters or mismatched products.
+
+### Root Cause
+`PricingPage.tsx` used keys `999_1499`, `1499_2499`, `above_2499` and query parameter `?budgetTier=`, whereas PLP expected `under_1499`, `under_2499`, `premium` and query parameter `?budget=`.
+
+### Fix
+Updated `PricingPage.tsx` tier keys to valid `BudgetTier` values (`under_999`, `under_1499`, `under_2499`, `premium`) and updated links to `/shop?budget=${t.tierKey}`. Also added fallback support for `?budgetTier=` in PLP.
+
+---
+
+## Bug #015 — Missing Product Link 404 Route
+**Date:** October 13, 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+On PDP, when product was not found, the "Back to collections" button navigated to `/collections` which triggered `NotFoundPage` (404).
+
+### Fix
+- Changed fallback button link to `/shop`.
+- Added `<Route path="/collections" element={<ProductListingPage />} />` and `<Route path="/collections/:slug" element={<ProductListingPage />} />` in `frontend/src/App.tsx`.
+
+---
+
 ## ⚠️ Known Potential Issue — `tsx watch` + `.env`
 
 **Pattern:** Any time `backend/.env` is edited, the running server does NOT pick up changes automatically.

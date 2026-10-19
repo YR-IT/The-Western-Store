@@ -8,4 +8,25 @@ Disallow: /checkout
 Disallow: /account
 Disallow: /account/*
 
+# AI Search & Retrieval Crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+
 Sitemap: https://www.thewesternstore.in/sitemap.xml

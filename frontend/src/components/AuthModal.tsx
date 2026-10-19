@@ -4,6 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { X, Lock, ShieldCheck, Sparkles, CheckCircle2, UserCheck, AlertCircle, Mail, User, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { GoogleSignInButton } from './common/GoogleSignInButton';
 
 export const AuthModal: React.FC = () => {
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ export const AuthModal: React.FC = () => {
         setTimeout(() => {
           setIsAuthModalOpen(false);
           setSuccessMessage('');
-        }, 2000);
+        }, 600);
       }
     } catch (err: any) {
       console.error('[Supabase SignUp Error]', err);
@@ -240,6 +241,21 @@ export const AuthModal: React.FC = () => {
                 >
                   Create Account
                 </button>
+              </div>
+
+              {/* Google OAuth */}
+              <GoogleSignInButton
+                label={customerTab === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}
+                onError={(msg) => setErrorMessage(msg)}
+              />
+
+              {/* Divider */}
+              <div className="relative flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#EAE4D9]" />
+                <span className="text-[10px] uppercase tracking-widest font-semibold text-[#A39B8F] whitespace-nowrap">
+                  or continue with email
+                </span>
+                <div className="flex-1 h-px bg-[#EAE4D9]" />
               </div>
 
               {/* Email Form */}

@@ -1,7 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
-import { BudgetTier } from '../types';
 import { ArrowRight, Tag } from 'lucide-react';
 
 
@@ -42,50 +42,56 @@ export const ShopByBudget: React.FC = () => {
         {/* 4 Budget Tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
           {budgetTiles.map((tile, idx) => (
-            <motion.div
+            <Link
               key={tile.tier}
-              id={`budget-tile-${tile.tier}`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.35, delay: idx * 0.08 }}
-              whileHover={{ y: -6 }}
+              to={`/shop?budget=${encodeURIComponent(tile.tier)}`}
               onClick={() => navigateToBudget(tile.tier)}
-              className="group relative h-[340px] xs:h-[380px] sm:h-[420px] rounded-xl overflow-hidden cursor-pointer shadow-xs hover:shadow-xl transition-all duration-500 border border-[#E0D7C8] bg-white flex flex-col justify-end w-full"
+              aria-label={`Explore outfits ${tile.priceLabel}`}
+              className="block w-full focus:outline-none focus:ring-2 focus:ring-[#721B29] rounded-xl"
             >
-              {/* Background Image with Zoom (hidden when no image is set) */}
-              {tile.image && (
-                <img
-                  src={tile.image}
-                  alt={tile.priceLabel}
-                  className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
-                  loading="lazy"
-                />
-              )}
-              {/* Warm fallback background when no image is uploaded yet */}
-              {!tile.image && (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#3D2B1F] via-[#6B4226] to-[#B8860B]" />
-              )}
+              <motion.div
+                id={`budget-tile-${tile.tier}`}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: idx * 0.08 }}
+                whileHover={{ y: -6 }}
+                className="group relative h-[340px] xs:h-[380px] sm:h-[420px] rounded-xl overflow-hidden cursor-pointer shadow-xs hover:shadow-xl transition-all duration-500 border border-[#E0D7C8] bg-white flex flex-col justify-end w-full"
+              >
+                {/* Background Image with Zoom (hidden when no image is set) */}
+                {tile.image && (
+                  <img
+                    src={tile.image}
+                    alt={tile.priceLabel}
+                    className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="lazy"
+                  />
+                )}
+                {/* Warm fallback background when no image is uploaded yet */}
+                {!tile.image && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#3D2B1F] via-[#6B4226] to-[#B8860B]" />
+                )}
 
-              {/* Shading Gradients */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+                {/* Shading Gradients */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
-              {/* Bottom Content Box - Only Price Label and Explore Now */}
-              <div className="relative z-10 p-5 sm:p-6 text-white w-full">
-                <div className="mb-3 sm:mb-4">
-                  <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDFBF7] tracking-tight block">
-                    {tile.priceLabel}
-                  </span>
-                </div>
+                {/* Bottom Content Box - Only Price Label and Explore Now */}
+                <div className="relative z-10 p-5 sm:p-6 text-white w-full">
+                  <div className="mb-3 sm:mb-4">
+                    <span className="font-serif text-3xl sm:text-4xl font-bold text-[#FDFBF7] tracking-tight block">
+                      {tile.priceLabel}
+                    </span>
+                  </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-white/20 w-full">
-                  <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#E6C280] group-hover:text-white transition-colors">
-                    <span>Explore Now</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="flex items-center justify-between pt-3 border-t border-white/20 w-full">
+                    <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#E6C280] group-hover:text-white transition-colors">
+                      <span>Explore Now</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </Link>
           ))}
         </div>
       </div>

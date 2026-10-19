@@ -186,7 +186,7 @@ export async function syncWishlistToSupabase(userId: string, productIds: string[
   if (!isUuid) return false;
 
   try {
-    await supabase.from('wishlists').delete().eq('user_id', userId);
+    await supabase.from('wishlist_items').delete().eq('user_id', userId);
     if (productIds.length === 0) return true;
 
     const rows = productIds.map((productId) => ({
@@ -194,7 +194,7 @@ export async function syncWishlistToSupabase(userId: string, productIds: string[
       product_id: productId,
     }));
 
-    const { error } = await supabase.from('wishlists').insert(rows);
+    const { error } = await supabase.from('wishlist_items').insert(rows);
     if (error) {
       console.warn('[Supabase] Wishlist sync error:', error.message);
       return false;
@@ -214,7 +214,7 @@ export async function fetchWishlistFromSupabase(userId: string): Promise<string[
 
   try {
     const { data, error } = await supabase
-      .from('wishlists')
+      .from('wishlist_items')
       .select('product_id')
       .eq('user_id', userId);
 
@@ -232,6 +232,26 @@ export async function fetchWishlistFromSupabase(userId: string): Promise<string[
 
 // ─── PRODUCT CRUD ─────────────────────────────────────────────────────────
 export async function upsertProductToSupabase(product: Product): Promise<boolean> {
+  const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
+
+  // 1. If Admin JWT is present, persist through Express backend service_role API
+  if (adminToken && BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify(product),
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn('[Product Sync] Backend API save notice:', err);
+    }
+  }
+
+  // 2. Direct Supabase Client fallback
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
@@ -277,6 +297,22 @@ export async function upsertProductToSupabase(product: Product): Promise<boolean
 }
 
 export async function deleteProductFromSupabase(productId: string): Promise<boolean> {
+  const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
+
+  if (adminToken && BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn('[Product Delete] Backend API delete notice:', err);
+    }
+  }
+
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
@@ -291,6 +327,24 @@ export async function deleteProductFromSupabase(productId: string): Promise<bool
 
 // ─── CATEGORY CRUD ────────────────────────────────────────────────────────
 export async function upsertCategoryToSupabase(category: Category): Promise<boolean> {
+  const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
+
+  if (adminToken && BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify(category),
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn('[Category Sync] Backend API save notice:', err);
+    }
+  }
+
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
@@ -312,6 +366,22 @@ export async function upsertCategoryToSupabase(category: Category): Promise<bool
 }
 
 export async function deleteCategoryFromSupabase(categoryId: string): Promise<boolean> {
+  const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
+
+  if (adminToken && BACKEND_URL) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn('[Category Delete] Backend API delete notice:', err);
+    }
+  }
+
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
@@ -370,10 +440,15 @@ export async function fetchStoreSettingsFromSupabase(): Promise<Record<string, a
 
 export async function saveStoreSettingToSupabase(key: string, value: any): Promise<boolean> {
   const adminToken = typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null;
-  let savedToBackend = false;
 
-  // 1. Persist to Backend Server API first
-  if (BACKEND_URL && adminToken) {
+  // Store settings are administrative configurations.
+  // Anonymous visitors or non-admin users must not attempt write operations.
+  if (!adminToken) {
+    return false;
+  }
+
+  // 1. Persist to Backend Server API (which uses service_role key to bypass RLS securely)
+  if (BACKEND_URL) {
     try {
       const res = await fetch(`${BACKEND_URL}/api/store-settings`, {
         method: 'POST',
@@ -383,13 +458,15 @@ export async function saveStoreSettingToSupabase(key: string, value: any): Promi
         },
         body: JSON.stringify({ key, value }),
       });
-      if (res.ok) savedToBackend = true;
+      if (res.ok) {
+        return true;
+      }
     } catch (err) {
-      console.warn('[StoreSettings] Backend save failed, falling back to Supabase direct:', err);
+      console.warn('[StoreSettings] Backend save error:', err);
     }
   }
 
-  // 2. Persist to Supabase directly
+  // 2. Direct Supabase client fallback (only attempted if backend API is not configured)
   if (isSupabaseConfigured() && supabase) {
     try {
       const row = {
@@ -399,14 +476,15 @@ export async function saveStoreSettingToSupabase(key: string, value: any): Promi
       };
       const { error } = await supabase.from('store_settings').upsert(row);
       if (error) {
+        // Log cleanly without throwing unhandled exceptions
         console.warn('[Supabase] Save store setting direct error:', error.message);
-      } else {
-        return true;
+        return false;
       }
+      return true;
     } catch (err) {
       console.error('[Supabase] Save store setting direct exception:', err);
     }
   }
 
-  return savedToBackend;
+  return false;
 }

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Mail, Lock, User, Loader2, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { SEOHead } from '../components/common/SEOHead';
+import { GoogleSignInButton } from '../components/common/GoogleSignInButton';
+import { resolveReturnUrl } from '../utils/authNavigation';
 
 export const SignupPage: React.FC = () => {
   const { loginWithGoogle, currentUser } = useStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,11 +20,16 @@ export const SignupPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const redirectTarget = resolveReturnUrl(
+    searchParams.get('redirect'),
+    (location.state as any)?.from
+  );
+
   useEffect(() => {
     if (currentUser) {
-      navigate('/account/orders', { replace: true });
+      navigate(redirectTarget, { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, redirectTarget, navigate]);
 
   if (currentUser) {
     return null;
@@ -60,9 +69,8 @@ export const SignupPage: React.FC = () => {
           name: fullName.trim() || email.split('@')[0],
           email: email.trim(),
         });
-        setTimeout(() => {
-          navigate('/account/orders', { replace: true });
-        }, 1200);
+        // Direct, instant redirection back to wherever user came from
+        navigate(redirectTarget, { replace: true });
       }
     } catch (err: any) {
       console.error('[Signup Error]', err);
@@ -106,6 +114,22 @@ export const SignupPage: React.FC = () => {
             <span>{successMessage}</span>
           </div>
         )}
+
+        {/* Google OAuth */}
+        <GoogleSignInButton
+          label="Sign up with Google"
+          returnUrl={redirectTarget}
+          onError={(msg) => setErrorMessage(msg)}
+        />
+
+        {/* Divider */}
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 h-px bg-[#EAE4D9]" />
+          <span className="text-[10px] uppercase tracking-widest font-semibold text-[#8C8276] whitespace-nowrap">
+            or register with email
+          </span>
+          <div className="flex-1 h-px bg-[#EAE4D9]" />
+        </div>
 
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>
@@ -179,7 +203,10 @@ export const SignupPage: React.FC = () => {
         <div className="text-center pt-2 border-t border-[#EAE4D9]">
           <p className="text-xs text-[#736B63]">
             Already have an account?{' '}
-            <Link to="/login" className="text-[#721B29] font-bold hover:underline">
+            <Link
+              to={redirectTarget && redirectTarget !== '/' ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : '/login'}
+              className="text-[#721B29] font-bold hover:underline"
+            >
               Sign In
             </Link>
           </p>

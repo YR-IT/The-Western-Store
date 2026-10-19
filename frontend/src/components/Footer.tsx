@@ -61,9 +61,16 @@ export const Footer: React.FC = () => {
             <div className="space-y-2.5 text-xs text-[#D1C7B8]">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#E6C280] flex-shrink-0 mt-0.5" />
-                <span className="leading-relaxed">
-                  {STORE_INFO.address}, {STORE_INFO.city}, {STORE_INFO.state} - {STORE_INFO.pincode}
-                </span>
+                <a
+                  href="https://maps.google.com/?q=The+Western+Store+Kurukshetra"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="leading-relaxed hover:text-[#E6C280] transition-colors inline-block"
+                  title="View boutique location on Google Maps"
+                >
+                  <span>{STORE_INFO.address}, {STORE_INFO.city}, {STORE_INFO.state} - {STORE_INFO.pincode}</span>
+                  <span className="block text-[11px] text-[#E6C280] mt-0.5">Directions on Google Maps ↗</span>
+                </a>
               </div>
 
               <div className="flex items-center gap-2.5">
@@ -100,9 +107,9 @@ export const Footer: React.FC = () => {
           {/* Col 1: Store & Quick Links */}
           <motion.div variants={footerColVariants}>
             <h4 className="font-serif text-sm font-semibold text-white uppercase tracking-wider mb-4 border-l-2 border-[#721B29] pl-2.5">
-              Explore
+              Explore &amp; Collections
             </h4>
-            <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
+            <ul className="space-y-2 text-xs text-[#B5ABA0]">
               <li>
                 <Link
                   to="/"
@@ -123,11 +130,29 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
+                  to="/shop?category=Suits"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Designer Suits &amp; Ensembles</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/shop?category=Co-ords"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Festive Co-ord Sets</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/about"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>About Us</span>
+                  <span>About Our Boutique</span>
                 </Link>
               </li>
               <li>

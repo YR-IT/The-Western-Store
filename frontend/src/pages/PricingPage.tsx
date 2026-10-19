@@ -17,7 +17,7 @@ export const PricingPage: React.FC = () => {
       range: '₹999 – ₹1,499',
       description: 'Office-ready kurtas, elegant solid co-ords, and festive dupattas with subtle embellishments.',
       features: ['Modal, Muslin & Rayon Blends', 'Refined Silhouette Cuts', 'Standard Pan-India Dispatch'],
-      tierKey: '999_1499',
+      tierKey: 'under_1499',
       popular: true,
     },
     {
@@ -25,14 +25,14 @@ export const PricingPage: React.FC = () => {
       range: '₹1,499 – ₹2,499',
       description: 'Heavily embroidered suit sets, festive anarkalis, and statement partywear drapes.',
       features: ['Chanderi & Silk Fabrics', 'Zari & Gota Patti Detailing', 'Matching Dupattas Included'],
-      tierKey: '1499_2499',
+      tierKey: 'under_2499',
     },
     {
       title: 'Heritage Couture',
       range: 'Above ₹2,499',
       description: 'Exclusive bridal edit, heavy party ensembles, and artisanal luxury festive collections.',
       features: ['Premium Handloom Silks', 'Artisan Hand-Embroidery', 'Complimentary Express Dispatch'],
-      tierKey: 'above_2499',
+      tierKey: 'premium',
     },
   ];
 
@@ -102,7 +102,7 @@ export const PricingPage: React.FC = () => {
 
               <div className="pt-6">
                 <Link
-                  to={`/shop?budgetTier=${t.tierKey}`}
+                  to={`/shop?budget=${t.tierKey}`}
                   className={`w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
                     t.popular
                       ? 'bg-[#721B29] text-white hover:bg-[#852031]'

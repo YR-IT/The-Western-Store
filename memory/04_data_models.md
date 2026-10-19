@@ -85,13 +85,24 @@ interface CartItem {
 
 ```typescript
 type OrderStatus =
-  | 'Pending WhatsApp'  // Just placed via WhatsApp modal
-  | 'Contacted'
+  | 'Pending'           // Awaiting payment or processing
+  | 'Paid'              // Razorpay payment verified
   | 'Confirmed'
-  | 'Paid'
   | 'Shipped'
   | 'Delivered'
   | 'Cancelled';
+
+interface OrderItemNormalized {
+  id: string;
+  productId: string;
+  title: string;
+  image: string;
+  size: string;
+  color: string;
+  quantity: number;
+  price: number;
+  product: Product;     // Retained for backward/forward compatibility
+}
 
 interface Order {
   id: string;
@@ -106,11 +117,14 @@ interface Order {
   city: string;
   state: string;
   notes?: string;
-  items: OrderItemSummary[];
+  items: OrderItemNormalized[];
   subtotal: number;
   shippingFee: number;
   total: number;
   status: OrderStatus;
+  paymentMethod: 'razorpay';
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   // Tracking (filled by admin after ship)
   courierName?: string;
   trackingNumber?: string;
@@ -118,8 +132,11 @@ interface Order {
   shippedDate?: string;
   estimatedDelivery?: string;
   trackingNotes?: string;
+  statusHistory?: { status: OrderStatus; timestamp: string; note?: string }[];
 }
 ```
+
+> **Stock Decrementing:** Upon successful payment verification (`POST /api/payments/verify`), `in_stock_count` is decremented in `products` table for each purchased item. If `in_stock_count` reaches 0 or below, `is_sold_out` is automatically set to `true`.
 
 ---
 
@@ -194,7 +211,8 @@ type HomeSectionType =
 |----------------|---------------|-----------|
 | `Product` | `products` | `images[]` stored as JSON array of ImageKit URLs |
 | `Category` | `categories` | `slug` is URL-safe version of name |
-| `Order` | `orders` | `shipping_address` is JSONB, `items` is JSONB array |
+| `Order` | `orders` | `shipping_address` is JSONB, `items` is normalized JSONB array |
+| `WishlistItem` | `wishlist_items` | User wishlist items (`user_id`, `product_id`) |
 | `HeroSlide` | `hero_slides` | `desktop_image`, `mobile_image` columns |
 | `Testimonial` | `testimonials` | |
 | `InstagramPost` | `instagram_posts` | `reel_url`, `video_url` |

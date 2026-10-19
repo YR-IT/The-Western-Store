@@ -24,7 +24,6 @@ export const CartPage: React.FC = () => {
     removeFromCart,
     updateQuantity,
     clearCart,
-    setIsCheckoutModalOpen,
     navigateToProduct,
   } = useStore();
 
@@ -216,19 +215,19 @@ export const CartPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Single prominent WhatsApp checkout button */}
+                {/* Single prominent secure checkout button */}
                 <button
-                  id="cart-page-whatsapp-checkout-btn"
+                  id="cart-page-checkout-btn"
                   type="button"
-                  onClick={() => setIsCheckoutModalOpen(true)}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-800 hover:to-emerald-900 text-white font-semibold text-sm rounded-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  onClick={() => navigate('/checkout')}
+                  className="w-full py-4 bg-[#721B29] hover:bg-[#5B1520] text-white font-semibold text-sm rounded-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Checkout via WhatsApp</span>
+                  <ShieldCheck className="w-4 h-4 text-[#E6C280]" />
+                  <span>Proceed to Secure Checkout</span>
                 </button>
 
                 <p className="mt-3 text-[11px] text-[#736B63] text-center leading-relaxed">
-                  No automated card payment. You'll review sizing and payment with our Kurukshetra store staff directly on WhatsApp.
+                  🔒 100% Secure Checkout powered by Razorpay. UPI, Cards & NetBanking accepted.
                 </p>
               </div>
 

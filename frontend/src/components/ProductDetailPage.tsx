@@ -279,7 +279,7 @@ export const ProductDetailPage: React.FC = () => {
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <button
-            onClick={() => navigate('/collections')}
+            onClick={() => navigate('/shop')}
             className="px-6 py-3 bg-[#721B29] text-white rounded-lg text-sm font-medium hover:bg-[#5B1520] transition shadow-sm"
           >
             Explore All Collections
@@ -324,11 +324,6 @@ export const ProductDetailPage: React.FC = () => {
       price: product.price,
     };
     navigate('/checkout', { state: { buyNowItem } });
-  };
-
-  const handleWhatsAppInquiry = () => {
-    const text = `Hi The Western Store Kurukshetra! I am interested in *${product.title}* (₹${product.price}) in Size: *${selectedSize}*, Color: *${selectedColor}*. Could you please confirm if this is in stock at your Railway Road store?`;
-    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   // Social Share Handlers
@@ -878,7 +873,7 @@ export const ProductDetailPage: React.FC = () => {
                         />
                       </div>
                       <p className="text-[11px] text-[#736B63] mt-2">
-                        Popular in Kurukshetra — complete your WhatsApp order before inventory runs out.
+                        Popular in Kurukshetra — complete your order before inventory runs out.
                       </p>
                     </div>
                   )}
@@ -1037,19 +1032,6 @@ export const ProductDetailPage: React.FC = () => {
                           </motion.span>
                         )}
                       </AnimatePresence>
-                    </motion.button>
-
-                    {/* Direct WhatsApp Inquiry */}
-                    <motion.button
-                      id="pdp-whatsapp-inquire-btn"
-                      type="button"
-                      onClick={handleWhatsAppInquiry}
-                      whileHover={{ scale: 1.012 }}
-                      whileTap={{ scale: 0.97 }}
-                      className="w-full py-3 px-6 rounded-sm border-2 border-emerald-700 bg-emerald-50/60 text-emerald-900 hover:bg-emerald-100 transition-colors font-medium text-xs tracking-wide flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <MessageSquare className="w-4 h-4 text-emerald-700" />
-                      <span>Ask Store Stylist on WhatsApp (📲 9729515288)</span>
                     </motion.button>
                   </div>
 

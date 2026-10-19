@@ -40,24 +40,28 @@
 
 ### Order Status Flow
 ```
-Pending WhatsApp → Contacted → Confirmed → Paid → Shipped → Delivered
-                                                           ↓
-                                                       Cancelled (at any stage)
+Paid (Online via Razorpay) → Confirmed → Shipped → Delivered
+                                             ↓
+                                         Cancelled (at any stage)
 ```
 
 ### Tracking Fields (filled when status = Shipped)
 - Courier Name
 - Tracking Number
-- Tracking Link (auto-generated for Delhivery if only tracking number provided)
+- Tracking Link (auto-generated for Delhivery if only tracking number provided, or custom carrier link)
 - Shipped Date
 - Estimated Delivery
 - Tracking Notes
 
 ### Orders API
 - `GET /api/admin/orders` — fetches from Supabase with JWT auth
+- `PUT /api/admin/orders/:id` — updates status and tracking info, records timestamped status history entry
 - `PUT /api/admin/orders/:id/status` — updates status field
 - `PUT /api/admin/orders/:id/tracking` — updates tracking fields
 - `DELETE /api/admin/orders/:id` — hard deletes the order
+
+### Catalog Management (Products & Categories)
+- **Supabase Service-Role Proxy:** Frontend client admin operations route through Express backend endpoints (`POST/PUT/DELETE /api/admin/products`, `POST/PUT/DELETE /api/admin/categories`) with `requireAdmin` JWT verification. This executes mutations via backend `service_role` Supabase client, avoiding client-side Row-Level Security (RLS) permission rejections.
 
 ### Admin Order Polling
 StoreContext polls `/api/admin/orders` every **25 seconds** when admin is logged in.

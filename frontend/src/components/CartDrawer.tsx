@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
-import { X, ShoppingBag, Trash2, Send, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Lock, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 
@@ -15,12 +15,11 @@ export const CartDrawer: React.FC = () => {
     cartSubtotal,
     removeFromCart,
     updateQuantity,
-    setIsCheckoutModalOpen,
   } = useStore();
 
   const handleProceedToCheckout = () => {
     setIsCartOpen(false);
-    setIsCheckoutModalOpen(true);
+    navigate('/checkout');
   };
 
   const handleGoToFullCart = () => {
@@ -200,21 +199,21 @@ export const CartDrawer: React.FC = () => {
                     </div>
                     <div className="flex justify-between text-[11px] text-[#8C8276]">
                       <span>Shipping</span>
-                      <span>Calculated on WhatsApp / Worldwide</span>
+                      <span className="text-emerald-700 font-semibold">Free Express across India</span>
                     </div>
                   </div>
 
-                  {/* Single Prominent WhatsApp Checkout button */}
+                  {/* Proceed to Razorpay Online Checkout */}
                   <motion.button
-                    id="cart-drawer-checkout-whatsapp-btn"
+                    id="cart-drawer-checkout-btn"
                     type="button"
                     onClick={handleProceedToCheckout}
                     whileHover={{ scale: 1.015 }}
                     whileTap={{ scale: 0.97 }}
-                    className="w-full py-3.5 bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-800 hover:to-emerald-900 text-white font-semibold text-xs sm:text-sm rounded-sm shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3.5 bg-[#721B29] hover:bg-[#5B1520] text-white font-semibold text-xs sm:text-sm rounded-sm shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Checkout via WhatsApp</span>
+                    <Lock className="w-4 h-4 text-[#E6C280]" />
+                    <span>Proceed to Secure Checkout</span>
                   </motion.button>
 
                   <button
@@ -231,7 +230,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Direct confirmation with Kurukshetra store staff</span>
+                      <span>100% Secure Payments Powered by Razorpay (UPI, Cards)</span>
                     </div>
                   </div>
                 </motion.div>

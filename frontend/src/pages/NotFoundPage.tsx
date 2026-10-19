@@ -46,6 +46,47 @@ export const NotFoundPage: React.FC = () => {
             <span>Explore Catalog</span>
           </Link>
         </div>
+
+        {/* Helpful Recovery Categories & Bug Reporting */}
+        <div className="pt-4 border-t border-[#EAE4D9]/80 space-y-3">
+          <p className="text-[11px] uppercase tracking-wider text-[#9C8F80] font-semibold">
+            Popular Collections
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link
+              to="/shop?category=Suits"
+              className="text-xs px-3 py-1 bg-[#F5F2EB] hover:bg-[#EAE4D9] rounded-full text-[#4A453E] transition-colors"
+            >
+              Ethnic Suits
+            </Link>
+            <Link
+              to="/shop?category=Co-ords"
+              className="text-xs px-3 py-1 bg-[#F5F2EB] hover:bg-[#EAE4D9] rounded-full text-[#4A453E] transition-colors"
+            >
+              Co-ord Sets
+            </Link>
+            <Link
+              to="/about"
+              className="text-xs px-3 py-1 bg-[#F5F2EB] hover:bg-[#EAE4D9] rounded-full text-[#4A453E] transition-colors"
+            >
+              About Boutique
+            </Link>
+          </div>
+          <p className="text-[11px] text-[#736B63] pt-1">
+            Think this is an error?{' '}
+            <a
+              href={`https://wa.me/919729515288?text=${encodeURIComponent(
+                'Hi The Western Store! I encountered a 404 broken page on: ' +
+                  (typeof window !== 'undefined' ? window.location.href : '')
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#721B29] font-medium underline underline-offset-2 hover:text-[#8a2133]"
+            >
+              Report broken link on WhatsApp
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

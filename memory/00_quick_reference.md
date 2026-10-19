@@ -77,6 +77,13 @@ curl http://localhost:4000/api/health
 
 ---
 
+## 💳 Checkout & Ordering Rules
+- **Pure Razorpay Checkout:** WhatsApp order redirection is completely removed. Orders are placed **only through Razorpay** (Cards, UPI, NetBanking).
+- **PDP Action Buttons:** Strictly **only "Buy Now"** and **"Add to Shopping Bag / Cart"** buttons on Product Detail Pages. No WhatsApp inquiry buttons.
+- **Admin Catalog:** Products and categories mutations use authenticated Express backend endpoints (`POST/PUT/DELETE /api/admin/products`, `POST/PUT/DELETE /api/admin/categories`) with service_role access to bypass client anon RLS restrictions.
+
+---
+
 ## 📞 Store Contact
 
 | | |

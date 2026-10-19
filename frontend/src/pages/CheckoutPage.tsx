@@ -58,7 +58,6 @@ export const CheckoutPage: React.FC = () => {
     notes: '',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'whatsapp'>('razorpay');
   const [agreedToPolicies, setAgreedToPolicies] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -78,7 +77,7 @@ export const CheckoutPage: React.FC = () => {
   const handleRazorpayPayment = async (orderId: string, orderNumber: string) => {
     const isScriptLoaded = await loadRazorpayScript();
     if (!isScriptLoaded || !window.Razorpay) {
-      throw new Error('Razorpay SDK could not be loaded. Please check your internet connection or use WhatsApp checkout.');
+      throw new Error('Razorpay SDK could not be loaded. Please check your internet connection and try again.');
     }
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
@@ -99,9 +98,6 @@ export const CheckoutPage: React.FC = () => {
 
     const data = await res.json();
     if (!res.ok || !data.success) {
-      if (data.code === 'RAZORPAY_NOT_CONFIGURED') {
-        throw new Error('Online payment gateway is being configured by store staff. Please select "Checkout via WhatsApp" below for instant confirmation!');
-      }
       throw new Error(data.error || 'Failed to initialize payment.');
     }
 
@@ -128,7 +124,7 @@ export const CheckoutPage: React.FC = () => {
         modal: {
           ondismiss: () => {
             setIsProcessing(false);
-            setErrorMessage('Payment window was closed. You can retry or switch to WhatsApp checkout.');
+            setErrorMessage('Payment window was closed. Please retry to complete your purchase.');
           },
         },
         handler: async (response) => {
@@ -188,72 +184,6 @@ export const CheckoutPage: React.FC = () => {
     });
   };
 
-  const handleWhatsAppCheckout = async (orderId: string, orderNumber: string) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-
-    // 1. Post to backend to record order
-    try {
-      await fetch(`${backendUrl}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: activeItems,
-          formData,
-          userId: currentUser?.id || null,
-          orderId,
-          orderNumber,
-        }),
-      });
-    } catch (err) {
-      console.warn('[Checkout] Background order sync note:', err);
-    }
-
-    // 2. Clear cart if standard cart checkout
-    if (!isBuyNow) {
-      clearCart();
-    }
-
-    // 3. Format WhatsApp Message
-    const itemsList = activeItems
-      .map((item, idx) => `${idx + 1}. *${item.product.title}*\n   Size: ${item.size || 'Free Size'} | Qty: ${item.quantity} | ₹${item.product.price * item.quantity}`)
-      .join('\n');
-
-    const messageText = `🛍️ *NEW ORDER: #${orderNumber}*\n\n` +
-      `*Customer Details:*\n` +
-      `👤 Name: ${formData.name}\n` +
-      `📞 Phone: ${formData.phone}\n` +
-      (formData.email ? `📧 Email: ${formData.email}\n` : '') +
-      `📍 Address: ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}\n` +
-      (formData.notes ? `📝 Note: ${formData.notes}\n` : '') +
-      `\n*Ordered Outfits:*\n${itemsList}\n\n` +
-      `💰 *Total Amount:* ₹${activeSubtotal.toLocaleString('en-IN')}\n\n` +
-      `Please confirm outfit availability and payment instructions. 🙏`;
-
-    window.open(`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(messageText)}`, '_blank');
-
-    // 4. Navigate to confirmation screen
-    navigate(`/order-confirmation/${orderId}`, {
-      state: {
-        order: {
-          id: orderId,
-          orderNumber,
-          customerName: formData.name,
-          customerPhone: formData.phone,
-          shippingAddress: {
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            pincode: formData.pincode,
-          },
-          total: activeSubtotal,
-          paymentMethod: 'whatsapp_cod',
-          paymentStatus: 'pending',
-          items: activeItems,
-        },
-      },
-    });
-  };
-
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -275,14 +205,10 @@ export const CheckoutPage: React.FC = () => {
     const orderId = `order-${Date.now()}`;
 
     try {
-      if (paymentMethod === 'razorpay') {
-        await handleRazorpayPayment(orderId, orderNumber);
-      } else {
-        await handleWhatsAppCheckout(orderId, orderNumber);
-      }
+      await handleRazorpayPayment(orderId, orderNumber);
     } catch (err: any) {
       console.error('[Checkout Submission Error]', err);
-      setErrorMessage(err.message || 'Payment could not be completed. Please try again or checkout via WhatsApp.');
+      setErrorMessage(err.message || 'Payment could not be completed. Please try again.');
       setIsProcessing(false);
     }
   };
@@ -490,74 +416,28 @@ export const CheckoutPage: React.FC = () => {
                   2
                 </div>
                 <h2 className="font-serif text-base font-bold text-[#242120]">
-                  Select Payment Option
+                  Payment Method
                 </h2>
               </div>
 
-              <div className="space-y-3">
-                {/* Razorpay Online Payment Option */}
-                <label
-                  className={`flex items-start gap-3.5 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === 'razorpay'
-                      ? 'border-[#721B29] bg-[#721B29]/5'
-                      : 'border-[#EAE4D9] hover:border-[#D9CEBF] bg-white'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentOption"
-                    value="razorpay"
-                    checked={paymentMethod === 'razorpay'}
-                    onChange={() => setPaymentMethod('razorpay')}
-                    className="mt-1 text-[#721B29] focus:ring-[#721B29]"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-[#242120] flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-[#721B29]" />
-                        <span>Pay Online via Razorpay</span>
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        Instant Verification
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#736B63] mt-1 leading-relaxed">
-                      UPI (Google Pay, PhonePe, Paytm), All Debit & Credit Cards, NetBanking, and Wallets. 256-bit encrypted checkout.
-                    </p>
-                  </div>
-                </label>
-
-                {/* WhatsApp Assisted Checkout Option */}
-                <label
-                  className={`flex items-start gap-3.5 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === 'whatsapp'
-                      ? 'border-emerald-700 bg-emerald-50/50'
-                      : 'border-[#EAE4D9] hover:border-[#D9CEBF] bg-white'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentOption"
-                    value="whatsapp"
-                    checked={paymentMethod === 'whatsapp'}
-                    onChange={() => setPaymentMethod('whatsapp')}
-                    className="mt-1 text-emerald-700 focus:ring-emerald-700"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-bold text-[#242120] flex items-center gap-2">
-                        <Send className="w-4 h-4 text-emerald-700" />
-                        <span>Checkout via WhatsApp</span>
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        Staff Assisted
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#736B63] mt-1 leading-relaxed">
-                      Directly connects with Kurukshetra store staff to verify size measurements, confirm live inventory, and finalize payment.
-                    </p>
-                  </div>
-                </label>
+              <div className="p-4 rounded-xl border-2 border-[#721B29] bg-[#721B29]/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold text-[#242120] flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-[#721B29]" />
+                    <span>Razorpay Secure Online Checkout</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>Instant & 256-bit Encrypted</span>
+                  </span>
+                </div>
+                <p className="text-xs text-[#736B63] leading-relaxed">
+                  Supports all major Indian payment methods: <strong>UPI (Google Pay, PhonePe, Paytm, BHIM)</strong>, <strong>Credit & Debit Cards (Visa, Mastercard, RuPay)</strong>, <strong>NetBanking (50+ Banks)</strong>, and <strong>Wallets</strong>.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-[#8C8276]">
+                  <span className="bg-white px-2 py-0.5 rounded border border-[#EAE4D9] font-medium">⚡ Instant Payment Confirmation</span>
+                  <span className="bg-white px-2 py-0.5 rounded border border-[#EAE4D9] font-medium">🔒 RBI & PCI-DSS Compliant</span>
+                </div>
               </div>
             </div>
 
@@ -588,26 +468,17 @@ export const CheckoutPage: React.FC = () => {
               id="checkout-submit-btn"
               type="submit"
               disabled={isProcessing}
-              className={`w-full py-4 px-6 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                paymentMethod === 'razorpay'
-                  ? 'bg-[#721B29] hover:bg-[#52131D]'
-                  : 'bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-800 hover:to-emerald-900'
-              } disabled:opacity-60`}
+              className="w-full py-4 px-6 bg-[#721B29] hover:bg-[#5B1520] text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Processing Your Order...</span>
                 </>
-              ) : paymentMethod === 'razorpay' ? (
-                <>
-                  <Lock className="w-4 h-4" />
-                  <span>Pay ₹{activeSubtotal.toLocaleString('en-IN')} via Razorpay</span>
-                </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
-                  <span>Complete Order on WhatsApp</span>
+                  <Lock className="w-4 h-4 text-[#E6C280]" />
+                  <span>Pay ₹{activeSubtotal.toLocaleString('en-IN')} via Razorpay</span>
                 </>
               )}
             </button>

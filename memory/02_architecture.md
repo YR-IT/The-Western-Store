@@ -95,8 +95,10 @@ src/
 |------|-----------|-------|
 | `/` | `HomePage` | Public |
 | `/shop` | `ProductListingPage` | Public |
+| `/collections` | `ProductListingPage` | Public |
 | `/category/:slug` | `ProductListingPage` | Public |
 | `/collection/:slug` | `ProductListingPage` | Public |
+| `/collections/:slug` | `ProductListingPage` | Public |
 | `/product/:slug` | `ProductDetailPage` | Public |
 | `/cart` | `CartPage` | Public |
 | `/checkout` | `CheckoutPage` | Public |
@@ -126,7 +128,7 @@ src/
 
 - Product catalog, categories, hero slides, testimonials, Instagram posts
 - Cart, wishlist (persisted to localStorage)
-- Auth state (`currentUser`, `adminToken`)
+- Auth state (`currentUser`, `adminToken`) with non-destructive guest-to-customer cart merging upon login
 - Orders (customer + admin views)
 - Home section config, filter config, trust features, budget tiles
 - UI state (modal open/close flags, active tabs)
@@ -154,7 +156,7 @@ Because `StoreContext` is outside the `BrowserRouter`, it cannot directly use `u
 
 ```
 src/
-└── index.ts    # Single-file Express server (~1062 lines)
+└── index.ts    # Single-file Express server (~1150 lines)
                 # Contains: rate limiters, CORS, auth, all API routes
 ```
 
@@ -166,16 +168,22 @@ src/
 | `GET` | `/api/health` | None | Health check |
 | `POST` | `/api/admin/login` | Rate limited (20/15min) | Admin JWT login |
 | `GET` | `/api/admin/orders` | `requireAdmin` (JWT) | Fetch all orders |
+| `PUT` | `/api/admin/orders/:id` | `requireAdmin` | Update order tracking link & append status history |
 | `PUT` | `/api/admin/orders/:id/status` | `requireAdmin` | Update order status |
 | `PUT` | `/api/admin/orders/:id/tracking` | `requireAdmin` | Update tracking info |
 | `DELETE` | `/api/admin/orders/:id` | `requireAdmin` | Delete order |
 | `GET` | `/api/admin/products` | `requireAdmin` | Fetch all products |
-| `POST` | `/api/admin/products` | `requireAdmin` | Add product |
-| `PUT` | `/api/admin/products/:id` | `requireAdmin` | Update product |
-| `DELETE` | `/api/admin/products/:id` | `requireAdmin` | Delete product |
+| `POST` | `/api/admin/products` | `requireAdmin` | Create product (bypasses anon RLS) |
+| `PUT` | `/api/admin/products/:id` | `requireAdmin` | Update product (bypasses anon RLS) |
+| `DELETE` | `/api/admin/products/:id` | `requireAdmin` | Delete product (bypasses anon RLS) |
+| `POST` | `/api/admin/categories` | `requireAdmin` | Create category (bypasses anon RLS) |
+| `PUT` | `/api/admin/categories/:id` | `requireAdmin` | Update category (bypasses anon RLS) |
+| `DELETE` | `/api/admin/categories/:id` | `requireAdmin` | Delete category (bypasses anon RLS) |
 | `POST` | `/api/orders` | Rate limited | Create new order |
 | `GET` | `/api/orders/track` | None | Public order tracking |
 | `POST` | `/api/contact` | Rate limited (5/15min) | Contact form |
-| `POST` | `/api/razorpay/create-order` | None | Create Razorpay order |
-| `POST` | `/api/razorpay/verify-payment` | None | Verify Razorpay signature |
+| `POST` | `/api/payments/create-order` | Rate limited (30/15min) | Create Razorpay order (paise) with normalized items |
+| `POST` | `/api/payments/verify` | Rate limited (30/15min) | Verify HMAC signature, save order & decrement stock |
+| `POST` | `/api/razorpay/create-order` | None | Alias endpoint |
+| `POST` | `/api/razorpay/verify-payment` | None | Alias endpoint |
 | `POST` | `/api/imagekit/auth` | None | ImageKit upload auth |

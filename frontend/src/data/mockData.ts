@@ -300,5 +300,7 @@ export const INITIAL_COLLECTION_FILTERS: CollectionFilterConfig = {
     { id: 'sort-newest', label: 'Newest Arrivals', value: 'newest', enabled: true },
     { id: 'sort-low-high', label: 'Price: Low to High', value: 'price_asc', enabled: true },
     { id: 'sort-high-low', label: 'Price: High to Low', value: 'price_desc', enabled: true },
+    { id: 'sort-rating', label: 'Highest Rated', value: 'rating', enabled: true },
+    { id: 'sort-discount', label: 'Biggest Discount', value: 'discount', enabled: true },
   ],
 };

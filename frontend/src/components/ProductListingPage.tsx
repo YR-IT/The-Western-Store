@@ -35,10 +35,10 @@ export const ProductListingPage: React.FC = () => {
     collectionFilters,
   } = useStore();
 
-  // Sync category & budget tier from URL path (/category/:slug, /collection/:slug) or query (?category=..., ?budget=...)
+  // Sync category & budget tier from URL path (/category/:slug, /collection/:slug, /collections/:slug) or query (?category=..., ?budget=...)
   useEffect(() => {
     const isCategoryRoute = location.pathname.startsWith('/category/');
-    const isCollectionRoute = location.pathname.startsWith('/collection/');
+    const isCollectionRoute = location.pathname.startsWith('/collection/') || location.pathname.startsWith('/collections/');
     const rawSlug = params.slug ? decodeURIComponent(params.slug).trim() : null;
 
     if (isCategoryRoute && rawSlug) {
@@ -86,9 +86,9 @@ export const ProductListingPage: React.FC = () => {
       }
     } else if (searchParams.get('category')) {
       setSelectedCategory(decodeURIComponent(searchParams.get('category')!) as ProductCategory);
-    } else if (searchParams.get('budget')) {
-      setSelectedBudgetTier(searchParams.get('budget') as BudgetTier);
-    } else if (location.pathname === '/shop' && !searchParams.get('category') && !searchParams.get('budget')) {
+    } else if (searchParams.get('budget') || searchParams.get('budgetTier')) {
+      setSelectedBudgetTier((searchParams.get('budget') || searchParams.get('budgetTier')) as BudgetTier);
+    } else if ((location.pathname === '/shop' || location.pathname === '/collections') && !searchParams.get('category') && !searchParams.get('budget') && !searchParams.get('budgetTier')) {
       setSelectedCategory('All');
       setSelectedBudgetTier('all');
     }
@@ -98,6 +98,7 @@ export const ProductListingPage: React.FC = () => {
 
   // Collapsible accordion state for main filter section titles
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    availability: true,
     category: true,
     budget: true,
     size: true,
@@ -126,12 +127,16 @@ export const ProductListingPage: React.FC = () => {
     return ['All', ...categories.map((c) => c.name)];
   }, [categories]);
 
+  // Query parameter search
+  const searchQuery = (searchParams.get('q') || searchParams.get('search') || '').trim();
+
   // Filters State
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string>('all');
   const [selectedColor, setSelectedColor] = useState<string>('all');
   const [selectedFabric, setSelectedFabric] = useState<string>('all');
   const [selectedOccasion, setSelectedOccasion] = useState<string>('all');
+  const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>('featured');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
@@ -159,6 +164,17 @@ export const ProductListingPage: React.FC = () => {
   const enabledSortOptions = useMemo(() => {
     return (collectionFilters?.sortOptions || []).filter((s) => s.enabled);
   }, [collectionFilters]);
+
+  const sortOptions = useMemo(() => {
+    const list = [...enabledSortOptions];
+    if (!list.some((s) => s.value === 'rating')) {
+      list.push({ id: 'sort-rating', label: 'Highest Rated', value: 'rating', enabled: true });
+    }
+    if (!list.some((s) => s.value === 'discount')) {
+      list.push({ id: 'sort-discount', label: 'Biggest Discount', value: 'discount', enabled: true });
+    }
+    return list;
+  }, [enabledSortOptions]);
 
   // Helper to check if a specific tier from enabledBudgetTiers is currently active
   const isPriceTierActive = (tier: { id: string; label: string; minPrice: number; maxPrice: number }) => {
@@ -200,6 +216,27 @@ export const ProductListingPage: React.FC = () => {
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
+        // Search query filter
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const titleMatch = p.title.toLowerCase().includes(q);
+          const catMatch = (p.category || '').toLowerCase().includes(q);
+          const descMatch = (p.description || '').toLowerCase().includes(q);
+          const fabricMatch = (p.fabricCare?.fabric || '').toLowerCase().includes(q);
+          const occasionMatch = (p.fabricCare?.occasion || '').toLowerCase().includes(q);
+          const colorMatch = p.colors?.some((c) => c.name.toLowerCase().includes(q));
+          if (!titleMatch && !catMatch && !descMatch && !fabricMatch && !occasionMatch && !colorMatch) {
+            return false;
+          }
+        }
+
+        // In Stock Only filter
+        if (inStockOnly) {
+          if (p.isSoldOut || (typeof p.inStockCount === 'number' && p.inStockCount <= 0)) {
+            return false;
+          }
+        }
+
         // Category filter
         if (selectedCategory === 'New Arrivals' || selectedCategory === 'New Arrival') {
           if (!p.isNew) return false;
@@ -268,13 +305,21 @@ export const ProductListingPage: React.FC = () => {
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'price-asc' || sortBy === 'price-low') return a.price - b.price;
-        if (sortBy === 'price-desc' || sortBy === 'price-high') return b.price - a.price;
+        if (sortBy === 'price-asc' || sortBy === 'price-low' || sortBy === 'price_asc') return a.price - b.price;
+        if (sortBy === 'price-desc' || sortBy === 'price-high' || sortBy === 'price_desc') return b.price - a.price;
         if (sortBy === 'newest') return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+        if (sortBy === 'discount') {
+          const discA = a.originalPrice && a.originalPrice > a.price ? (a.originalPrice - a.price) / a.originalPrice : 0;
+          const discB = b.originalPrice && b.originalPrice > b.price ? (b.originalPrice - b.price) / b.originalPrice : 0;
+          return discB - discA;
+        }
         return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
       });
   }, [
     products,
+    searchQuery,
+    inStockOnly,
     selectedCategory,
     selectedBudgetTier,
     selectedSizes,
@@ -300,6 +345,13 @@ export const ProductListingPage: React.FC = () => {
     setSelectedColor('all');
     setSelectedFabric('all');
     setSelectedOccasion('all');
+    setInStockOnly(false);
+    if (searchQuery) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('q');
+      nextParams.delete('search');
+      navigate({ pathname: location.pathname, search: nextParams.toString() ? `?${nextParams.toString()}` : '' });
+    }
   };
 
   const hasActiveFilters =
@@ -309,12 +361,20 @@ export const ProductListingPage: React.FC = () => {
     selectedPriceRange !== 'all' ||
     selectedColor !== 'all' ||
     selectedFabric !== 'all' ||
-    selectedOccasion !== 'all';
+    selectedOccasion !== 'all' ||
+    inStockOnly ||
+    !!searchQuery;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] py-6 sm:py-12 w-full max-w-full overflow-hidden">
       <SEOHead
-        title={selectedCategory === 'All' ? (selectedBudgetTier !== 'all' ? BUDGET_TIER_LABELS[selectedBudgetTier] || 'Collection' : 'All Collections') : selectedCategory}
+        title={
+          searchQuery
+            ? `Search: ${searchQuery}`
+            : selectedCategory === 'All'
+            ? (selectedBudgetTier !== 'all' ? BUDGET_TIER_LABELS[selectedBudgetTier] || 'Collection' : 'All Collections')
+            : selectedCategory
+        }
         description={`Explore ${selectedCategory === 'All' ? 'exclusive ethnic and western wear' : selectedCategory} from The Western Store Kurukshetra. Handcrafted boutique collection with Pan-India delivery.`}
         canonical={location.pathname}
       />
@@ -332,14 +392,18 @@ export const ProductListingPage: React.FC = () => {
             </button>
             <span>/</span>
             <span className="text-[#242120] font-medium">
-              {selectedCategory === 'All' ? 'All Collections' : selectedCategory}
+              {searchQuery ? `Search results` : selectedCategory === 'All' ? 'All Collections' : selectedCategory}
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 sm:gap-4 border-b border-[#EAE4D9] pb-4 sm:pb-6">
             <div>
               <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] tracking-tight">
-                {selectedCategory === 'All' ? 'Women’s Collection' : selectedCategory}
+                {searchQuery
+                  ? `Search: "${searchQuery}"`
+                  : selectedCategory === 'All'
+                  ? (selectedBudgetTier !== 'all' ? BUDGET_TIER_LABELS[selectedBudgetTier] || 'Collection' : 'Women’s Collection')
+                  : selectedCategory}
               </h1>
               <p className="text-xs sm:text-sm text-[#736B63] mt-1 font-light">
                 Showing {filteredProducts.length} handcrafted silhouettes from our Kurukshetra store
@@ -364,7 +428,7 @@ export const ProductListingPage: React.FC = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-[#D9CEBF] rounded-xs text-xs font-medium text-[#242120] focus:outline-none focus:border-[#721B29]"
                 >
-                  {enabledSortOptions.map((opt) => (
+                  {sortOptions.map((opt) => (
                     <option key={opt.id} value={opt.value}>
                       {opt.label}
                     </option>
@@ -388,6 +452,46 @@ export const ProductListingPage: React.FC = () => {
               <span className="text-xs text-[#736B63]">Applied:</span>
 
               <AnimatePresence mode="popLayout">
+                {searchQuery && (
+                  <motion.span
+                    key="search-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#721B29]/10 text-[#721B29] text-xs rounded-full font-medium"
+                  >
+                    <span>Search: "{searchQuery}"</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextParams = new URLSearchParams(searchParams);
+                        nextParams.delete('q');
+                        nextParams.delete('search');
+                        navigate({ pathname: location.pathname, search: nextParams.toString() ? `?${nextParams.toString()}` : '' });
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
+                {inStockOnly && (
+                  <motion.span
+                    key="instock-chip"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs rounded-full font-medium"
+                  >
+                    <span>In Stock Only</span>
+                    <button type="button" onClick={() => setInStockOnly(false)}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.span>
+                )}
+
                 {selectedCategory !== 'All' && (
                   <motion.span
                     key="cat-chip"
@@ -520,6 +624,45 @@ export const ProductListingPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block space-y-6 bg-white p-6 rounded-xl border border-[#EAE4D9] sticky top-28">
+            {/* Availability Filter */}
+            <div>
+              <button
+                type="button"
+                onClick={() => toggleSection('availability')}
+                className="w-full flex items-center justify-between pb-2 border-b border-[#F4EFE6] text-left cursor-pointer group"
+              >
+                <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#242120] group-hover:text-[#721B29] transition-colors">
+                  Availability
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                    expandedSections['availability'] ? 'rotate-180 text-[#721B29]' : ''
+                  }`}
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {expandedSections['availability'] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden pt-2.5"
+                  >
+                    <label className="flex items-center gap-2.5 cursor-pointer text-xs text-[#4A453E] hover:text-[#721B29] py-1">
+                      <input
+                        type="checkbox"
+                        checked={inStockOnly}
+                        onChange={(e) => setInStockOnly(e.target.checked)}
+                        className="rounded-xs border-[#D9CEBF] text-[#721B29] focus:ring-[#721B29] accent-[#721B29]"
+                      />
+                      <span>In Stock Only</span>
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Category Filter */}
             <div>
               <button
@@ -930,6 +1073,45 @@ export const ProductListingPage: React.FC = () => {
                   >
                     <X className="w-5 h-5" />
                   </button>
+                </div>
+
+                {/* Availability */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('availability')}
+                    className="w-full flex items-center justify-between pb-1.5 border-b border-[#F4EFE6] text-left cursor-pointer group"
+                  >
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8F867C] group-hover:text-[#721B29] transition-colors">
+                      Availability
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[#8F867C] transition-transform duration-200 ${
+                        expandedSections['availability'] ? 'rotate-180 text-[#721B29]' : ''
+                      }`}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {expandedSections['availability'] && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden pt-2"
+                      >
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-[#4A453E] hover:text-[#721B29] py-1">
+                          <input
+                            type="checkbox"
+                            checked={inStockOnly}
+                            onChange={(e) => setInStockOnly(e.target.checked)}
+                            className="rounded-xs border-[#D9CEBF] text-[#721B29] focus:ring-[#721B29] accent-[#721B29]"
+                          />
+                          <span>In Stock Only</span>
+                        </label>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Category */}

@@ -27,14 +27,17 @@
 
 ## 🟢 Nice to Have / Future
 
-- [ ] **Razorpay Live Integration** — switch from WhatsApp checkout to online payment
+- [x] **Razorpay Exclusive Checkout** — completely switched from WhatsApp checkout to direct Razorpay online payment
+- [x] **Admin RLS Proxy** — added backend service_role endpoints for catalog mutations
+- [x] **Guest Cart Merge** — implemented non-destructive cart merging on login
+- [x] **Live Inventory Decrement** — automated stock count decrement post-payment
+- [x] **PLP Search & Filter Wiring** — connected `?q=`, `?budget=`, "In Stock Only", Rating and Discount sort
 - [ ] **Order Email Notifications** — send confirmation emails via Nodemailer or Resend
 - [ ] **WhatsApp Business API** — automated order notifications via official API
 - [ ] **Google Merchant Center** — product feed for Google Shopping
 - [ ] **Instagram Shopping** — tag products in Instagram posts
 - [ ] **Analytics** — add Google Analytics 4 or Plausible
 - [ ] **Push Notifications** — PWA push for order updates
-- [ ] **Sitemap.xml** — for SEO indexing
 - [ ] **Supabase Realtime** — replace 25-second polling with live order updates in Admin Panel
 - [ ] **Product Reviews** — allow customers to submit reviews post-delivery
 - [ ] **Size Guide** — upload size chart image per category
@@ -77,6 +80,10 @@
 | Oct 9, 2026 | Admin JWT auth fully working |
 | Oct 9, 2026 | Mobile hero carousel aspect ratio fixed |
 | Oct 9, 2026 | Memory folder created |
+| Oct 13, 2026 | Removed WhatsApp order redirection; converted exclusively to Razorpay payments |
+| Oct 13, 2026 | Restricted PDP buttons to Buy Now and Add to Bag only |
+| Oct 13, 2026 | Built backend admin catalog API proxy (service_role RLS bypass) |
+| Oct 13, 2026 | Fixed wishlist table schema, guest cart merge, stock decrementing, and PLP search/filters |
 | TBD | Products added to catalog |
 | TBD | Razorpay KYC completed |
 | TBD | Production deployment |

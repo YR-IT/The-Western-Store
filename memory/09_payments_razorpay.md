@@ -63,20 +63,22 @@ To go live, the store owner needs to complete Razorpay KYC:
 
 ---
 
-## Checkout Flow (Alternative — WhatsApp)
+## Exclusive Checkout Flow (Razorpay Only)
 
-If Razorpay is not yet live, the **WhatsApp Checkout flow** is the primary order method:
+WhatsApp order redirection has been **completely removed**. Orders are placed and processed **strictly through Razorpay**:
 
-1. Customer fills cart
-2. Clicks "Order via WhatsApp"
-3. `WhatsAppCheckoutModal` opens → collects name, phone, address
-4. On submit: order saved to Supabase with status `'Pending WhatsApp'`
-5. WhatsApp opens pre-filled with order summary
-6. Store manually confirms + processes payment
-
-This is the **current active checkout path** for the store.
-
----
+1. Customer adds items to bag and proceeds to `/checkout` (or clicks "Buy Now" on PDP).
+2. Customer inputs contact info and shipping address.
+3. Customer clicks **"Pay Now — Secure Razorpay Checkout"**.
+4. Frontend calls `POST /api/payments/create-order` (or alias `/api/razorpay/create-order`) with customer details and normalized order items.
+5. Razorpay checkout modal opens supporting **UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, NetBanking, and Wallets**.
+6. On payment authorization, frontend posts verification payload to `POST /api/payments/verify`.
+7. Backend validates the HMAC SHA256 signature using `crypto.timingSafeEqual`.
+8. On verified signature:
+   - Order is stored in Supabase with status `'Paid'` and payment method `'razorpay'`.
+   - Inventory stock (`in_stock_count`) is automatically decremented for each product.
+   - If stock hits 0, `is_sold_out` is set to `true`.
+9. Customer is redirected to `/order-confirmation/:orderId` with live tracking links.
 
 ## Frontend Razorpay Integration
 

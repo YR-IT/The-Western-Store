@@ -21,6 +21,7 @@ import { ContactPage } from './components/ContactPage';
 import { PolicyPage } from './components/PolicyPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AboutUsPage } from './pages/AboutUsPage';
 import { PricingPage } from './pages/PricingPage';
@@ -40,12 +41,18 @@ import { SearchModal } from './components/SearchModal';
 import { AuthModal } from './components/AuthModal';
 import { STORE_INFO } from './data/mockData';
 import { MessageCircle } from 'lucide-react';
+import { setLastPublicPage } from './utils/authNavigation';
 
 const AppLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { setRouterNavigate } = useStore();
   const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // Track the most recent non-auth store page for seamless return upon login
+  useEffect(() => {
+    setLastPublicPage(`${location.pathname}${location.search}${location.hash}`);
+  }, [location]);
 
   // Inject the router navigate function into StoreContext once on mount
   useEffect(() => {
@@ -69,8 +76,10 @@ const AppLayout: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<ProductListingPage />} />
+          <Route path="/collections" element={<ProductListingPage />} />
           <Route path="/category/:slug" element={<ProductListingPage />} />
           <Route path="/collection/:slug" element={<ProductListingPage />} />
+          <Route path="/collections/:slug" element={<ProductListingPage />} />
           <Route path="/product/:slug" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
@@ -96,6 +105,7 @@ const AppLayout: React.FC = () => {
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route
             path="/admin/*"

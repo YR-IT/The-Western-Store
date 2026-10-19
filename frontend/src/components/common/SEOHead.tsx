@@ -5,6 +5,7 @@ import { STORE_INFO } from '../../data/mockData';
 interface SEOHeadProps {
   title: string;
   description?: string;
+  keywords?: string;
   canonical?: string;
   ogImage?: string;
   ogType?: 'website' | 'article' | 'product';
@@ -13,11 +14,14 @@ interface SEOHeadProps {
 }
 
 const SITE_URL = 'https://www.thewesternstore.in';
-const DEFAULT_OG_IMAGE = 'https://www.thewesternstore.in/og-image.jpg';
+const DEFAULT_OG_IMAGE = 'https://www.thewesternstore.in/logo.png';
+const DEFAULT_KEYWORDS =
+  'The Western Store Kurukshetra, women boutique Kurukshetra, ethnic wear, suits, festive co-ords, designer boutique Haryana, women fashion Kurukshetra';
 
 export const SEOHead: React.FC<SEOHeadProps> = ({
   title,
-  description = 'Shop handpicked ethnic wear, festive co-ords, suits, and daily ensembles from The Western Store Kurukshetra. Premium fabrics, tailored fits & Pan-India delivery.',
+  description = 'Shop handpicked ethnic suits, festive co-ords & designer wear at The Western Store Kurukshetra. Premium fabrics, custom fits & Pan-India delivery.',
+  keywords = DEFAULT_KEYWORDS,
   canonical,
   ogImage = DEFAULT_OG_IMAGE,
   ogType = 'website',
@@ -29,6 +33,21 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     ? (canonical.startsWith('http') ? canonical : `${SITE_URL}${canonical.startsWith('/') ? canonical : `/${canonical}`}`)
     : (typeof window !== 'undefined' ? window.location.href : SITE_URL);
 
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'The Western Store',
+    url: SITE_URL,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${SITE_URL}/shop?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   const defaultOrgSchema = {
     '@context': 'https://schema.org',
     '@type': 'ClothingStore',
@@ -36,6 +55,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     legalName: STORE_INFO.legalName || 'The Western Store',
     url: SITE_URL,
     logo: `${SITE_URL}/logo.png`,
+    image: `${SITE_URL}/logo.png`,
     telephone: `+91${STORE_INFO.phone}`,
     email: STORE_INFO.email,
     address: {
@@ -46,18 +66,51 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       postalCode: STORE_INFO.pincode,
       addressCountry: 'IN',
     },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '29.9695',
+      longitude: '76.8783',
+    },
+    openingHoursSpecification: [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ],
+        opens: '10:30',
+        closes: '21:00',
+      },
+    ],
+    sameAs: [
+      STORE_INFO.instagramUrl,
+      'https://maps.google.com/?q=The+Western+Store+Kurukshetra',
+    ].filter(Boolean),
     priceRange: '₹₹',
     currenciesAccepted: 'INR',
     paymentAccepted: 'Cash, UPI, Credit Card, Debit Card, Net Banking',
   };
 
-  const schemaToInject = jsonLd ? (Array.isArray(jsonLd) ? [defaultOrgSchema, ...jsonLd] : [defaultOrgSchema, jsonLd]) : defaultOrgSchema;
+  const schemasToInject = [websiteSchema, defaultOrgSchema];
+  if (jsonLd) {
+    if (Array.isArray(jsonLd)) {
+      schemasToInject.push(...jsonLd);
+    } else {
+      schemasToInject.push(jsonLd);
+    }
+  }
 
   return (
     <Helmet>
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
       <link rel="canonical" href={canonicalUrl} />
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
@@ -79,7 +132,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 
       {/* Structured Data / JSON-LD */}
       <script type="application/ld+json">
-        {JSON.stringify(schemaToInject)}
+        {JSON.stringify(schemasToInject)}
       </script>
     </Helmet>
   );
