@@ -48,7 +48,7 @@ export const AdminLoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#1A1617] text-white">
       <SEOHead
-        title="Administrative Console Login"
+        title="Admin Login"
         description="Restricted store administrative portal."
         noIndex={true}
       />
@@ -59,7 +59,7 @@ export const AdminLoginPage: React.FC = () => {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <h1 className="font-serif text-2xl font-bold text-white tracking-wide">
-            Staff Administrative Portal
+            Admin Login
           </h1>
           <p className="text-xs text-[#A89F91]">
             Authorized boutique management access only
@@ -76,7 +76,7 @@ export const AdminLoginPage: React.FC = () => {
         <form onSubmit={handleAdminLogin} className="space-y-4">
           <div>
             <label className="block text-[11px] uppercase tracking-wider font-semibold text-[#A89F91] mb-1.5">
-              Staff Email
+              Admin Email
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-[#8C8276] absolute left-3.5 top-3" />
@@ -119,7 +119,7 @@ export const AdminLoginPage: React.FC = () => {
                 <span>Verifying credentials...</span>
               </>
             ) : (
-              <span>Authorize & Enter Console</span>
+              <span>Admin Login</span>
             )}
           </button>
         </form>

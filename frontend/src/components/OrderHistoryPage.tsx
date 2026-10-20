@@ -23,10 +23,16 @@ import {
 } from 'lucide-react';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
+import { UserAvatar } from './common/UserAvatar';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 import { SEOHead } from './common/SEOHead';
 
-export const OrderHistoryPage: React.FC = () => {
+interface OrderHistoryPageProps {
+  /** When true, skip duplicate page chrome (used inside AccountPage tabs). */
+  embedded?: boolean;
+}
+
+export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
   const {
     currentUser,
@@ -124,16 +130,19 @@ export const OrderHistoryPage: React.FC = () => {
 
   return (
     <>
-      <SEOHead title="My Orders" description="View and track your previous and active orders." noIndex />
+      {!embedded && (
+        <SEOHead title="My Orders" description="View and track your previous and active orders." noIndex />
+      )}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -12 }}
         transition={{ duration: 0.3 }}
-        className="py-8 sm:py-12 bg-[#FAF8F3] min-h-[80vh]"
+        className={embedded ? 'py-0' : 'py-8 sm:py-12 bg-[#FAF8F3] min-h-[80vh]'}
       >
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={embedded ? 'max-w-5xl mx-auto' : 'max-w-5xl mx-auto px-4 sm:px-6 lg:px-8'}>
         {/* Header Breadcrumb & Title */}
+        {!embedded && (
         <div className="mb-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#EAE4D9] pb-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#721B29]/10 text-[#721B29] text-xs font-bold uppercase tracking-wider mb-2">
@@ -150,17 +159,12 @@ export const OrderHistoryPage: React.FC = () => {
 
           {currentUser && (
             <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-[#EAE4D9] shadow-2xs">
-              {currentUser.avatar ? (
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-10 h-10 rounded-full object-cover border border-[#EAE4D9]"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#721B29] text-white flex items-center justify-center font-bold text-sm">
-                  {currentUser.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar
+                name={currentUser.name}
+                email={currentUser.email}
+                src={currentUser.avatar}
+                size="lg"
+              />
               <div className="text-left">
                 <p className="text-xs font-bold text-[#242120] leading-tight">{currentUser.name}</p>
                 <p className="text-[11px] text-[#736B63] truncate max-w-[180px]">{currentUser.email}</p>
@@ -168,6 +172,7 @@ export const OrderHistoryPage: React.FC = () => {
             </div>
           )}
         </div>
+        )}
 
         {/* NOT LOGGED IN STATE */}
         {!currentUser ? (

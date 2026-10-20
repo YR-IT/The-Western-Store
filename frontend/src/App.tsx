@@ -16,7 +16,6 @@ import { ProductDetailPage } from './components/ProductDetailPage';
 import { CartPage } from './components/CartPage';
 import { WishlistPage } from './components/WishlistPage';
 import { OrderTrackingPage } from './components/OrderTrackingPage';
-import { OrderHistoryPage } from './components/OrderHistoryPage';
 import { ContactPage } from './components/ContactPage';
 import { PolicyPage } from './components/PolicyPage';
 import { LoginPage } from './pages/LoginPage';
@@ -27,6 +26,9 @@ import { AboutUsPage } from './pages/AboutUsPage';
 import { PricingPage } from './pages/PricingPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
+import { AccountPage } from './pages/AccountPage';
+import { FAQPage } from './pages/FAQPage';
+import { SizeGuidePage } from './pages/SizeGuidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 // Lazy Loaded Admin Panel
@@ -34,7 +36,6 @@ const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ def
 
 // Global Overlays & Modals
 import { CartDrawer } from './components/CartDrawer';
-import { WhatsAppCheckoutModal } from './components/WhatsAppCheckoutModal';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SizeChartModal } from './components/SizeChartModal';
 import { SearchModal } from './components/SearchModal';
@@ -91,7 +92,7 @@ const AppLayout: React.FC = () => {
             path="/account/orders"
             element={
               <PrivateRoute>
-                <OrderHistoryPage />
+                <AccountPage />
               </PrivateRoute>
             }
           />
@@ -99,7 +100,7 @@ const AppLayout: React.FC = () => {
             path="/account"
             element={
               <PrivateRoute>
-                <OrderHistoryPage />
+                <AccountPage />
               </PrivateRoute>
             }
           />
@@ -125,6 +126,8 @@ const AppLayout: React.FC = () => {
           />
           <Route path="/about" element={<AboutUsPage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/size-guide" element={<SizeGuidePage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/policies/refund-policy" element={<PolicyPage initialTab="returns" />} />
           <Route path="/policies/shipping-policy" element={<PolicyPage initialTab="shipping" />} />
@@ -159,7 +162,6 @@ const AppLayout: React.FC = () => {
 
       {/* Global Interactive Modals */}
       <CartDrawer />
-      <WhatsAppCheckoutModal />
       <QuickViewModal />
       <SizeChartModal />
       <SearchModal />

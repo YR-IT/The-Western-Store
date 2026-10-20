@@ -40,10 +40,16 @@ export const OrderConfirmationPage: React.FC = () => {
   }, [orderId, orders, order]);
 
   const targetOrderNumber = order?.orderNumber || orderId || 'TWS-ORDER';
+  const trackPhone = order?.phone || '';
+  const trackLink = trackPhone
+    ? `/track-order?orderId=${encodeURIComponent(targetOrderNumber)}&phone=${encodeURIComponent(trackPhone)}`
+    : `/track-order?orderId=${encodeURIComponent(targetOrderNumber)}`;
   const paymentMethodText =
-    order?.paymentMethod === 'razorpay'
+    order?.paymentMethod === 'razorpay' || (order as any)?.paymentStatus === 'paid'
       ? 'Paid Online (Razorpay / UPI / Card)'
-      : 'WhatsApp Order / COD';
+      : order?.paymentMethod
+        ? String(order.paymentMethod)
+        : 'Paid Online';
 
   const waMessage = encodeURIComponent(
     `Hi The Western Store! 👋\nI just placed order *#${targetOrderNumber}* on your website.\nCould you please confirm receipt and dispatch details? Thank you!`
@@ -101,7 +107,11 @@ export const OrderConfirmationPage: React.FC = () => {
                 Payment Status
               </span>
               <p className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full inline-block mt-0.5">
-                {order?.paymentStatus === 'paid' ? 'Paid & Verified' : 'Order Recorded'}
+                {(order as any)?.paymentStatus === 'paid' ||
+                order?.paymentMethod === 'razorpay' ||
+                order?.status === 'Paid'
+                  ? 'Paid & Verified'
+                  : 'Order Recorded'}
               </p>
             </div>
           </div>
@@ -112,11 +122,15 @@ export const OrderConfirmationPage: React.FC = () => {
               <h2 className="font-serif text-sm font-bold text-[#242120] mb-3">
                 Ordered Garments ({order.items.length})
               </h2>
-              {order.items.map((item, idx) => (
+              {order.items.map((item: any, idx) => {
+                const title = item.product?.title || item.title || 'Boutique Item';
+                const image =
+                  item.product?.images?.[0] || item.image || FALLBACK_PRODUCT_IMAGE;
+                return (
                 <div key={idx} className="py-3 flex items-center gap-4 first:pt-0 last:pb-0">
                   <img
-                    src={getOptimizedImageUrl(item.product.images[0], 160, 80)}
-                    alt={item.product.title}
+                    src={getOptimizedImageUrl(image, 160, 80)}
+                    alt={title}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = FALLBACK_PRODUCT_IMAGE;
                     }}
@@ -124,7 +138,7 @@ export const OrderConfirmationPage: React.FC = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-serif text-xs sm:text-sm font-bold text-[#242120] truncate">
-                      {item.product.title}
+                      {title}
                     </p>
                     <div className="flex items-center gap-3 text-[11px] text-[#736B63] mt-1">
                       <span>Size: <strong className="text-[#242120]">{item.size || 'Free Size'}</strong></span>
@@ -138,7 +152,8 @@ export const OrderConfirmationPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -151,14 +166,20 @@ export const OrderConfirmationPage: React.FC = () => {
               </div>
               <p className="font-semibold text-[#242120]">{order?.customerName || 'Customer'}</p>
               <p className="text-[#736B63] mt-0.5 whitespace-pre-line leading-relaxed">
-                {order?.shippingAddress?.address || 'Provided during checkout'}
+                {order?.address ||
+                  (order as any)?.shippingAddress?.address ||
+                  'Provided during checkout'}
               </p>
-              {order?.shippingAddress?.city && (
+              {(order?.city || (order as any)?.shippingAddress?.city) && (
                 <p className="text-[#736B63]">
-                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
+                  {order?.city || (order as any)?.shippingAddress?.city},{' '}
+                  {order?.state || (order as any)?.shippingAddress?.state} —{' '}
+                  {order?.pincode || (order as any)?.shippingAddress?.pincode}
                 </p>
               )}
-              <p className="text-[#736B63] mt-1">Phone: {order?.customerPhone}</p>
+              <p className="text-[#736B63] mt-1">
+                Phone: {order?.phone || (order as any)?.customerPhone || '—'}
+              </p>
             </div>
 
             <div className="bg-[#FAF8F3] p-4 rounded-xl border border-[#EAE4D9] space-y-2">
@@ -183,7 +204,7 @@ export const OrderConfirmationPage: React.FC = () => {
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            to={`/track-order?orderId=${targetOrderNumber}`}
+            to={trackLink}
             className="py-3.5 px-4 bg-white border border-[#D9CEBF] hover:border-[#721B29] text-[#242120] hover:text-[#721B29] text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-2xs"
           >
             <Truck className="w-4 h-4 text-[#721B29]" />

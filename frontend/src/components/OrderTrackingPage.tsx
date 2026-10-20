@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
 import { STORE_INFO } from '../data/mockData';
@@ -31,6 +31,8 @@ import {
 export const OrderTrackingPage: React.FC = () => {
   const { orders, trackingPrefill, lastPlacedOrder } = useStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autoSearchDone = useRef(false);
 
   const [orderIdInput, setOrderIdInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
@@ -40,18 +42,36 @@ export const OrderTrackingPage: React.FC = () => {
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Initialize from prefill or last placed order if available
+  // Prefill from URL (?orderId=&phone=), context, or last placed order
   useEffect(() => {
+    if (autoSearchDone.current) return;
+
+    const urlOrderId = searchParams.get('orderId') || searchParams.get('orderNumber') || '';
+    const urlPhone = searchParams.get('phone') || '';
+
+    if (urlOrderId) {
+      autoSearchDone.current = true;
+      setOrderIdInput(urlOrderId);
+      const phone = urlPhone || lastPlacedOrder?.phone || trackingPrefill?.phone || '';
+      setPhoneInput(phone);
+      if (phone) {
+        performSearch(urlOrderId, phone);
+      }
+      return;
+    }
+
     if (trackingPrefill) {
+      autoSearchDone.current = true;
       setOrderIdInput(trackingPrefill.orderNumber);
       setPhoneInput(trackingPrefill.phone);
       performSearch(trackingPrefill.orderNumber, trackingPrefill.phone);
     } else if (lastPlacedOrder) {
+      autoSearchDone.current = true;
       setOrderIdInput(lastPlacedOrder.orderNumber);
       setPhoneInput(lastPlacedOrder.phone);
       performSearch(lastPlacedOrder.orderNumber, lastPlacedOrder.phone);
     }
-  }, [trackingPrefill, lastPlacedOrder]);
+  }, [trackingPrefill, lastPlacedOrder, searchParams]);
 
   // Normalize phone number (strip +91, 0, spaces, dashes)
   const normalizePhone = (p: string) => {

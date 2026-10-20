@@ -229,6 +229,24 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
+                  to="/faq"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>FAQ</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/size-guide"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Size Guide</span>
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/contact"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >

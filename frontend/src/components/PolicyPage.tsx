@@ -403,7 +403,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#FDFBF7] border border-[#EAE4D9]">
                   <Truck className="w-4 h-4 text-[#721B29] shrink-0 mt-0.5" />
                   <p className="text-xs leading-relaxed">
-                    <strong>Shipping Charges:</strong> Shipping charges are calculated at checkout based on your exact delivery pincode and package weight.
+                    <strong>Shipping Charges:</strong> Prepaid online orders currently ship <strong>free across India</strong> from our Kurukshetra boutique. Delivery timelines vary by destination (typically 3–7 business days after dispatch).
                   </p>
                 </div>
 
@@ -773,7 +773,43 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
 
               <section className="space-y-2">
                 <h3 className="font-serif text-base font-bold text-[#242120]">
-                  5. Security Precautions
+                  5. Grievance Officer (Consumer Protection / DPDP)
+                </h3>
+                <p>
+                  In accordance with the Consumer Protection (E-Commerce) Rules, 2020 and applicable data protection requirements, customers may contact our designated Grievance Officer for complaints relating to privacy, orders, or service:
+                </p>
+                <div className="p-3 rounded-lg bg-[#FAF8F3] border border-[#EAE4D9] text-xs space-y-1">
+                  <p>
+                    <strong>Officer:</strong>{' '}
+                    {STORE_INFO.grievanceOfficer || 'To be designated by the store owner (update STORE_INFO.grievanceOfficer)'}
+                  </p>
+                  <p>
+                    <strong>Email:</strong>{' '}
+                    {STORE_INFO.grievanceEmail ? (
+                      <a href={`mailto:${STORE_INFO.grievanceEmail}`} className="text-[#721B29] font-semibold underline">
+                        {STORE_INFO.grievanceEmail}
+                      </a>
+                    ) : (
+                      <a href={`mailto:${STORE_INFO.email}`} className="text-[#721B29] font-semibold underline">
+                        {STORE_INFO.email}
+                      </a>
+                    )}
+                  </p>
+                  <p>
+                    <strong>Legal name / GSTIN:</strong>{' '}
+                    {STORE_INFO.legalName || 'Legal business name pending'}
+                    {' · '}
+                    {STORE_INFO.gstin || 'GSTIN pending / unregistered'}
+                  </p>
+                  <p className="text-[#736B63]">
+                    We aim to acknowledge grievances within 48 hours and resolve them within the timelines prescribed under applicable law.
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="font-serif text-base font-bold text-[#242120]">
+                  6. Security Precautions
                 </h3>
                 <p>
                   Our site has stringent security measures in place to protect against the loss, misuse, and alteration of information under our control. Whenever you change or access your account information, we offer the use of a secure server. Once your information is in our possession, we adhere to strict security guidelines to protect it against unauthorized access.
@@ -782,7 +818,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
 
               <section className="space-y-2">
                 <h3 className="font-serif text-base font-bold text-[#242120]">
-                  6. Advertising
+                  7. Advertising
                 </h3>
                 <p>
                   We use third-party service providers to serve ads on our behalf across the internet and sometimes on this site. They may collect anonymous information about your visits to our website and your interaction with our products and services. They may also use information about your visits to other websites to target advertisements for goods and services.

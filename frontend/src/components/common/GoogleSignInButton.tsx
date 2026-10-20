@@ -37,8 +37,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
       setLoading(true);
 
-      // Persist the return target so /auth/callback knows exactly where to return
-      saveAuthReturnUrl(returnUrl);
+      // Persist origin page (cart, product, checkout, etc.) before leaving for Google
+      saveAuthReturnUrl(
+        returnUrl ||
+          `${window.location.pathname}${window.location.search}${window.location.hash}`
+      );
 
       const redirectTo = `${window.location.origin}/auth/callback`;
 
@@ -46,6 +49,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         provider: 'google',
         options: {
           redirectTo,
+          skipBrowserRedirect: false,
           queryParams: {
             // Ask Google to always show the account picker
             prompt: 'select_account',

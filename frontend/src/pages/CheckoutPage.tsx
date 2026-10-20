@@ -24,6 +24,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { CartItem } from '../types';
+import { getDefaultAddress, loadCustomerProfile } from '../utils/customerProfile';
 
 export const CheckoutPage: React.FC = () => {
   const location = useLocation();
@@ -35,6 +36,7 @@ export const CheckoutPage: React.FC = () => {
     clearCart,
     currentUser,
     orders,
+    setLastPlacedOrder,
   } = useStore();
 
   // Check if this is an isolated "Buy Now" checkout (single item, does not touch shopping cart)
@@ -61,6 +63,23 @@ export const CheckoutPage: React.FC = () => {
   const [agreedToPolicies, setAgreedToPolicies] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Prefill from saved profile / default address when logged in
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const profile = loadCustomerProfile(currentUser.id);
+    const addr = getDefaultAddress(currentUser.id);
+    setFormData((prev) => ({
+      ...prev,
+      name: addr?.name || profile?.name || currentUser.name || prev.name,
+      phone: addr?.phone || profile?.phone || prev.phone,
+      email: profile?.email || currentUser.email || prev.email,
+      address: addr?.address || prev.address,
+      city: addr?.city || prev.city,
+      state: addr?.state || prev.state,
+      pincode: addr?.pincode || prev.pincode,
+    }));
+  }, [currentUser?.id]);
 
   // If user arrives at checkout with 0 items, redirect to cart or shop
   useEffect(() => {
@@ -151,26 +170,42 @@ export const CheckoutPage: React.FC = () => {
               clearCart();
             }
 
+            const confirmationOrder = {
+              id: orderId,
+              orderNumber,
+              createdAt: new Date().toISOString(),
+              userId: currentUser?.id,
+              userEmail: currentUser?.email || formData.email,
+              customerName: formData.name,
+              phone: formData.phone,
+              email: formData.email,
+              address: formData.address,
+              city: formData.city,
+              state: formData.state,
+              pincode: formData.pincode,
+              notes: formData.notes,
+              items: activeItems.map((item) => ({
+                productId: item.productId,
+                title: item.product.title,
+                image: item.product.images?.[0] || '',
+                size: item.size,
+                color: item.color,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+              subtotal: activeSubtotal,
+              shippingFee: 0,
+              total: activeSubtotal,
+              paymentMethod: 'razorpay' as const,
+              status: 'Paid' as const,
+            };
+
+            // Prefill /track-order and account history after redirect
+            setLastPlacedOrder(confirmationOrder as any);
+
             // Navigate to Order Confirmation
             navigate(`/order-confirmation/${orderId}`, {
-              state: {
-                order: {
-                  id: orderId,
-                  orderNumber,
-                  customerName: formData.name,
-                  customerPhone: formData.phone,
-                  shippingAddress: {
-                    address: formData.address,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
-                  },
-                  total: activeSubtotal,
-                  paymentMethod: 'razorpay',
-                  paymentStatus: 'paid',
-                  items: activeItems,
-                },
-              },
+              state: { order: confirmationOrder },
             });
             resolve();
           } catch (err: any) {
@@ -528,7 +563,7 @@ export const CheckoutPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Charges</span>
-                  <span className="font-semibold text-emerald-700">Calculated / Standard Free</span>
+                  <span className="font-semibold text-emerald-700">Free across India</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Estimated Dispatch</span>

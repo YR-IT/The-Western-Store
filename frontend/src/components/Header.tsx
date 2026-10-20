@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import logoImg from '../assets/images/Logo_Final.jpg';
+import { UserAvatar } from './common/UserAvatar';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -276,11 +277,12 @@ export const Header: React.FC = () => {
                 className="p-1.5 xs:p-2 sm:p-2.5 text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6] transition-colors rounded-full flex items-center justify-center cursor-pointer"
                 aria-label="Account menu"
               >
-                {currentUser?.avatar ? (
-                  <img
+                {currentUser ? (
+                  <UserAvatar
+                    name={currentUser.name}
+                    email={currentUser.email}
                     src={currentUser.avatar}
-                    alt={currentUser.name}
-                    className="w-6 h-6 rounded-full border border-[#721B29] object-cover shrink-0"
+                    size="sm"
                   />
                 ) : (
                   <User className="w-4 h-4 xs:w-5 xs:h-5" />
@@ -325,10 +327,26 @@ export const Header: React.FC = () => {
 
                   {/* Navigation Actions */}
                   <button
+                    id="header-account-profile-btn"
+                    type="button"
+                    onClick={() => {
+                      navigate('/account?tab=profile');
+                      setAccountMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-[#721B29]" />
+                      <span>My Profile</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                  </button>
+
+                  <button
                     id="header-order-history-btn"
                     type="button"
                     onClick={() => {
-                      navigate('/account/orders');
+                      navigate('/account');
                       setAccountMenuOpen(false);
                     }}
                     className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
@@ -372,24 +390,40 @@ export const Header: React.FC = () => {
                     <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
                   </a>
 
-                  {/* Admin Portal Link - only visible for logged in admins */}
-                  {currentUser?.isAdmin && (
-                    <>
-                      <div className="my-1 border-t border-[#EAE4D9]" />
-                      <button
-                        id="admin-portal-link"
-                        type="button"
-                        onClick={() => {
-                          navigate('/admin');
-                          setAdminActiveTab('dashboard');
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center gap-2 cursor-pointer"
-                      >
+                  <div className="my-1 border-t border-[#EAE4D9]" />
+                  {currentUser?.isAdmin ? (
+                    <button
+                      id="admin-portal-link"
+                      type="button"
+                      onClick={() => {
+                        navigate('/admin');
+                        setAdminActiveTab('dashboard');
+                        setAccountMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-[#721B29]" />
                         <span>Store Admin Panel</span>
-                      </button>
-                    </>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                    </button>
+                  ) : (
+                    <button
+                      id="header-staff-login-btn"
+                      type="button"
+                      onClick={() => {
+                        navigate('/admin/login');
+                        setAccountMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                        <span>Admin Login</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                    </button>
                   )}
 
                   {/* Sign Out Button if logged in */}
@@ -477,10 +511,11 @@ export const Header: React.FC = () => {
               {currentUser && (
                 <div className="p-3 bg-[#721B29]/10 border-b border-[#721B29]/15 flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
-                    <img
+                    <UserAvatar
+                      name={currentUser.name}
+                      email={currentUser.email}
                       src={currentUser.avatar}
-                      alt={currentUser.name}
-                      className="w-7 h-7 rounded-full border border-[#721B29] object-cover shrink-0"
+                      size="md"
                     />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-[#242120] truncate">

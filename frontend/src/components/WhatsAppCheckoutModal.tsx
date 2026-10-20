@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { X, Send, ShieldCheck, ShoppingBag, MapPin, Phone, User, CheckCircle2, Package } from 'lucide-react';
+import { UserAvatar } from './common/UserAvatar';
 
 export const WhatsAppCheckoutModal: React.FC = () => {
   const {
@@ -187,10 +188,12 @@ export const WhatsAppCheckoutModal: React.FC = () => {
               {currentUser ? (
                 <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <img
+                    <UserAvatar
+                      name={currentUser.name}
+                      email={currentUser.email}
                       src={currentUser.avatar}
-                      alt={currentUser.name}
-                      className="w-7 h-7 rounded-full border border-emerald-600 object-cover"
+                      size="md"
+                      className="border-emerald-600"
                     />
                     <div>
                       <p className="text-xs font-bold text-emerald-950">{currentUser.name}</p>

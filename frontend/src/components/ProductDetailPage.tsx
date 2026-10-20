@@ -53,69 +53,6 @@ interface ReviewItem {
   userLiked?: boolean;
 }
 
-const INITIAL_INDIAN_REVIEWS: ReviewItem[] = [
-  {
-    id: 'rev-1',
-    name: 'Pooja Sharma',
-    location: 'Kurukshetra, Haryana',
-    rating: 5,
-    date: '2 days ago',
-    title: 'Stunning boutique quality! Fabric is super soft & elegant',
-    comment: 'Bought this directly after checking with the store stylist at Railway Road boutique. The finish and zari work are immaculate! Delivered in Kurukshetra within 24 hours. Fitting was 100% accurate as per size guide.',
-    size: 'M',
-    verified: true,
-    helpfulCount: 18,
-  },
-  {
-    id: 'rev-2',
-    name: 'Ananya Verma',
-    location: 'Karnal, Haryana',
-    rating: 5,
-    date: '5 days ago',
-    title: 'Exact color as shown in pictures! Perfect fitting',
-    comment: 'I was hesitant about ordering online, but the store manager shared a quick WhatsApp video of the outfit fabric before dispatch. Fits like a glove with zero alteration required.',
-    size: 'L',
-    verified: true,
-    helpfulCount: 14,
-  },
-  {
-    id: 'rev-3',
-    name: 'Simranjit Kaur',
-    location: 'Ambala Cantt, Punjab',
-    rating: 5,
-    date: '1 week ago',
-    title: 'Gorgeous outfit for family function & festive season',
-    comment: 'High quality material and sturdy stitching. Wore this to a family sangeet in Ambala and received so many compliments! Super comfortable to wear for long hours.',
-    size: 'S',
-    verified: true,
-    helpfulCount: 11,
-  },
-  {
-    id: 'rev-4',
-    name: 'Dr. Ritu Aggarwal',
-    location: 'Delhi NCR',
-    rating: 5,
-    date: '2 weeks ago',
-    title: 'Best budget western & ethnic boutique edit',
-    comment: 'The drape and lining material are top class. Very breathable fabric and premium look without paying exorbitant designer prices. Highly recommend The Western Store!',
-    size: 'XL',
-    verified: true,
-    helpfulCount: 8,
-  },
-  {
-    id: 'rev-5',
-    name: 'Kavita Joshi',
-    location: 'Panipat, Haryana',
-    rating: 4,
-    date: '3 weeks ago',
-    title: 'Loved the fast courier delivery & boutique box packaging',
-    comment: 'Great packaging and prompt responses on WhatsApp. The color looks even richer in person.',
-    size: 'M',
-    verified: true,
-    helpfulCount: 6,
-  },
-];
-
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
@@ -156,8 +93,8 @@ export const ProductDetailPage: React.FC = () => {
   // Carousel ref
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Reviews state
-  const [reviewsList, setReviewsList] = useState<ReviewItem[]>(INITIAL_INDIAN_REVIEWS);
+  // Reviews state — only real product.customReviews or customer-submitted this session (no mock seed)
+  const [reviewsList, setReviewsList] = useState<ReviewItem[]>([]);
   const [reviewFilter, setReviewFilter] = useState<'all' | '5star' | 'verified'>('all');
   const [reviewPage, setReviewPage] = useState(1);
   const REVIEWS_PER_PAGE = 5;
@@ -196,12 +133,12 @@ export const ProductDetailPage: React.FC = () => {
 
   // Image Navigation & Swipe Handlers
   const handlePrevImage = () => {
-    if (!product.images || product.images.length <= 1) return;
+    if (!product?.images || product.images.length <= 1) return;
     setSelectedImageIdx((prev) => (prev - 1 + product.images.length) % product.images.length);
   };
 
   const handleNextImage = () => {
-    if (!product.images || product.images.length <= 1) return;
+    if (!product?.images || product.images.length <= 1) return;
     setSelectedImageIdx((prev) => (prev + 1) % product.images.length);
   };
 
@@ -260,7 +197,7 @@ export const ProductDetailPage: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [product.images]);
+  }, [product?.images]);
 
   if (!product) {
     return (
@@ -360,7 +297,7 @@ export const ProductDetailPage: React.FC = () => {
     }
   };
 
-  // Active reviews list (Use custom product reviews if present, else fallback to default store reviews)
+  // Prefer admin/catalog custom reviews; otherwise session-submitted reviews only
   const activeReviewsList = (product.customReviews && product.customReviews.length > 0)
     ? product.customReviews
     : reviewsList;
@@ -426,24 +363,24 @@ export const ProductDetailPage: React.FC = () => {
 
   const avgScore = activeReviewsList.length > 0
     ? (activeReviewsList.reduce((acc, r) => acc + r.rating, 0) / activeReviewsList.length).toFixed(1)
-    : '4.9';
+    : null;
 
   const count5 = activeReviewsList.filter((r) => r.rating === 5).length;
   const count4 = activeReviewsList.filter((r) => r.rating === 4).length;
   const count3 = activeReviewsList.filter((r) => r.rating === 3).length;
   const count2 = activeReviewsList.filter((r) => r.rating === 2).length;
   const count1 = activeReviewsList.filter((r) => r.rating === 1).length;
-  const totalR = activeReviewsList.length || 1;
+  const totalR = Math.max(activeReviewsList.length, 1);
 
   const starPercentages = [
-    { stars: 5, percent: Math.round((count5 / totalR) * 100) },
-    { stars: 4, percent: Math.round((count4 / totalR) * 100) },
-    { stars: 3, percent: Math.round((count3 / totalR) * 100) },
-    { stars: 2, percent: Math.round((count2 / totalR) * 100) },
-    { stars: 1, percent: Math.round((count1 / totalR) * 100) },
+    { stars: 5, percent: activeReviewsList.length ? Math.round((count5 / totalR) * 100) : 0 },
+    { stars: 4, percent: activeReviewsList.length ? Math.round((count4 / totalR) * 100) : 0 },
+    { stars: 3, percent: activeReviewsList.length ? Math.round((count3 / totalR) * 100) : 0 },
+    { stars: 2, percent: activeReviewsList.length ? Math.round((count2 / totalR) * 100) : 0 },
+    { stars: 1, percent: activeReviewsList.length ? Math.round((count1 / totalR) * 100) : 0 },
   ];
 
-  const productJsonLd = {
+  const productJsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.title,
@@ -466,12 +403,16 @@ export const ProductDetailPage: React.FC = () => {
         name: 'The Western Store',
       },
     },
-    aggregateRating: {
+  };
+
+  // Only emit AggregateRating when real reviews exist (never invent ratings for SEO)
+  if (avgScore && activeReviewsList.length > 0) {
+    productJsonLd.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: avgScore,
-      reviewCount: (activeReviewsList.length || 1).toString(),
-    },
-  };
+      reviewCount: String(activeReviewsList.length),
+    };
+  }
 
   return (
     <>
@@ -1347,13 +1288,12 @@ export const ProductDetailPage: React.FC = () => {
                     Customer Ratings & Feedback
                   </span>
                   <h3 className="font-sans text-2xl sm:text-3xl font-bold text-[#242120] mt-1 flex items-center gap-2.5 flex-wrap">
-                    <span>Verified Customer Reviews</span>
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-900 rounded-full border border-emerald-200">
-                      🇮🇳 Indian Buyers
-                    </span>
+                    <span>Customer Reviews</span>
                   </h3>
                   <p className="text-xs text-[#736B63] mt-1">
-                    Authentic feedback from boutique shoppers in Kurukshetra, Karnal, Ambala & across India
+                    {activeReviewsList.length > 0
+                      ? 'Feedback from shoppers who purchased this style'
+                      : 'No reviews yet — be the first to share your fit & fabric experience'}
                   </p>
                 </div>
 
@@ -1389,17 +1329,25 @@ export const ProductDetailPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 bg-[#FAF7F0] rounded-xl border border-[#EAE4D9] mb-8">
                 {/* Main Score */}
                 <div className="md:col-span-4 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-[#EAE4D9] pb-6 md:pb-0 md:pr-6 text-center">
-                  <span className="text-5xl font-extrabold text-[#721B29]">{avgScore}</span>
+                  <span className="text-5xl font-extrabold text-[#721B29]">
+                    {avgScore ?? '—'}
+                  </span>
                   <div className="flex items-center gap-1 my-2 text-amber-500">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          avgScore && i < Math.round(Number(avgScore))
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-[#D9CEBF]'
+                        }`}
+                      />
                     ))}
                   </div>
                   <span className="text-xs text-[#5C544B] font-medium">
-                    Based on {activeReviewsList.length} verified Indian buyer reviews
-                  </span>
-                  <span className="text-[11px] text-[#721B29] font-semibold mt-1">
-                    98% would recommend this silhouette
+                    {activeReviewsList.length > 0
+                      ? `Based on ${activeReviewsList.length} review${activeReviewsList.length === 1 ? '' : 's'}`
+                      : 'Awaiting first review'}
                   </span>
                 </div>
 

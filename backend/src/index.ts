@@ -35,6 +35,26 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 const requireUser = createRequireUser(supabase);
 
+/** Decrement product stock for paid order line items (idempotent-safe when called once per payment). */
+async function decrementInventoryForItems(items: any[]): Promise<void> {
+  if (!supabase || !Array.isArray(items)) return;
+  for (const itm of items) {
+    const prodId = itm.productId || itm.product?.id;
+    const qty = Number(itm.quantity) || 1;
+    if (!prodId) continue;
+    const { data: prodData } = await supabase.from('products').select('in_stock_count').eq('id', prodId).single();
+    if (prodData && prodData.in_stock_count !== null && prodData.in_stock_count !== undefined) {
+      const currentStock = Number(prodData.in_stock_count);
+      const newStock = Math.max(0, currentStock - qty);
+      await supabase.from('products').update({
+        in_stock_count: newStock,
+        is_sold_out: newStock <= 0,
+        updated_at: new Date().toISOString(),
+      }).eq('id', prodId);
+    }
+  }
+}
+
 // ─── Rate Limiters ────────────────────────────────────────────────────────
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -831,27 +851,52 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       return;
     }
 
-    // Validate prices against catalog in database
+    // Validate prices + stock against catalog in database
     const productIds = items.map((i: any) => i.productId || i.product?.id || i.id).filter(Boolean);
-    const { data: dbProducts } = await supabase.from('products').select('id, price, title, images, sizes, colors').in('id', productIds);
-    const productPriceMap = new Map((dbProducts || []).map((p: any) => [p.id, p.price]));
+    const { data: dbProducts } = await supabase
+      .from('products')
+      .select('id, price, title, images, sizes, colors, in_stock_count, is_sold_out')
+      .in('id', productIds);
+    const productMap = new Map((dbProducts || []).map((p: any) => [p.id, p]));
 
     let calculatedSubtotal = 0;
     const validatedItems = [];
     for (const item of items) {
       const pId = item.productId || item.product?.id || item.id;
-      const verifiedPrice = productPriceMap.get(pId);
-      if (verifiedPrice === undefined) {
+      const matched = productMap.get(pId);
+      if (!matched) {
         res.status(400).json({ error: `Product '${item.product?.title || item.title || pId}' is not found in store catalog.` });
         return;
       }
-      const unitPrice = Number(verifiedPrice);
+
       const qty = Math.max(1, Math.min(item.quantity || 1, 10));
+      const stockCount = matched.in_stock_count !== null && matched.in_stock_count !== undefined
+        ? Number(matched.in_stock_count)
+        : null;
+
+      if (matched.is_sold_out === true || (stockCount !== null && stockCount <= 0)) {
+        res.status(409).json({
+          error: `"${matched.title}" is currently sold out. Please remove it from your bag to continue.`,
+          code: 'OUT_OF_STOCK',
+          productId: pId,
+        });
+        return;
+      }
+      if (stockCount !== null && qty > stockCount) {
+        res.status(409).json({
+          error: `"${matched.title}" only has ${stockCount} left in stock. Please reduce quantity.`,
+          code: 'INSUFFICIENT_STOCK',
+          productId: pId,
+          available: stockCount,
+        });
+        return;
+      }
+
+      const unitPrice = Number(matched.price);
       calculatedSubtotal += unitPrice * qty;
 
-      const matched = (dbProducts || []).find((p: any) => p.id === pId);
-      const title = matched ? matched.title : (item.product?.title || item.title || 'Boutique Item');
-      const image = matched && matched.images?.[0] ? matched.images[0] : (item.image || item.product?.images?.[0] || '');
+      const title = matched.title;
+      const image = matched.images?.[0] || item.image || item.product?.images?.[0] || '';
 
       validatedItems.push({
         id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -862,9 +907,9 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
           id: pId,
           title,
           price: unitPrice,
-          images: matched?.images || item.product?.images || (image ? [image] : []),
-          sizes: matched?.sizes || item.product?.sizes || [],
-          colors: matched?.colors || item.product?.colors || [],
+          images: matched.images || item.product?.images || (image ? [image] : []),
+          sizes: matched.sizes || item.product?.sizes || [],
+          colors: matched.colors || item.product?.colors || [],
         },
         size: item.size || 'Free Size',
         color: item.color || 'Standard',
@@ -1015,27 +1060,18 @@ app.post('/api/payments/verify', async (req, res) => {
     };
 
     if (targetOrderId) {
+      // Skip inventory if already paid (idempotent re-verify)
+      const { data: prior } = await supabase
+        .from('orders')
+        .select('payment_status, items')
+        .eq('id', targetOrderId)
+        .single();
+      const alreadyPaid = prior?.payment_status === 'paid';
+
       await supabase.from('orders').update(updateData).eq('id', targetOrderId);
 
-      // Decrement inventory stock on products
-      const { data: orderWithItems } = await supabase.from('orders').select('items').eq('id', targetOrderId).single();
-      if (orderWithItems && Array.isArray(orderWithItems.items)) {
-        for (const itm of orderWithItems.items) {
-          const prodId = itm.productId || itm.product?.id;
-          const qty = Number(itm.quantity) || 1;
-          if (prodId) {
-            const { data: prodData } = await supabase.from('products').select('in_stock_count').eq('id', prodId).single();
-            if (prodData && prodData.in_stock_count !== null && prodData.in_stock_count !== undefined) {
-              const currentStock = Number(prodData.in_stock_count);
-              const newStock = Math.max(0, currentStock - qty);
-              await supabase.from('products').update({
-                in_stock_count: newStock,
-                is_sold_out: newStock <= 0,
-                updated_at: new Date().toISOString(),
-              }).eq('id', prodId);
-            }
-          }
-        }
+      if (!alreadyPaid && prior && Array.isArray(prior.items)) {
+        await decrementInventoryForItems(prior.items);
       }
     }
 
@@ -1087,6 +1123,13 @@ app.post('/api/payments/webhook', async (req, res) => {
       const rzpPaymentId = payload.id;
 
       if (eventType === 'payment.captured' || eventType === 'order.paid') {
+        // Idempotent: only decrement stock when transitioning into paid
+        const { data: existingOrder } = await supabase
+          .from('orders')
+          .select('id, payment_status, items')
+          .eq('razorpay_order_id', rzpOrderId)
+          .maybeSingle();
+
         await supabase
           .from('orders')
           .update({
@@ -1097,6 +1140,10 @@ app.post('/api/payments/webhook', async (req, res) => {
             updated_at: new Date().toISOString(),
           })
           .eq('razorpay_order_id', rzpOrderId);
+
+        if (existingOrder && existingOrder.payment_status !== 'paid' && Array.isArray(existingOrder.items)) {
+          await decrementInventoryForItems(existingOrder.items);
+        }
       } else if (eventType === 'payment.failed') {
         await supabase
           .from('orders')

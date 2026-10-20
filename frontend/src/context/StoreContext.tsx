@@ -4,6 +4,7 @@ import {
   fetchProductsFromSupabase,
   fetchCategoriesFromSupabase,
   syncCartToSupabase,
+  fetchCartFromSupabase,
   syncWishlistToSupabase,
   upsertProductToSupabase,
   deleteProductFromSupabase,
@@ -43,6 +44,28 @@ import {
   INITIAL_INSTAGRAM_POSTS,
   STORE_INFO,
 } from '../data/mockData';
+
+/** Non-destructively merge cart lines by productId + size + color (sum quantities). */
+function mergeCartItems(base: CartItem[], incoming: CartItem[]): CartItem[] {
+  const merged = [...base];
+  incoming.forEach((savedItem) => {
+    const existingIdx = merged.findIndex(
+      (i) =>
+        i.productId === savedItem.productId &&
+        i.size === savedItem.size &&
+        (i.color || '') === (savedItem.color || '')
+    );
+    if (existingIdx >= 0) {
+      merged[existingIdx] = {
+        ...merged[existingIdx],
+        quantity: merged[existingIdx].quantity + savedItem.quantity,
+      };
+    } else {
+      merged.push(savedItem);
+    }
+  });
+  return merged;
+}
 
 interface CheckoutFormData {
   name: string;
@@ -798,57 +821,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'customer' | 'admin'>('customer');
   const [authModalMessage, setAuthModalMessage] = useState('');
-
-  // ── Supabase auth state listener ──────────────────────────────────────────
-  // Hydrates currentUser whenever a Supabase session is established or cleared.
-  // This covers:
-  //   • Google OAuth callback (SIGNED_IN event after redirect)
-  //   • Email/password sign-in already handled inline in components
-  //   • Page refresh — Supabase restores the session from storage and fires
-  //     INITIAL_SESSION so the user stays logged in without re-authenticating.
-  useEffect(() => {
-    if (!isSupabaseConfigured() || !supabase) return;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
-        const user = session.user;
-        const meta = user.user_metadata || {};
-
-        // Only update if this is a provider-based sign-in (Google, etc.)
-        // or if the user is not already tracked (avoids double-set for email/pw flow).
-        const isOAuthProvider = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
-
-        setCurrentUser((prev) => {
-          // Already have this user stored — don't overwrite (avoids loops)
-          if (prev?.id === user.id) return prev;
-
-          // For email/password sign-ins the components set the user directly.
-          // Only auto-hydrate for OAuth providers or when there's no current user.
-          if (!isOAuthProvider && prev !== null) return prev;
-
-          return {
-            id: user.id,
-            name: meta.full_name || meta.name || user.email?.split('@')[0] || 'Customer',
-            email: user.email || '',
-            avatar: meta.avatar_url || meta.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(meta.full_name || 'Customer')}`,
-            authProvider: (user.app_metadata?.provider as any) || 'google',
-            isAdmin: false,
-          };
-        });
-      } else if (event === 'SIGNED_OUT') {
-        // Let the explicit logout() function handle local cleanup;
-        // this just ensures remote sign-out also clears the user.
-        setCurrentUser((prev) => {
-          if (prev && !prev.isAdmin) return null;
-          return prev;
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // ─────────────────────────────────────────────────────────────────────────
+  /** Prevents guest→account cart merge from running twice for the same user session */
+  const cartMergedForUserRef = useRef<string | null>(null);
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -1214,46 +1188,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {}
   }, [collectionFilters]);
 
-  // Real-time Supabase Auth Listener
+  // ── Single Supabase auth listener (hydrate only — cart merge is loginWithGoogle) ──
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const meta = session.user.user_metadata || {};
-        const userName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Store Customer';
-        setCurrentUser({
-          id: session.user.id,
-          name: userName,
-          email: session.user.email || '',
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName)}`,
-          authProvider: 'google',
-          isAdmin: false,
-        });
-      }
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        const meta = session.user.user_metadata || {};
-        const userName = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Store Customer';
-        setCurrentUser({
-          id: session.user.id,
-          name: userName,
-          email: session.user.email || '',
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userName)}`,
-          authProvider: 'google',
-          isAdmin: false,
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const user = session.user;
+        const meta = user.user_metadata || {};
+        const isOAuthProvider = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+
+        setCurrentUser((prev) => {
+          if (prev?.id === user.id) return prev;
+          // Email/password flows set the user themselves — don't clobber
+          if (!isOAuthProvider && prev !== null) return prev;
+
+          return {
+            id: user.id,
+            name: meta.full_name || meta.name || user.email?.split('@')[0] || 'Customer',
+            email: user.email || '',
+            avatar:
+              meta.avatar_url ||
+              meta.picture ||
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(meta.full_name || 'Customer')}`,
+            authProvider: (user.app_metadata?.provider as UserAccount['authProvider']) || 'google',
+            isAdmin: false,
+          };
         });
       } else if (event === 'SIGNED_OUT') {
-        setCurrentUser(null);
-        setCart([]);
+        cartMergedForUserRef.current = null;
+        setCurrentUser((prev) => {
+          if (prev && !prev.isAdmin) return null;
+          return prev;
+        });
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   // Auth Methods
@@ -1269,48 +1240,66 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsAuthModalOpen(true);
   };
 
-  const loginWithGoogle = (userInfo?: Partial<UserAccount>) => {
+  /**
+   * Finalize Google (or other OAuth) login: set the customer and merge any
+   * guest cart with the account cart (local + Supabase). Safe to call twice —
+   * merge runs at most once per user id until logout.
+   */
+  const loginWithGoogle = useCallback((userInfo?: Partial<UserAccount>) => {
     if (!userInfo?.email) return;
+
     const newUser: UserAccount = {
       id: userInfo.id || `usr_${Date.now()}`,
       name: userInfo.name || userInfo.email.split('@')[0],
       email: userInfo.email,
-      avatar: userInfo.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userInfo.name || 'Customer')}`,
+      avatar:
+        userInfo.avatar ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userInfo.name || 'Customer')}`,
       authProvider: 'google',
       isAdmin: false,
     };
+
     setCurrentUser(newUser);
+    setIsAuthModalOpen(false);
+
+    // Already merged for this user in this browser session — keep cart as-is
+    if (cartMergedForUserRef.current === newUser.id) return;
+    cartMergedForUserRef.current = newUser.id;
 
     setCart((currentGuestCart) => {
-      let merged = [...currentGuestCart];
+      const guestSnapshot = [...currentGuestCart];
+
+      let localAccountCart: CartItem[] = [];
       const savedAccountCart = localStorage.getItem(`tws_cart_${newUser.id}`);
       if (savedAccountCart) {
         try {
-          const parsed: CartItem[] = JSON.parse(savedAccountCart);
-          if (Array.isArray(parsed)) {
-            parsed.forEach((savedItem) => {
-              const existingIdx = merged.findIndex(
-                (i) =>
-                  i.productId === savedItem.productId &&
-                  i.size === savedItem.size &&
-                  (i.color || '') === (savedItem.color || '')
-              );
-              if (existingIdx >= 0) {
-                merged[existingIdx] = {
-                  ...merged[existingIdx],
-                  quantity: merged[existingIdx].quantity + savedItem.quantity,
-                };
-              } else {
-                merged.push(savedItem);
-              }
-            });
-          }
-        } catch {}
+          const parsed = JSON.parse(savedAccountCart);
+          if (Array.isArray(parsed)) localAccountCart = parsed;
+        } catch {
+          /* ignore corrupt storage */
+        }
       }
-      localStorage.setItem(`tws_cart_${newUser.id}`, JSON.stringify(merged));
-      return merged;
+
+      // Immediate merge so redirect sees guest + local account cart
+      const quickMerged = mergeCartItems(guestSnapshot, localAccountCart);
+      localStorage.setItem(`tws_cart_${newUser.id}`, JSON.stringify(quickMerged));
+      localStorage.setItem('tws_cart', JSON.stringify(quickMerged));
+
+      // If Supabase has an account cart, re-merge guest + remote (not remote onto
+      // quickMerged) so local+remote copies of the same lines are not double-counted.
+      fetchCartFromSupabase(newUser.id)
+        .then((remote) => {
+          if (!remote || remote.length === 0) return;
+          const withRemote = mergeCartItems(guestSnapshot, remote);
+          setCart(withRemote);
+          localStorage.setItem(`tws_cart_${newUser.id}`, JSON.stringify(withRemote));
+          localStorage.setItem('tws_cart', JSON.stringify(withRemote));
+        })
+        .catch(() => {});
+
+      return quickMerged;
     });
-  };
+  }, []);
 
   const loginAsAdmin = async (email: string, pass: string): Promise<boolean> => {
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
@@ -1352,6 +1341,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (isSupabaseConfigured() && supabase) {
       supabase.auth.signOut().catch(() => {});
     }
+    cartMergedForUserRef.current = null;
     setAdminToken(null);
     sessionStorage.removeItem('tws_admin_token');
     sessionStorage.removeItem('tws_admin_secret');

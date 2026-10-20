@@ -16,6 +16,7 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -33,6 +34,31 @@ export const LoginPage: React.FC = () => {
   if (currentUser) {
     return null;
   }
+
+  const handleForgotPassword = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setErrorMessage('Enter your email address above, then click Forgot password.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      if (!isSupabaseConfigured() || !supabase) {
+        throw new Error('Authentication service is currently offline. Please try again shortly.');
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) throw error;
+      setSuccessMessage('Password reset link sent. Check your email inbox (and spam folder).');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Could not send reset email. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +179,16 @@ export const LoginPage: React.FC = () => {
                 placeholder="••••••••"
                 className="w-full pl-10 pr-3.5 py-2.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-lg text-xs text-[#242120] placeholder-[#A89F91] focus:outline-none focus:border-[#721B29] focus:bg-white transition-colors"
               />
+            </div>
+            <div className="mt-1.5 text-right">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetLoading}
+                className="text-[11px] font-semibold text-[#721B29] hover:underline cursor-pointer disabled:opacity-50"
+              >
+                {resetLoading ? 'Sending reset link…' : 'Forgot password?'}
+              </button>
             </div>
           </div>
 
