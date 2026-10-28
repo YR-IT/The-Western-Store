@@ -42,9 +42,15 @@ export const Header: React.FC = () => {
     categories,
     setAdminActiveTab,
     currentUser,
+    adminToken,
     openAuthModal,
     logout,
   } = useStore();
+
+  const isAdminSession = Boolean(
+    currentUser?.isAdmin || adminToken || (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token'))
+  );
+  const isCustomerSession = Boolean(currentUser && !currentUser.isAdmin);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -293,18 +299,31 @@ export const Header: React.FC = () => {
                 <div className="absolute right-0 mt-2 w-64 bg-[#FDFBF7] border border-[#E5DFD3] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                   {/* Account Identity Header */}
                   <div className="px-4 py-2.5 border-b border-[#EAE4D9] bg-[#FAF8F3]">
-                    {currentUser ? (
+                    {isAdminSession ? (
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-[#721B29] bg-[#721B29]/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" />
+                            Admin
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-[#242120] truncate">
+                          {currentUser?.name || 'Admin'}
+                        </p>
+                        <p className="text-[11px] text-[#736B63] truncate">
+                          {currentUser?.email || 'Store administrator'}
+                        </p>
+                      </div>
+                    ) : isCustomerSession ? (
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <UserCheck className="w-3 h-3" />
-                            {currentUser.isAdmin ? 'Admin' : 'Customer'}
+                            Customer
                           </span>
                         </div>
-                        <p className="text-xs font-bold text-[#242120] truncate">
-                          {currentUser.isAdmin ? 'Admin' : currentUser.name}
-                        </p>
-                        <p className="text-[11px] text-[#736B63] truncate">{currentUser.email}</p>
+                        <p className="text-xs font-bold text-[#242120] truncate">{currentUser!.name}</p>
+                        <p className="text-[11px] text-[#736B63] truncate">{currentUser!.email}</p>
                       </div>
                     ) : (
                       <div>
@@ -325,38 +344,42 @@ export const Header: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Navigation Actions */}
-                  <button
-                    id="header-account-profile-btn"
-                    type="button"
-                    onClick={() => {
-                      navigate('/account?tab=profile');
-                      setAccountMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-[#721B29]" />
-                      <span>My Profile</span>
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                  </button>
+                  {/* Customer account actions — hidden while admin is logged in */}
+                  {!isAdminSession && (
+                    <>
+                      <button
+                        id="header-account-profile-btn"
+                        type="button"
+                        onClick={() => {
+                          navigate('/account?tab=profile');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-[#721B29]" />
+                          <span>My Profile</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                      </button>
 
-                  <button
-                    id="header-order-history-btn"
-                    type="button"
-                    onClick={() => {
-                      navigate('/account');
-                      setAccountMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-[#721B29]" />
-                      <span>My Order History</span>
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                  </button>
+                      <button
+                        id="header-order-history-btn"
+                        type="button"
+                        onClick={() => {
+                          navigate('/account');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-[#721B29]" />
+                          <span>My Order History</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                      </button>
+                    </>
+                  )}
 
                   <button
                     id="header-track-order-btn"
@@ -376,7 +399,6 @@ export const Header: React.FC = () => {
                     </span>
                   </button>
 
-
                   <a
                     href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
                     target="_blank"
@@ -390,44 +412,49 @@ export const Header: React.FC = () => {
                     <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
                   </a>
 
-                  <div className="my-1 border-t border-[#EAE4D9]" />
-                  {currentUser?.isAdmin ? (
-                    <button
-                      id="admin-portal-link"
-                      type="button"
-                      onClick={() => {
-                        navigate('/admin');
-                        setAdminActiveTab('dashboard');
-                        setAccountMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-[#721B29]" />
-                        <span>Store Admin Panel</span>
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                    </button>
-                  ) : (
-                    <button
-                      id="header-staff-login-btn"
-                      type="button"
-                      onClick={() => {
-                        navigate('/admin/login');
-                        setAccountMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-[#721B29]" />
-                        <span>Admin Login</span>
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                    </button>
-                  )}
+                  {/* Admin Login only for guests; Admin Panel only when admin session */}
+                  {isAdminSession ? (
+                    <>
+                      <div className="my-1 border-t border-[#EAE4D9]" />
+                      <button
+                        id="admin-portal-link"
+                        type="button"
+                        onClick={() => {
+                          navigate('/admin');
+                          setAdminActiveTab('dashboard');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-[#721B29] font-semibold hover:bg-[#721B29]/10 flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                          <span>Store Admin Panel</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                      </button>
+                    </>
+                  ) : !isCustomerSession ? (
+                    <>
+                      <div className="my-1 border-t border-[#EAE4D9]" />
+                      <button
+                        id="header-staff-login-btn"
+                        type="button"
+                        onClick={() => {
+                          navigate('/admin/login');
+                          setAccountMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                          <span>Admin Login</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                      </button>
+                    </>
+                  ) : null}
 
-                  {/* Sign Out Button if logged in */}
-                  {currentUser && (
+                  {(isCustomerSession || isAdminSession) && (
                     <button
                       type="button"
                       onClick={() => {
@@ -676,13 +703,14 @@ export const Header: React.FC = () => {
                 </div>
               </div>
 
-              {/* Mobile Drawer Admin Link - only visible for logged in admins */}
-              {currentUser?.isAdmin && (
+              {/* Mobile Drawer Admin Link — only when admin session is active */}
+              {isAdminSession && (
                 <div className="p-4 border-t border-[#EAE4D9] bg-[#F8F5EE]">
                   <button
                     type="button"
                     onClick={() => {
                       navigate('/admin');
+                      setAdminActiveTab('dashboard');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#721B29] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 shadow-sm"

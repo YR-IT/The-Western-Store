@@ -1188,6 +1188,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {}
   }, [collectionFilters]);
 
+  // Restore admin user object when JWT exists but currentUser isn't admin
+  // (e.g. refresh, or customer session had overwritten the UI state)
+  useEffect(() => {
+    if (!adminToken) return;
+    setCurrentUser((prev) => {
+      if (prev?.isAdmin) return prev;
+      return {
+        id: 'admin_tws_1',
+        name: 'Admin',
+        email: 'admin@thewesternstore.com',
+        authProvider: 'admin',
+        isAdmin: true,
+      };
+    });
+  }, [adminToken]);
+
   // ── Single Supabase auth listener (hydrate only — cart merge is loginWithGoogle) ──
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
@@ -1199,6 +1215,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const isOAuthProvider = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
 
         setCurrentUser((prev) => {
+          // Never let a customer Supabase session overwrite an active admin session
+          if (prev?.isAdmin) return prev;
+          if (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token')) return prev;
+
           if (prev?.id === user.id) return prev;
           // Email/password flows set the user themselves — don't clobber
           if (!isOAuthProvider && prev !== null) return prev;
@@ -1247,6 +1267,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    */
   const loginWithGoogle = useCallback((userInfo?: Partial<UserAccount>) => {
     if (!userInfo?.email) return;
+
+    // Customer login replaces any admin session (mutually exclusive)
+    setAdminToken(null);
+    sessionStorage.removeItem('tws_admin_token');
+    sessionStorage.removeItem('tws_admin_secret');
 
     const newUser: UserAccount = {
       id: userInfo.id || `usr_${Date.now()}`,
@@ -1312,19 +1337,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.user) {
-          // Map role:'admin' → isAdmin:true so AdminPanel and Header checks work
-          setCurrentUser({
-            ...data.user,
-            isAdmin: data.user.role === 'admin',
-          });
-          if (data.token) {
-            setAdminToken(data.token);
-            sessionStorage.setItem('tws_admin_token', data.token);
+        if (data.success && data.user && data.token) {
+          // Drop any customer Supabase session so it cannot overwrite admin state
+          if (isSupabaseConfigured() && supabase) {
+            await supabase.auth.signOut().catch(() => {});
           }
+
+          const adminUser: UserAccount = {
+            id: data.user.id || 'admin_tws_1',
+            name: data.user.name || 'Admin',
+            email: data.user.email || email.trim(),
+            authProvider: 'admin',
+            isAdmin: true,
+          };
+
+          setAdminToken(data.token);
+          sessionStorage.setItem('tws_admin_token', data.token);
           sessionStorage.removeItem('tws_admin_secret');
-          routerNavigate('/admin');
+          setCurrentUser(adminUser);
+          setIsAuthModalOpen(false);
           setAdminActiveTab('dashboard');
+          routerNavigate('/admin');
           return true;
         }
       }

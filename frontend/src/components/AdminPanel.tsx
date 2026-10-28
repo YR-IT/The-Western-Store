@@ -141,6 +141,7 @@ export const AdminPanel: React.FC = () => {
     navigateToProduct,
     setSelectedProductId,
     currentUser,
+    adminToken,
   } = useStore();
 
   // Search & Filter in Orders
@@ -561,7 +562,13 @@ export const AdminPanel: React.FC = () => {
     showToast(`Moved "${updated[index + 1].name}" down`);
   };
 
-  if (!currentUser?.isAdmin) {
+  const hasAdminAccess = Boolean(
+    currentUser?.isAdmin ||
+      adminToken ||
+      (typeof window !== 'undefined' && sessionStorage.getItem('tws_admin_token'))
+  );
+
+  if (!hasAdminAccess) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-[#721B29] mb-4 shadow-sm">
@@ -573,10 +580,10 @@ export const AdminPanel: React.FC = () => {
         </p>
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/admin/login')}
           className="px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
         >
-          Return to Storefront
+          Go to Admin Login
         </button>
       </div>
     );
