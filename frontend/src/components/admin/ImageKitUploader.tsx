@@ -19,11 +19,6 @@ const BACKEND_URL =
     ? 'http://localhost:4000'
     : 'https://the-western-store.onrender.com');
 
-/** Explicit extensions — macOS Chrome often greys out Upload for camera JPGs when only `image/*` is set. */
-const IMAGE_ACCEPT =
-  'image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.JPG,.JPEG,.PNG,.WEBP,.GIF,.HEIC,.HEIF';
-const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.MP4,.WEBM,.MOV';
-
 async function fileToBase64(file: File): Promise<string> {
   // FileReader avoids spreading large typed arrays into String.fromCharCode,
   // which throws "Maximum call stack size exceeded" on real camera photos.
@@ -69,7 +64,10 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isVideoFolder = folder.includes('video');
-  const resolvedAccept = accept || (isVideoFolder ? VIDEO_ACCEPT : IMAGE_ACCEPT);
+  // Do NOT set accept for images — macOS Chrome/Safari greys out the native Upload
+  // button for many camera JPGs when accept filters are present (even image/* / .jpg).
+  // Validate the chosen file in JS instead. Videos keep a light filter when requested.
+  const resolvedAccept = accept || (isVideoFolder ? 'video/*,.mp4,.webm,.mov,.MP4,.WEBM,.MOV' : undefined);
 
   const openPicker = () => {
     if (isUploading) return;
@@ -170,11 +168,10 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept={resolvedAccept}
+        {...(resolvedAccept ? { accept: resolvedAccept } : {})}
         onChange={handleFileChange}
         className="sr-only"
         tabIndex={-1}
-        // Keep enabled so macOS file dialog can confirm selection; we block via button instead
       />
 
       <div className="flex items-center gap-3">
