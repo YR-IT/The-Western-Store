@@ -37,7 +37,12 @@ interface ImageKitMediaLibraryModalProps {
   mediaType?: 'image' | 'video' | 'all';
 }
 
-const BACKEND_URL = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+const rawBackendUrl = ((import.meta as any).env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
+const BACKEND_URL =
+  rawBackendUrl ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:4000'
+    : 'https://the-western-store.onrender.com');
 
 export const ImageKitMediaLibraryModal: React.FC<ImageKitMediaLibraryModalProps> = ({
   isOpen,

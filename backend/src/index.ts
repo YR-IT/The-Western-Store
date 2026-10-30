@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import ImageKit from '@imagekit/nodejs';
+import ImageKit, { toFile } from '@imagekit/nodejs';
 import Razorpay from 'razorpay';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
@@ -116,11 +116,14 @@ app.use(
   })
 );
 
-// ─── Webhook Raw Body Middleware ──────────────────────────────────────────
-// Razorpay webhook endpoint requires raw buffer for signature verification
+// ─── Body parsers ─────────────────────────────────────────────────────────
+// Razorpay webhook needs the raw buffer for signature verification.
+// ImageKit admin uploads send base64 payloads that can exceed the default 5mb JSON limit.
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {
     express.raw({ type: 'application/json' })(req, res, next);
+  } else if (req.originalUrl === '/api/imagekit/upload') {
+    express.json({ limit: '15mb' })(req, res, next);
   } else {
     express.json({ limit: '5mb' })(req, res, next);
   }
@@ -1260,10 +1263,85 @@ app.get('/api/imagekit/auth', requireAdmin, (_req, res) => {
     res.json({
       ...authParams,
       publicKey: process.env.IMAGEKIT_PUBLIC_KEY || '',
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || '',
     });
   } catch (err) {
     console.error('[ImageKit Auth Error]', err);
     res.status(500).json({ error: 'Failed to generate upload authentication.' });
+  }
+});
+
+/**
+ * Server-side ImageKit upload.
+ * Preferred over browser→ImageKit direct upload so private-key signing stays on the server
+ * and mismatched client credentials cannot break catalogue photo uploads.
+ */
+app.post('/api/imagekit/upload', requireAdmin, async (req, res) => {
+  if (!process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
+    res.status(503).json({
+      error: 'ImageKit is not fully configured on server. Please add IMAGEKIT credentials.',
+    });
+    return;
+  }
+
+  try {
+    const { fileBase64, fileName, folder, tags } = req.body || {};
+    if (!fileBase64 || typeof fileBase64 !== 'string') {
+      res.status(400).json({ error: 'Missing fileBase64 payload.' });
+      return;
+    }
+
+    const rawBase64 = fileBase64.includes(',')
+      ? fileBase64.split(',').pop() || ''
+      : fileBase64;
+    const buffer = Buffer.from(rawBase64, 'base64');
+    if (!buffer.length) {
+      res.status(400).json({ error: 'Invalid file data. Could not decode base64 payload.' });
+      return;
+    }
+    // Guard against oversized payloads (compressed catalogue photos should stay well under this)
+    if (buffer.length > 12 * 1024 * 1024) {
+      res.status(413).json({ error: 'Image is too large. Please use a photo under 12 MB.' });
+      return;
+    }
+
+    const safeName = String(fileName || `upload-${Date.now()}.jpg`)
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 120);
+    const targetFolder = typeof folder === 'string' && folder.trim()
+      ? folder.trim()
+      : '/products';
+
+    const uploadFile = await toFile(buffer, safeName);
+    const uploadOptions: Record<string, unknown> = {
+      file: uploadFile,
+      fileName: safeName,
+      folder: targetFolder,
+      useUniqueFileName: true,
+    };
+    if (Array.isArray(tags) && tags.length > 0) {
+      uploadOptions.tags = tags.map(String).join(',');
+    }
+
+    const uploaded = await imagekit.files.upload(uploadOptions as any);
+    if (!uploaded?.url) {
+      res.status(502).json({ error: 'ImageKit did not return a file URL.' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      url: uploaded.url,
+      fileId: uploaded.fileId,
+      name: uploaded.name,
+      filePath: uploaded.filePath,
+      thumbnailUrl: uploaded.thumbnailUrl,
+    });
+  } catch (err: any) {
+    console.error('[ImageKit Upload Error]', err);
+    res.status(500).json({
+      error: err?.message || 'Failed to upload file to ImageKit.',
+    });
   }
 });
 

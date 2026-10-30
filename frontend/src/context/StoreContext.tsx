@@ -1335,36 +1335,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify({ email: email.trim(), password: pass }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user && data.token) {
-          // Drop any customer Supabase session so it cannot overwrite admin state
-          if (isSupabaseConfigured() && supabase) {
-            await supabase.auth.signOut().catch(() => {});
-          }
-
-          const adminUser: UserAccount = {
-            id: data.user.id || 'admin_tws_1',
-            name: data.user.name || 'Admin',
-            email: data.user.email || email.trim(),
-            authProvider: 'admin',
-            isAdmin: true,
-          };
-
-          setAdminToken(data.token);
-          sessionStorage.setItem('tws_admin_token', data.token);
-          sessionStorage.removeItem('tws_admin_secret');
-          setCurrentUser(adminUser);
-          setIsAuthModalOpen(false);
-          setAdminActiveTab('dashboard');
-          routerNavigate('/admin');
-          return true;
-        }
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
+
+      if (!res.ok) {
+        const msg = data?.error || `Admin login failed (${res.status}).`;
+        throw new Error(msg);
+      }
+
+      // Prefer JWT token (current backend). Fall back to legacy adminSecret if Render
+      // has not redeployed yet — store it as the session token so the panel can open.
+      const sessionToken: string | undefined = data?.token || data?.adminSecret;
+      if (data?.success && data?.user && sessionToken) {
+        // Drop any customer Supabase session so it cannot overwrite admin state
+        if (isSupabaseConfigured() && supabase) {
+          await supabase.auth.signOut().catch(() => {});
+        }
+
+        const adminUser: UserAccount = {
+          id: data.user.id || 'admin_tws_1',
+          name: data.user.name || 'Admin',
+          email: data.user.email || email.trim(),
+          authProvider: 'admin',
+          isAdmin: true,
+        };
+
+        setAdminToken(sessionToken);
+        sessionStorage.setItem('tws_admin_token', sessionToken);
+        if (data.adminSecret) {
+          sessionStorage.setItem('tws_admin_secret', data.adminSecret);
+        } else {
+          sessionStorage.removeItem('tws_admin_secret');
+        }
+        setCurrentUser(adminUser);
+        setIsAuthModalOpen(false);
+        setAdminActiveTab('dashboard');
+        routerNavigate('/admin');
+        return true;
+      }
+
+      throw new Error(
+        'Login succeeded but the server did not return an auth token. Redeploy the backend with the latest code and ensure JWT_SECRET is set on Render.'
+      );
     } catch (err) {
       console.warn('[Admin Auth] Backend server request failed:', err);
+      throw err;
     }
-    return false;
   };
 
   const logout = () => {

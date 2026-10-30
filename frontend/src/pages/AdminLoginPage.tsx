@@ -39,7 +39,10 @@ export const AdminLoginPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('[Admin Login Error]', err);
-      setErrorMessage(err.message || 'Server connection error.');
+      setErrorMessage(
+        err?.message ||
+          'Could not reach the admin API. Check VITE_BACKEND_URL and that the backend is online.'
+      );
     } finally {
       setLoading(false);
     }
@@ -85,7 +88,7 @@ export const AdminLoginPage: React.FC = () => {
                 required
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="staff@thewesternstore.in"
+                placeholder="admin@thewesternstore.com"
                 className="w-full pl-10 pr-3.5 py-2.5 bg-black/40 border border-white/10 rounded-lg text-xs text-white placeholder-[#736B63] focus:outline-none focus:border-[#E6C280] transition-colors"
               />
             </div>

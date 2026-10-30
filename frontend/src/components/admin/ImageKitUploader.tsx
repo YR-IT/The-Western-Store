@@ -13,7 +13,22 @@ interface ImageKitUploaderProps {
 }
 
 const rawBackendUrl = ((import.meta as any).env?.VITE_BACKEND_URL || '').trim().replace(/\/+$/, '');
-const BACKEND_URL = rawBackendUrl || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:4000' : '');
+const BACKEND_URL =
+  rawBackendUrl ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:4000'
+    : 'https://the-western-store.onrender.com');
+
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   onUploadSuccess,
@@ -37,74 +52,58 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
     const rawFile = e.target.files?.[0];
     if (!rawFile) return;
 
-    // Reset feedback states
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsUploading(true);
-    setProgress(15);
+    setProgress(10);
 
     try {
-      // Resize & optimize high-res camera photos before upload so they never exceed ImageKit MP limits
       let file = rawFile;
       if (rawFile.type.startsWith('image/')) {
         file = await compressAndResizeImage(rawFile, 2560, 2560, 0.92);
       }
-      setProgress(30);
+      setProgress(35);
 
       const adminToken = sessionStorage.getItem('tws_admin_token');
+      if (!adminToken) {
+        throw new Error('Admin session expired. Please log in again before uploading.');
+      }
 
-      // Step 1: Fetch authentication params from Express backend
-      const authRes = await fetch(`${BACKEND_URL}/api/imagekit/auth`, {
+      const fileBase64 = await fileToBase64(file);
+      setProgress(55);
+
+      // Upload through the backend so ImageKit private-key signing stays server-side.
+      const uploadRes = await fetch(`${BACKEND_URL}/api/imagekit/upload`, {
+        method: 'POST',
         headers: {
-          ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
         },
+        body: JSON.stringify({
+          fileBase64,
+          fileName: file.name || rawFile.name || 'upload.jpg',
+          folder,
+          tags,
+        }),
       });
 
-      if (!authRes.ok) {
-        const errorData = await authRes.json().catch(() => ({}));
+      setProgress(85);
+
+      const uploadData = await uploadRes.json().catch(() => ({}));
+      if (!uploadRes.ok) {
         throw new Error(
-          errorData.error ||
-            'Failed to get upload signature from server. Ensure you are logged in as admin.'
+          uploadData.error ||
+            uploadData.message ||
+            `ImageKit upload failed (${uploadRes.status}).`
         );
       }
 
-      const authData = await authRes.json();
-      const { token, expire, signature, publicKey } = authData;
-
-      setProgress(50);
-
-      // Step 2: Prepare FormData for ImageKit Upload API
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('fileName', file.name || 'upload');
-      formData.append('token', token);
-      formData.append('expire', String(expire));
-      formData.append('signature', signature);
-      formData.append('folder', folder);
-      if (tags && tags.length > 0) {
-        formData.append('tags', tags.join(','));
-      }
-      if (publicKey) formData.append('publicKey', publicKey);
-
-      setProgress(75);
-
-      // Step 3: Upload directly to ImageKit upload endpoint
-      const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      setProgress(90);
-
-      if (!uploadRes.ok) {
-        const errJson = await uploadRes.json().catch(() => ({}));
-        throw new Error(errJson.message || 'ImageKit upload request failed.');
-      }
-
-      const uploadData = await uploadRes.json();
-      setProgress(100);
-
       const finalUrl = uploadData.url || '';
+      if (!finalUrl) {
+        throw new Error('Upload succeeded but ImageKit did not return a file URL.');
+      }
+
+      setProgress(100);
       setSuccessMsg('Uploaded to ImageKit successfully!');
 
       const callback = onUploadSuccess || onSuccess;
@@ -112,13 +111,12 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         callback(finalUrl);
       }
 
-      // Clear file input
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
       console.error('[ImageKit Uploader]', err);
       setErrorMsg(
         err.message ||
-          'Upload failed. Please verify ImageKit credentials in backend/.env or use URL input.'
+          'Upload failed. Please verify ImageKit credentials on the backend or paste an image URL instead.'
       );
     } finally {
       setIsUploading(false);
@@ -138,15 +136,16 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         onChange={handleFileChange}
         className="hidden"
         id={uniqueInputId}
+        disabled={isUploading}
       />
 
       <div className="flex items-center gap-3">
         <label
           htmlFor={uniqueInputId}
-          className={`px-3.5 py-2 rounded-sm text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all border ${
+          className={`px-3.5 py-2 rounded-sm text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${
             isUploading
-              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF] cursor-not-allowed'
-              : 'bg-[#721B29] text-white hover:bg-[#852031] border-[#721B29] shadow-xs'
+              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF] cursor-not-allowed pointer-events-none'
+              : 'bg-[#721B29] text-white hover:bg-[#852031] border-[#721B29] shadow-xs cursor-pointer'
           }`}
         >
           {isUploading ? (
@@ -163,7 +162,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         </label>
       </div>
 
-      {/* Progress Bar */}
       {isUploading && (
         <div className="w-full bg-[#EAE4D9] h-1.5 rounded-full overflow-hidden">
           <div
@@ -173,7 +171,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         </div>
       )}
 
-      {/* Feedback Messages */}
       {successMsg && (
         <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-sm text-[11px]">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
