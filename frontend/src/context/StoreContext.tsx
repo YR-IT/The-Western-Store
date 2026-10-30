@@ -200,14 +200,12 @@ interface StoreContextType {
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
   toggleStockStatus: (productId: string) => void;
-  resetProductsToDefault: () => void;
 
   // Category Management
   addCategory: (category: Omit<Category, 'id'>) => void;
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (newCategories: Category[]) => void;
-  resetCategoriesToDefault: () => void;
 
   // Helper navigation actions
   navigateToCategory: (category: ProductCategory) => void;
@@ -1878,18 +1876,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCategories(newCategories);
   };
 
-  const resetCategoriesToDefault = () => {
-    setCategories(INITIAL_CATEGORIES);
-    localStorage.removeItem('tws_categories_v4');
-    localStorage.removeItem('tws_categories');
-  };
-
-  const resetProductsToDefault = () => {
-    setProducts(INITIAL_PRODUCTS);
-    localStorage.removeItem('tws_products_v4');
-    localStorage.removeItem('tws_products');
-  };
-
   const openOrderTracking = (orderNumber?: string, phone?: string) => {
     if (orderNumber || phone) {
       setTrackingPrefill({ orderNumber: orderNumber || '', phone: phone || '' });
@@ -1998,12 +1984,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateProduct,
         deleteProduct,
         toggleStockStatus,
-        resetProductsToDefault,
         addCategory,
         updateCategory,
         deleteCategory,
         reorderCategories,
-        resetCategoriesToDefault,
         navigateToCategory,
         navigateToBudget,
         navigateToProduct,
