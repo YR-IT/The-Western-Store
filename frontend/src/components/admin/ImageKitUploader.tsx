@@ -20,14 +20,22 @@ const BACKEND_URL =
     : 'https://the-western-store.onrender.com');
 
 async function fileToBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
+  // FileReader avoids spreading large typed arrays into String.fromCharCode,
+  // which throws "Maximum call stack size exceeded" on real camera photos.
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const base64 = result.includes(',') ? result.split(',').pop() || '' : result;
+      if (!base64) {
+        reject(new Error('Could not read the selected image file.'));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Could not read the selected image file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({

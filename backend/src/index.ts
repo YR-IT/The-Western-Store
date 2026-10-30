@@ -100,6 +100,9 @@ const allowedOrigins = [
 
 const vercelPreviewRegex = /^https:\/\/the-western-store[-a-z0-9]*\.vercel\.app$/;
 
+// Render / Cloudflare terminate TLS and forward client IP via X-Forwarded-For.
+app.set('trust proxy', 1);
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -107,10 +110,15 @@ app.use(
       if (allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin)) {
         return callback(null, true);
       }
+      // Also allow any *.vercel.app preview for this storefront project family
+      if (/^https:\/\/[\w-]+\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
       if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
         return callback(null, true);
       }
-      callback(new Error(`CORS blocked for origin: ${origin}`));
+      // Do not throw — throwing turns OPTIONS preflight into HTTP 500.
+      return callback(null, false);
     },
     credentials: true,
   })
