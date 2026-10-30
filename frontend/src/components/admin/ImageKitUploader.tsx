@@ -124,7 +124,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       console.error('[ImageKit Uploader]', err);
       setErrorMsg(
         err.message ||
-          'Upload failed. Please verify ImageKit credentials on the backend or paste an image URL instead.'
+          'Upload failed. Check your admin login and ImageKit setup, then try again.'
       );
     } finally {
       setIsUploading(false);

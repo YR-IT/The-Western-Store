@@ -621,21 +621,13 @@ export const AdminPanel: React.FC = () => {
               The Western Store
             </span>
             <span className="text-[10px] bg-[#721B29] px-2 py-0.5 rounded-xs font-semibold uppercase tracking-wider text-[#E6C280]">
-              Seller Portal
+              Admin
             </span>
           </div>
         </div>
 
-        <div className="text-xs text-[#BFB5A5] hidden sm:flex items-center gap-3">
-          <span className="flex items-center gap-1.5 bg-[#2B2324] px-2.5 py-1 rounded-sm border border-[#3D3334]">
-            <Truck className="w-3.5 h-3.5 text-[#E6C280]" />
-            <span>Tracking Manager Active</span>
-          </span>
-          <span className="text-[#594F50]">•</span>
-          <span className="text-emerald-400 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Live WhatsApp Sync</span>
-          </span>
+        <div className="text-xs text-[#BFB5A5] hidden sm:block truncate max-w-[220px]">
+          {currentUser?.email || 'Store owner'}
         </div>
       </header>
 
@@ -645,12 +637,12 @@ export const AdminPanel: React.FC = () => {
         <aside className="w-full md:w-64 bg-white border-r border-[#EAE4D9] p-3 sm:p-4 flex md:flex-col justify-between overflow-x-auto shrink-0">
           <div className="space-y-1 w-full flex md:flex-col gap-1 md:gap-0">
             {[
-              { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              { id: 'orders', label: 'Orders & Tracking', icon: ShoppingBag, badge: pendingOrders },
-              { id: 'products', label: 'Catalog & Products', icon: Package, badge: products.length },
+              { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+              { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: pendingOrders },
+              { id: 'products', label: 'Products', icon: Package, badge: products.length },
               { id: 'categories', label: 'Categories', icon: Layers },
-              { id: 'sections', label: 'Homepage & Photos', icon: Sliders },
-              { id: 'filters', label: 'Collection Filters', icon: Filter },
+              { id: 'sections', label: 'Homepage', icon: Sliders },
+              { id: 'filters', label: 'Filters', icon: Filter },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = adminActiveTab === tab.id;
@@ -683,21 +675,12 @@ export const AdminPanel: React.FC = () => {
             })}
           </div>
 
-          <div className="hidden md:block pt-6 border-t border-[#EAE4D9] text-[11px] text-[#736B63] space-y-2">
-            <div className="p-3 bg-[#FAF7F0] rounded-lg border border-[#EAE4D9]">
-              <div className="flex items-center gap-1.5 font-bold text-[#242120]">
-                <Truck className="w-3.5 h-3.5 text-[#721B29]" />
-                <span>Courier Dispatch</span>
-              </div>
-              <p className="text-[10px] text-[#736B63] mt-1 leading-snug">
-                Add tracking links and AWB numbers to keep customers informed via WhatsApp.
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold text-[#242120]">Kurukshetra Showroom</p>
-              <p>Railway Road, Opp. Hotel Pearl Marc</p>
-              <p>WhatsApp: 9729515288</p>
-            </div>
+          <div className="hidden md:block pt-6 border-t border-[#EAE4D9] text-[11px] text-[#736B63]">
+            <p className="font-semibold text-[#242120]">Quick tip</p>
+            <p className="mt-1 leading-snug">
+              Use <span className="font-semibold text-[#242120]">Orders</span> to add tracking, and{' '}
+              <span className="font-semibold text-[#242120]">Products</span> to upload photos from your phone.
+            </p>
           </div>
         </aside>
 
@@ -708,10 +691,10 @@ export const AdminPanel: React.FC = () => {
             <div className="space-y-8">
               <div>
                 <h2 className="font-serif text-2xl font-bold text-[#242120]">
-                  Store Executive Overview
+                  Overview
                 </h2>
                 <p className="text-xs text-[#736B63] mt-0.5">
-                  Real-time activity from Kurukshetra showroom and Instagram bio shoppers.
+                  Orders, sales, and stock at a glance.
                 </p>
               </div>
 
@@ -901,10 +884,10 @@ export const AdminPanel: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-[#242120]">
-                    Orders & Tracking Manager ({orders.length})
+                    Orders ({orders.length})
                   </h2>
                   <p className="text-xs text-[#736B63]">
-                    Add courier tracking links, AWB numbers, dispatch dates, and send 1-click WhatsApp tracking updates to buyers.
+                    Update status, add tracking, and message customers on WhatsApp.
                   </p>
                 </div>
 
@@ -1186,14 +1169,11 @@ export const AdminPanel: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#242120]">
-                      Product Catalogue ({filteredProducts.length} of {products.length})
+                      Products ({filteredProducts.length})
                     </h2>
-                    <span className="bg-[#721B29]/10 text-[#721B29] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Editable
-                    </span>
                   </div>
                   <p className="text-xs text-[#736B63] mt-1">
-                    Manage boutique garments: edit photos, descriptions, stock inventory, prices, sizes, and shades.
+                    Add garments, upload photos, set price and stock.
                   </p>
                 </div>
 
@@ -1204,7 +1184,7 @@ export const AdminPanel: React.FC = () => {
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#D9CEBF] text-[#242120] hover:border-[#721B29] hover:text-[#721B29] rounded-sm text-xs font-semibold transition-all shadow-2xs cursor-pointer"
                   >
                     <HardDrive className="w-4 h-4 text-[#721B29]" />
-                    <span>Browse ImageKit Library</span>
+                    <span>Media Library</span>
                   </button>
                   <button
                     type="button"
@@ -1212,7 +1192,7 @@ export const AdminPanel: React.FC = () => {
                     className="flex items-center gap-1.5 px-4 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] transition-all shadow-xs cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Add New Garment</span>
+                    <span>Add Product</span>
                   </button>
                 </div>
               </div>
@@ -1529,14 +1509,11 @@ export const AdminPanel: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#242120]">
-                      Store Departments & Categories ({categories.length})
+                      Categories ({categories.length})
                     </h2>
-                    <span className="bg-[#721B29]/10 text-[#721B29] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Editable & Dynamic
-                    </span>
                   </div>
                   <p className="text-xs text-[#736B63] mt-1">
-                    Manage boutique categories, department covers, and homepage circular navigation badges.
+                    Organize products into shop categories.
                   </p>
                 </div>
 

@@ -62,7 +62,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
 
   // Images
   const [images, setImages] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState('');
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
   // Description
@@ -230,7 +229,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
   const handleAddImage = (url: string) => {
     if (!url.trim()) return;
     setImages((prev) => [...prev, url.trim()]);
-    setNewImageUrl('');
   };
 
   const handleRemoveImage = (index: number) => {
@@ -884,19 +882,18 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                 {images.length === 0 && (
                   <div className="p-8 border-2 border-dashed border-[#D9CEBF] bg-[#FAF8F3] rounded-xl text-center text-[#8C8276] space-y-1">
                     <ImageIcon className="w-8 h-8 mx-auto text-[#736B63]" />
-                    <p className="text-xs font-bold text-[#242120]">No product photos uploaded yet</p>
-                    <p className="text-[11px]">Upload a photo from your PC or phone via ImageKit, or paste an image URL link below.</p>
+                    <p className="text-xs font-bold text-[#242120]">No product photos yet</p>
+                    <p className="text-[11px]">Upload from your phone/computer, or pick an existing photo from your media library.</p>
                   </div>
                 )}
 
-                {/* Upload Image via ImageKit or Select from Media Library */}
-                <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#EAE4D9] space-y-4">
+                <div className="p-4 bg-[#FAF8F3] rounded-xl border border-[#EAE4D9] space-y-3">
                   <div>
                     <label className="block font-semibold text-[#242120] mb-1">
-                      Add High-Res Garment Imagery
+                      Add product photos
                     </label>
                     <p className="text-[11px] text-[#736B63] mb-3">
-                      Upload fresh photos from your device, or select photos already uploaded to your ImageKit cloud repository.
+                      Photos upload to ImageKit automatically. No link pasting needed.
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <ImageKitUploader
@@ -910,33 +907,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                         className="px-3.5 py-2 bg-white border border-[#721B29] text-[#721B29] hover:bg-[#721B29] hover:text-white rounded-sm text-xs font-semibold flex items-center gap-2 transition-colors shadow-2xs cursor-pointer"
                       >
                         <HardDrive className="w-4 h-4" />
-                        <span>Browse ImageKit Media Library</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative flex py-1 items-center">
-                    <div className="flex-grow border-t border-[#EAE4D9]"></div>
-                    <span className="flex-shrink mx-3 text-[10px] uppercase font-bold tracking-wider text-[#8C8276]">Or enter image URL</span>
-                    <div className="flex-grow border-t border-[#EAE4D9]"></div>
-                  </div>
-
-                  <div>
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="https://images.unsplash.com/..."
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddImage(newImageUrl)}
-                        className="px-4 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add URL</span>
+                        <span>Browse Media Library</span>
                       </button>
                     </div>
                   </div>

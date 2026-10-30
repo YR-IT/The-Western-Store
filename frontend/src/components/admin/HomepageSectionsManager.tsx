@@ -399,7 +399,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>Section Order & Visibility ({homeSections.length})</span>
+          <span>Layout</span>
         </button>
 
         <button
@@ -412,7 +412,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Megaphone className="w-4 h-4" />
-          <span>Announcement Bar</span>
+          <span>Announcement</span>
         </button>
 
         <button
@@ -425,7 +425,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <ImageIcon className="w-4 h-4" />
-          <span>Hero Slides ({heroSlides.length})</span>
+          <span>Banners ({heroSlides.length})</span>
         </button>
 
         <button
@@ -438,7 +438,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Tag className="w-4 h-4" />
-          <span>Budget Edit Cards ({budgetTiles.length})</span>
+          <span>Budget cards</span>
         </button>
 
         <button
@@ -451,7 +451,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-          <span>Testimonials ({testimonials.length})</span>
+          <span>Reviews</span>
         </button>
 
         <button
@@ -464,7 +464,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Instagram className="w-4 h-4" />
-          <span>Instagram Feed ({instagramPosts.length})</span>
+          <span>Videos</span>
         </button>
 
         <button
@@ -477,7 +477,7 @@ export const HomepageSectionsManager: React.FC = () => {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Promo Banners</span>
+          <span>Promos</span>
         </button>
       </div>
 
@@ -1041,15 +1041,25 @@ export const HomepageSectionsManager: React.FC = () => {
                         {(slide.targetDevice === 'all' || slide.targetDevice === 'desktop' || !slide.targetDevice) && (
                           <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
                             <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                              🖥️ PC / Laptop Banner Image (Widescreen 16:9 / 1920x1080) *
+                              Desktop banner (widescreen)
                             </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="url"
-                                placeholder="https://... (Desktop Banner URL)"
-                                value={slide.desktopImage || slide.image}
-                                onChange={(e) => updateHeroSlide(slide.id, { desktopImage: e.target.value, image: e.target.value })}
-                                className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
+                            {(slide.desktopImage || slide.image) ? (
+                              <img
+                                src={slide.desktopImage || slide.image}
+                                alt="Desktop banner preview"
+                                className="w-full h-28 object-cover rounded border border-[#EAE4D9]"
+                              />
+                            ) : (
+                              <p className="text-[11px] text-[#8C8276]">No desktop banner yet — upload or pick from library.</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <ImageKitUploader
+                                folder="/hero-slides"
+                                buttonText="Upload desktop banner"
+                                onUploadSuccess={(url) => {
+                                  updateHeroSlide(slide.id, { desktopImage: url, image: url });
+                                  showToast('Desktop banner uploaded!');
+                                }}
                               />
                               <button
                                 type="button"
@@ -1058,36 +1068,37 @@ export const HomepageSectionsManager: React.FC = () => {
                                   setIsHeroMediaModalOpen(true);
                                 }}
                                 className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
-                                title="Pick from ImageKit CDN"
+                                title="Pick from ImageKit"
                               >
                                 <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                                <span>CDN</span>
+                                <span>Library</span>
                               </button>
                             </div>
-                            <ImageKitUploader
-                              folder="/hero-slides"
-                              buttonText="Upload Desktop Banner to ImageKit"
-                              onUploadSuccess={(url) => {
-                                updateHeroSlide(slide.id, { desktopImage: url, image: url });
-                                showToast('Desktop Banner uploaded!');
-                              }}
-                            />
                           </div>
                         )}
 
-                        {/* 2. Mobile Banner Upload (Shown if 'all' or 'mobile') */}
                         {(slide.targetDevice === 'all' || slide.targetDevice === 'mobile' || !slide.targetDevice) && (
                           <div className="p-3 bg-white rounded-lg border border-[#EAE4D9] space-y-2">
                             <label className="block font-bold text-[#4A453E] uppercase text-[10px]">
-                              📱 Mobile Phone Image (Vertical / Normal) *
+                              Mobile banner
                             </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="url"
-                                placeholder="https://... (Mobile Image URL)"
-                                value={slide.mobileImage || ''}
-                                onChange={(e) => updateHeroSlide(slide.id, { mobileImage: e.target.value, image: slide.image || e.target.value })}
-                                className="w-full px-2.5 py-1.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded text-xs font-mono"
+                            {slide.mobileImage ? (
+                              <img
+                                src={slide.mobileImage}
+                                alt="Mobile banner preview"
+                                className="w-full h-28 object-cover rounded border border-[#EAE4D9]"
+                              />
+                            ) : (
+                              <p className="text-[11px] text-[#8C8276]">No mobile banner yet — upload or pick from library.</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <ImageKitUploader
+                                folder="/hero-slides"
+                                buttonText="Upload mobile banner"
+                                onUploadSuccess={(url) => {
+                                  updateHeroSlide(slide.id, { mobileImage: url, image: slide.image || url });
+                                  showToast('Mobile banner uploaded!');
+                                }}
                               />
                               <button
                                 type="button"
@@ -1096,20 +1107,12 @@ export const HomepageSectionsManager: React.FC = () => {
                                   setIsHeroMediaModalOpen(true);
                                 }}
                                 className="px-2.5 py-1.5 bg-[#FAF8F3] hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
-                                title="Pick from ImageKit CDN"
+                                title="Pick from ImageKit"
                               >
                                 <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                                <span>CDN</span>
+                                <span>Library</span>
                               </button>
                             </div>
-                            <ImageKitUploader
-                              folder="/hero-slides"
-                              buttonText="Upload Mobile Image to ImageKit"
-                              onUploadSuccess={(url) => {
-                                updateHeroSlide(slide.id, { mobileImage: url, image: slide.image || url });
-                                showToast('Mobile Image uploaded!');
-                              }}
-                            />
                           </div>
                         )}
 
@@ -1275,25 +1278,22 @@ export const HomepageSectionsManager: React.FC = () => {
                       </button>
                     </div>
 
+                    {tile.image ? (
+                      <img
+                        src={tile.image}
+                        alt={tile.priceLabel}
+                        className="w-full h-24 object-cover rounded border border-[#EAE4D9] mb-2"
+                      />
+                    ) : null}
                     <ImageKitUploader
                       folder="/budget-photos"
                       tags={['budget_photo', tile.tier]}
-                      buttonText="Upload to /budget-photos"
+                      buttonText="Upload cover photo"
                       onUploadSuccess={(url) => {
                         updateBudgetTile(tile.tier, { image: url });
                         showToast(`Uploaded photo for ${tile.priceLabel}`);
                       }}
                     />
-
-                    <div className="mt-2">
-                      <input
-                        type="url"
-                        value={tile.image}
-                        onChange={(e) => updateBudgetTile(tile.tier, { image: e.target.value })}
-                        placeholder="Direct Image URL"
-                        className="w-full px-2.5 py-1 bg-white border border-[#D9CEBF] rounded text-[11px] text-[#736B63] focus:outline-none focus:border-[#721B29]"
-                      />
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1842,15 +1842,21 @@ export const HomepageSectionsManager: React.FC = () => {
               {(newSlide.targetDevice === 'all' || newSlide.targetDevice === 'desktop') && (
                 <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
                   <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
-                    🖥️ PC / Laptop Banner Image (Widescreen 16:9 / 1920x1080) *
+                    Desktop banner
                   </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://... (Desktop Banner URL)"
-                      value={newSlide.desktopImage}
-                      onChange={(e) => setNewSlide({ ...newSlide, desktopImage: e.target.value, image: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
+                  {newSlide.desktopImage ? (
+                    <img src={newSlide.desktopImage} alt="Desktop preview" className="w-full h-28 object-cover rounded border border-[#EAE4D9]" />
+                  ) : (
+                    <p className="text-[11px] text-[#8C8276]">Upload or pick from library.</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ImageKitUploader
+                      folder="/hero-slides"
+                      buttonText="Upload desktop banner"
+                      onUploadSuccess={(url) => {
+                        setNewSlide((prev) => ({ ...prev, desktopImage: url, image: url }));
+                        showToast('Desktop banner uploaded!');
+                      }}
                     />
                     <button
                       type="button"
@@ -1861,33 +1867,30 @@ export const HomepageSectionsManager: React.FC = () => {
                       className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                      <span>CDN</span>
+                      <span>Library</span>
                     </button>
                   </div>
-                  <ImageKitUploader
-                    folder="/hero-slides"
-                    buttonText="Upload Desktop Banner to ImageKit"
-                    onUploadSuccess={(url) => {
-                      setNewSlide((prev) => ({ ...prev, desktopImage: url, image: url }));
-                      showToast('Desktop Banner uploaded!');
-                    }}
-                  />
                 </div>
               )}
 
-              {/* 2. Mobile Banner (Shown if 'all' or 'mobile') */}
               {(newSlide.targetDevice === 'all' || newSlide.targetDevice === 'mobile') && (
                 <div className="p-3 bg-[#FAF8F3] rounded-lg border border-[#EAE4D9] space-y-2">
                   <label className="block font-bold uppercase text-[10px] text-[#4A453E]">
-                    📱 Mobile Phone Image (Vertical / Normal) *
+                    Mobile banner
                   </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://... (Mobile Banner URL)"
-                      value={newSlide.mobileImage}
-                      onChange={(e) => setNewSlide({ ...newSlide, mobileImage: e.target.value, image: newSlide.image || e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-[#D9CEBF] rounded text-xs font-mono"
+                  {newSlide.mobileImage ? (
+                    <img src={newSlide.mobileImage} alt="Mobile preview" className="w-full h-28 object-cover rounded border border-[#EAE4D9]" />
+                  ) : (
+                    <p className="text-[11px] text-[#8C8276]">Upload or pick from library.</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ImageKitUploader
+                      folder="/hero-slides"
+                      buttonText="Upload mobile banner"
+                      onUploadSuccess={(url) => {
+                        setNewSlide((prev) => ({ ...prev, mobileImage: url, image: prev.image || url }));
+                        showToast('Mobile banner uploaded!');
+                      }}
                     />
                     <button
                       type="button"
@@ -1898,17 +1901,9 @@ export const HomepageSectionsManager: React.FC = () => {
                       className="px-2.5 py-1.5 bg-white hover:bg-[#F3EFE6] text-[#721B29] border border-[#D9CEBF] text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <Folder className="w-3.5 h-3.5 text-[#721B29]" />
-                      <span>CDN</span>
+                      <span>Library</span>
                     </button>
                   </div>
-                  <ImageKitUploader
-                    folder="/hero-slides"
-                    buttonText="Upload Mobile Banner to ImageKit"
-                    onUploadSuccess={(url) => {
-                      setNewSlide((prev) => ({ ...prev, mobileImage: url, image: prev.image || url }));
-                      showToast('Mobile Banner uploaded!');
-                    }}
-                  />
                 </div>
               )}
 
@@ -2047,16 +2042,22 @@ export const HomepageSectionsManager: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Banner Background Photo URL
+              <div className="space-y-2">
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E]">
+                  Banner background photo
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={newBanner.imageUrl}
-                  onChange={(e) => setNewBanner({ ...newBanner, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                {newBanner.imageUrl ? (
+                  <img src={newBanner.imageUrl} alt="Banner preview" className="w-full h-28 object-cover rounded border border-[#EAE4D9]" />
+                ) : (
+                  <p className="text-[11px] text-[#8C8276]">Upload a photo for this banner section.</p>
+                )}
+                <ImageKitUploader
+                  folder="/banners"
+                  buttonText="Upload banner photo"
+                  onUploadSuccess={(url) => {
+                    setNewBanner((prev) => ({ ...prev, imageUrl: url }));
+                    showToast('Banner photo uploaded!');
+                  }}
                 />
               </div>
 
