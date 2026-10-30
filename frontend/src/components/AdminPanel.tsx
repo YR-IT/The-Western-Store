@@ -47,7 +47,6 @@ import {
   Archive,
   AlertTriangle,
   HardDrive,
-  RotateCcw,
   Star,
   ArrowUp,
   ArrowDown,
@@ -135,7 +134,6 @@ export const AdminPanel: React.FC = () => {
     updateCategory,
     deleteCategory,
     reorderCategories,
-    resetCategoriesToDefault,
     openOrderTracking,
     navigateToCategory,
     navigateToProduct,
@@ -535,11 +533,6 @@ export const AdminPanel: React.FC = () => {
     deleteCategory(id);
     setDeleteConfirmModal(null);
     showToast('Category removed from store navigation');
-  };
-
-  const handleResetCategories = () => {
-    resetCategoriesToDefault();
-    showToast('Reset categories to default Ethnic Wear & Western Wear');
   };
 
   const handleMoveCategoryUp = (index: number) => {
@@ -1520,16 +1513,6 @@ export const AdminPanel: React.FC = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={handleResetCategories}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#D9CEBF] text-[#242120] rounded-sm text-xs font-semibold hover:bg-[#FAF7F0] transition-colors cursor-pointer"
-                    title="Reset to default categories"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-[#736B63]" />
-                    <span>Reset Defaults</span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={handleOpenAddCategory}
                     className="flex items-center gap-1.5 px-4 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold hover:bg-[#852031] transition-all shadow-xs cursor-pointer"
                   >
@@ -1547,14 +1530,14 @@ export const AdminPanel: React.FC = () => {
                   </div>
                   <h3 className="font-serif font-bold text-base text-[#242120]">No categories defined</h3>
                   <p className="text-xs text-[#736B63] max-w-sm mx-auto">
-                    Add new categories or restore default store categories.
+                    Add a category to organize products in your store.
                   </p>
                   <button
                     type="button"
-                    onClick={handleResetCategories}
+                    onClick={handleOpenAddCategory}
                     className="px-4 py-2 bg-[#721B29] text-white rounded-sm text-xs font-semibold cursor-pointer"
                   >
-                    Restore Default Categories
+                    Add New Category
                   </button>
                 </div>
               ) : (
