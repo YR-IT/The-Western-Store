@@ -275,6 +275,64 @@ On PDP, when product was not found, the "Back to collections" button navigated t
 
 ---
 
+## Bug #016 — Prod Admin Login Fail (Stale Render JWT / Env)
+**Date:** October 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Production `/admin/login` rejected valid credentials or JWT checks failed after deploy.
+
+### Root Cause
+Render backend had stale/mismatched `JWT_SECRET` / admin env vs local expectations; free instance spin-down + old deploy.
+
+### Fix
+Redeploy Render service from `yr-it` repo; confirm `ADMIN_*` + `JWT_SECRET` on Render match intended values; verify `/api/health`.
+
+---
+
+## Bug #017 — ImageKit Uploads Broken / Wrong Account
+**Date:** October 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+Admin image uploads failed or assets went to the wrong ImageKit account.
+
+### Root Cause
+Env pointed at old ImageKit credentials; client-side auth upload path was fragile.
+
+### Fix
+- Switched keys to account **89dmpbgrm** (`IMAGEKIT_*` in `backend/.env` + Render)
+- Primary path: `POST /api/imagekit/upload` (base64 + private key on server)
+- Removed paste-image-URL fields from admin editors
+
+---
+
+## Bug #018 — Safari / macOS “Upload” Greyed Out
+**Date:** October 2026  
+**Status:** ✅ Fixed
+
+### Symptom
+ImageKit file picker Upload button disabled / greyed on Safari (macOS).
+
+### Root Cause
+Restrictive `accept="image/*"` and/or programmatic `.click()` on a hidden `<input type="file">`.
+
+### Fix
+`ImageKitUploader.tsx`: opacity-0 overlay / label-driven input; **no** image-only `accept`; avoid `.click()` patterns that Safari blocks.
+
+---
+
+## Bug #019 — Admin UX Clutter
+**Date:** October 2026  
+**Status:** ✅ Fixed
+
+### Changes
+- Simplified admin sidebar (Home / Orders / Products / Categories / Homepage / Filters)
+- Removed restore-categories / demo seed helpers from admin UI
+- Removed storefront navbar share button
+
+---
+
 ## ⚠️ Known Potential Issue — `tsx watch` + `.env`
 
 **Pattern:** Any time `backend/.env` is edited, the running server does NOT pick up changes automatically.
@@ -282,3 +340,5 @@ On PDP, when product was not found, the "Back to collections" button navigated t
 **Always do:** `touch backend/src/index.ts` after editing `.env`, then wait ~2 seconds for restart.
 
 **Verify:** `curl http://localhost:4000/api/health` and check the response JSON.
+
+**Prod equivalent:** After changing Render env vars, trigger a redeploy/restart or uploads/login stay broken.

@@ -190,9 +190,9 @@ export const Header: React.FC = () => {
             <button
               id="nav-contact"
               type="button"
-              onClick={() => { navigate('/contact'); setActiveDropdown(null); }}
+              onClick={() => { navigate('/contact-us'); setActiveDropdown(null); }}
               className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors rounded-md shrink-0 cursor-pointer ${
-                location.pathname === '/contact'
+                location.pathname === '/contact-us' || location.pathname === '/contact'
                   ? 'text-[#721B29] font-bold bg-[#F3EFE6]'
                   : 'text-[#242120] hover:text-[#721B29] hover:bg-[#F3EFE6]/70'
               }`}
@@ -625,7 +625,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      navigate('/contact');
+                      navigate('/contact-us');
                       setMobileMenuOpen(false);
                     }}
                     className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"

@@ -49,16 +49,16 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
   const handleTabChange = (tab: PolicyTab) => {
     switch (tab) {
       case 'returns':
-        navigate('/policies/refund-policy');
+        navigate('/refund-policy');
         break;
       case 'shipping':
-        navigate('/policies/shipping-policy');
+        navigate('/shipping-policy');
         break;
       case 'terms':
-        navigate('/policies/terms-and-conditions');
+        navigate('/terms-and-conditions');
         break;
       case 'privacy':
-        navigate('/policies/privacy-policy');
+        navigate('/privacy-policy');
         break;
     }
   };
@@ -66,8 +66,8 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
   const tabs: { id: PolicyTab; label: string; shortLabel: string; icon: React.ReactNode }[] = [
     {
       id: 'returns',
-      label: 'No Exchange & Return',
-      shortLabel: 'Exchange & Return',
+      label: 'Refund & Cancellation',
+      shortLabel: 'Refunds',
       icon: <ShieldAlert className="w-4 h-4" />,
     },
     {
@@ -96,26 +96,27 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
         return {
           title: 'Shipping & Delivery Policy',
           description: 'Read the official Pan-India shipping and dispatch guidelines for The Western Store Kurukshetra.',
-          canonical: '/policies/shipping-policy',
+          canonical: '/shipping-policy',
         };
       case 'terms':
         return {
           title: 'Terms & Conditions',
           description: 'Terms of service and user agreements for shopping at The Western Store Kurukshetra online boutique.',
-          canonical: '/policies/terms-and-conditions',
+          canonical: '/terms-and-conditions',
         };
       case 'privacy':
         return {
           title: 'Privacy Policy',
           description: 'How The Western Store protects and handles your personal information, data, and security.',
-          canonical: '/policies/privacy-policy',
+          canonical: '/privacy-policy',
         };
       case 'returns':
       default:
         return {
-          title: 'Return & Exchange Policy',
-          description: 'Guidelines for damage claims, parcel unboxing video requirements, and exchange terms at The Western Store.',
-          canonical: '/policies/refund-policy',
+          title: 'Refund & Cancellation Policy',
+          description:
+            'Refund, cancellation, and replacement guidelines for cancelled, undelivered, defective, or wrong items at The Western Store Kurukshetra.',
+          canonical: '/refund-policy',
         };
     }
   };
@@ -156,7 +157,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
             transition={{ duration: 0.45, delay: 0.08 }}
             className="font-serif text-3xl sm:text-5xl font-bold text-[#241C1D] tracking-tight mb-3"
           >
-            {activeTab === 'returns' && 'Return & Exchange Policy'}
+            {activeTab === 'returns' && 'Refund & Cancellation Policy'}
             {activeTab === 'shipping' && 'Shipping & Delivery Policy'}
             {activeTab === 'terms' && 'Terms & Conditions'}
             {activeTab === 'privacy' && 'Privacy Policy'}
@@ -200,7 +201,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
 
       {/* Main Content Area */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14">
-        {/* TAB 1: NO EXCHANGE & RETURN */}
+        {/* TAB 1: REFUND & CANCELLATION */}
         {activeTab === 'returns' && (
           <motion.div
             key="tab-returns"
@@ -209,78 +210,89 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
             transition={{ duration: 0.35 }}
             className="space-y-8"
           >
-            {/* Top Priority Highlight: Defect Claims Exception */}
-            <div className="rounded-2xl border-2 border-[#B8860B]/40 bg-[#FFFDF5] p-6 sm:p-7 shadow-sm">
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-full bg-[#B8860B]/15 border border-[#B8860B]/30 flex items-center justify-center shrink-0 mt-0.5">
-                  <Video className="w-5 h-5 text-[#8A5A00]" />
-                </div>
-                <div className="space-y-3 flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="font-serif text-lg sm:text-xl font-bold text-[#422D0A]">
-                      Defect Claims & Transit Issues
-                    </h2>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#8A5A00] bg-[#B8860B]/15 px-2.5 py-0.5 rounded-full border border-[#B8860B]/30">
-                      Mandatory Video Proof
-                    </span>
-                  </div>
-
-                  <p className="text-xs sm:text-sm text-[#5C451D] leading-relaxed">
-                    If you receive a defective item, a <strong>valid unboxing video is mandatory</strong> to raise a claim. The video must clearly show the package being opened for the first time, without cuts, pauses, or edits.
-                  </p>
-
-                  <div className="bg-white/80 rounded-xl p-4 border border-[#E8DCC4] space-y-2 text-xs text-[#5C451D]">
-                    <div className="flex items-center gap-2 font-semibold text-[#422D0A]">
-                      <CheckCircle2 className="w-4 h-4 text-[#8A5A00] shrink-0" />
-                      <span>How to submit a defect claim:</span>
-                    </div>
-                    <ul className="list-disc list-inside space-y-1 pl-1 text-[12px] text-[#6E5429]">
-                      <li>Record the video continuously from the outer courier seal opening.</li>
-                      <li>Raise your claim within <strong>24 to 48 hours</strong> of delivery.</li>
-                      <li>
-                        Share the unedited video and your Order Number directly on WhatsApp at{' '}
-                        <a
-                          href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20would%20like%20to%20raise%20a%20defect%20claim%20with%20my%20unboxing%20video.`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-bold text-[#721B29] underline hover:text-[#52131D]"
-                        >
-                          +91 {STORE_INFO.phone}
-                        </a>
-                        .
-                      </li>
-                    </ul>
-                  </div>
-
-                  <p className="text-[11px] font-semibold text-[#8A5A00] bg-[#FAF3E0] p-2.5 rounded-lg border border-[#ECDDB8]">
-                    ⚠️ Returns for defects will NOT be accepted without a proper, uncut unboxing video.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Core Return & Exchange Policy */}
             <div className="bg-white rounded-2xl border border-[#EAE4D9] p-6 sm:p-8 shadow-sm space-y-6">
               <div className="border-b border-[#EAE4D9] pb-4">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-[#721B29]">
-                  Standard Policy
+                  Official Policy
                 </span>
                 <h2 className="font-serif text-2xl font-bold text-[#242120] mt-1">
-                  Return & Exchange Policy
+                  Refund &amp; Cancellation Policy
                 </h2>
+                <p className="text-xs sm:text-sm text-[#736B63] mt-2 leading-relaxed">
+                  This page explains when you can cancel an order, when you are eligible for a refund or replacement,
+                  and how long a refund takes. It applies to all online orders paid through our website payment gateway.
+                </p>
               </div>
 
-              {/* Policy clauses */}
               <div className="space-y-4 text-xs sm:text-sm text-[#4A453E] leading-relaxed">
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9]">
-                  <AlertTriangle className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
+                  <Clock className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-[#242120] block font-semibold mb-1">1. Order cancellation</strong>
+                    <ul className="list-disc list-inside space-y-1 mt-1">
+                      <li>
+                        You may request cancellation <strong>before the order is dispatched</strong> by contacting us
+                        via phone, email, WhatsApp, or our{' '}
+                        <button type="button" onClick={() => navigate('/contact-us')} className="font-semibold text-[#721B29] underline">
+                          Contact Us
+                        </button>{' '}
+                        page with your order number.
+                      </li>
+                      <li>
+                        If payment was successful and we cancel before dispatch (or cannot fulfil the order), we will
+                        issue a <strong>full refund</strong> to the original payment method within{' '}
+                        <strong>5–7 business days</strong> after approval.
+                      </li>
+                      <li>
+                        Once an order has been handed to the courier / marked shipped, it cannot normally be cancelled.
+                        Please see undelivered and defective-item sections below.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9]">
+                  <Truck className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-[#242120] block font-semibold mb-1">2. Undelivered or lost shipments</strong>
+                    <p>
+                      If a paid order is marked delivered by the courier but you did not receive it, or the shipment is
+                      confirmed lost in transit, contact us within <strong>7 days</strong> of the expected / marked
+                      delivery date. After verification with the courier, we will arrange either a{' '}
+                      <strong>replacement</strong> (subject to stock) or a <strong>full refund</strong> to the original
+                      payment method within <strong>5–7 business days</strong> of confirmation.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9]">
+                  <CheckCircle2 className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-[#242120] block font-semibold mb-1">
-                      All orders are final:
+                      3. Defective, damaged, or wrong items — refunds &amp; replacements
                     </strong>
-                    <span>
-                      Once placed and confirmed, orders cannot be cancelled, returned, or exchanged. No refunds and no exchanges will be issued.
-                    </span>
+                    <p className="mb-2">
+                      If you receive a product that is <strong>confirmed defective</strong>, damaged in transit, or{' '}
+                      <strong>wrong</strong> (incorrect item / size / colour vs your order), you are eligible for a{' '}
+                      <strong>replacement</strong> (subject to availability) or a <strong>full refund</strong> of the
+                      item price (and applicable shipping, if charged) to your original payment method.
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>
+                        Please report the issue preferably within <strong>48 hours</strong> of delivery (and no later
+                        than <strong>7 days</strong>) so we can investigate promptly.
+                      </li>
+                      <li>
+                        An unedited unboxing video (showing the sealed package opening through to the product){' '}
+                        <strong>helps us verify claims faster</strong>. It is strongly recommended but not the only way
+                        to raise a claim — we will also review clear photos, order details, and courier feedback.
+                      </li>
+                      <li>
+                        Once we confirm the defect or error, approved refunds are processed within{' '}
+                        <strong>5–7 business days</strong> to the original payment method. Bank / card timelines may add
+                        a few extra days beyond that.
+                      </li>
+                    </ul>
                   </div>
                 </div>
 
@@ -288,34 +300,108 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                   <Package className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-[#242120] block font-semibold mb-1">
-                      Rigorous Pre-Dispatch Quality Checks:
+                      4. Change of mind, fit preference &amp; exchanges
                     </strong>
-                    <span>
-                      Every item is thoroughly inspected for fabric defects, stitching, and finishing, and carefully packaged by our dedicated quality assurance team before dispatch. We ensure there are zero defects in our articles when they leave our store.
-                    </span>
+                    <p>
+                      Because many garments are curated boutique pieces with limited stock, we generally{' '}
+                      <strong>do not offer returns or exchanges for change of mind, preference, or fit</strong> once a
+                      correctly described, undamaged item has been delivered. Please use our size guide and contact our
+                      team before ordering if you need sizing help. This does <strong>not</strong> limit your rights for
+                      defective, damaged, wrong, cancelled, or undelivered orders described above.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9]">
-                  <Ruler className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-[#242120] block font-semibold mb-1">
-                      Accurate Sizing Recommendation:
-                    </strong>
-                    <span>
-                      Please check your suit size carefully before placing your order. Refer to our size guide and size tutorial video for accurate measurements to ensure a perfect fit.
-                    </span>
+                    <strong className="text-[#242120] block font-semibold mb-1">5. How refunds are paid</strong>
+                    <ul className="list-disc list-inside space-y-1 mt-1">
+                      <li>Refunds are issued only to the <strong>original payment method</strong> used at checkout.</li>
+                      <li>
+                        After we approve a refund, expect <strong>5–7 business days</strong> for the amount to reflect
+                        (payment gateway / bank processing may take longer in some cases).
+                      </li>
+                      <li>You will receive confirmation on your registered phone / email when a refund is initiated.</li>
+                    </ul>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Sizing CTA Bar */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[#721B29]/5 border border-[#721B29]/20">
+            <div className="rounded-2xl border border-[#B8860B]/40 bg-[#FFFDF5] p-6 sm:p-7 shadow-sm">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-full bg-[#B8860B]/15 border border-[#B8860B]/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <Video className="w-5 h-5 text-[#8A5A00]" />
+                </div>
+                <div className="space-y-3 flex-1">
+                  <h2 className="font-serif text-lg sm:text-xl font-bold text-[#422D0A]">
+                    How to raise a refund or replacement request
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[#5C451D] leading-relaxed">
+                    Contact us with your <strong>order number</strong>, a short description of the issue, and (if
+                    available) photos or an unboxing video. You can reach us through any of these channels:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-[#6E5429]">
+                    <li>
+                      Phone:{' '}
+                      <a href={`tel:+91${STORE_INFO.phone}`} className="font-bold text-[#721B29] underline">
+                        {STORE_INFO.phoneFormatted}
+                      </a>
+                    </li>
+                    <li>
+                      Email:{' '}
+                      <a href={`mailto:${STORE_INFO.email}`} className="font-bold text-[#721B29] underline">
+                        {STORE_INFO.email}
+                      </a>
+                    </li>
+                    <li>
+                      WhatsApp:{' '}
+                      <a
+                        href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=${encodeURIComponent(
+                          'Hi The Western Store, I need help with a refund / replacement for my order.'
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#721B29] underline"
+                      >
+                        +91 {STORE_INFO.phone}
+                      </a>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/contact-us')}
+                        className="font-bold text-[#721B29] underline"
+                      >
+                        Contact Us form
+                      </button>{' '}
+                      on the website
+                    </li>
+                  </ul>
+                  <p className="text-[11px] text-[#6E5429] bg-[#FAF3E0] p-2.5 rounded-lg border border-[#ECDDB8]">
+                    We aim to acknowledge refund / defect requests within 48 hours on business days and resolve confirmed
+                    cases as quickly as possible under this policy.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#EAE4D9] p-6 sm:p-8 shadow-sm space-y-4">
+              <div className="flex items-start gap-3">
+                <Ruler className="w-5 h-5 text-[#721B29] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-[#242120] block font-semibold mb-1 text-sm">Sizing tip</strong>
+                  <p className="text-xs sm:text-sm text-[#4A453E] leading-relaxed">
+                    Please check your size carefully before ordering. Refer to our size guide for bust, waist, and
+                    length measurements. Our team can help you choose the right fit before you pay.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[#721B29]/5 border border-[#721B29]/20">
                 <div className="text-center sm:text-left">
                   <p className="text-xs font-bold text-[#242120]">Need help finding your exact size?</p>
-                  <p className="text-[11px] text-[#736B63]">
-                    Our stylists assist with bust, waist, and length measurements.
-                  </p>
+                  <p className="text-[11px] text-[#736B63]">Ask before you order — we are happy to guide you.</p>
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
                   <button
@@ -325,14 +411,13 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                   >
                     View Size Guide
                   </button>
-                  <a
-                    href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20need%20help%20with%20sizing%20measurements.`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => navigate('/contact-us')}
                     className="px-4 py-2 bg-[#721B29] hover:bg-[#52131D] text-white rounded-lg text-xs font-bold transition-all shadow-sm"
                   >
-                    Ask on WhatsApp
-                  </a>
+                    Contact Us
+                  </button>
                 </div>
               </div>
             </div>
@@ -556,7 +641,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                 <h3 className="font-serif text-base font-bold text-[#242120]">
                   Section 5 – Products or Services
                 </h3>
-                <p>Certain products or services may be available exclusively online through the website. These products or services may have limited quantities and are subject to return or exchange only according to our Return Policy.</p>
+                <p>Certain products or services may be available exclusively online through the website. These products or services may have limited quantities and are subject to cancellation, refund, or replacement only according to our Refund &amp; Cancellation Policy.</p>
                 <p>We have made every effort to display as accurately as possible the colours and images of our products that appear at the store. We cannot guarantee that your computer monitor's display of any color will be accurate.</p>
                 <p>We reserve the right to limit the sales of our products or Services to any person, geographic region or jurisdiction. All descriptions of products or product pricing are subject to change at any time without notice, at the sole discretion of us. We reserve the right to discontinue any product at any time. Any offer for any product or service made on this site is void where prohibited.</p>
                 <p>We do not warrant that the quality of any products, services, information, or other material purchased or obtained by you will meet your expectations, or that any errors in the Service will be corrected.</p>
@@ -568,7 +653,13 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                 </h3>
                 <p>We reserve the right to refuse any order you place with us. We may, in our sole discretion, limit or cancel quantities purchased per person, per household or per order. In the event that we make a change to or cancel an order, we may attempt to notify you by contacting the e-mail and/or billing address/phone number provided at the time the order was made.</p>
                 <p>You agree to provide current, complete and accurate purchase and account information for all purchases made at our store. You agree to promptly update your account and other information so that we can complete your transactions and contact you as needed.</p>
-                <p>For more detail, please review our Returns Policy.</p>
+                <p>
+                  For more detail, please review our{' '}
+                  <button type="button" onClick={() => navigate('/refund-policy')} className="font-semibold text-[#721B29] underline">
+                    Refund &amp; Cancellation Policy
+                  </button>
+                  .
+                </p>
               </section>
 
               <section className="space-y-2">
@@ -781,7 +872,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                 <div className="p-3 rounded-lg bg-[#FAF8F3] border border-[#EAE4D9] text-xs space-y-1">
                   <p>
                     <strong>Officer:</strong>{' '}
-                    {STORE_INFO.grievanceOfficer || 'To be designated by the store owner (update STORE_INFO.grievanceOfficer)'}
+                    {STORE_INFO.grievanceOfficer || `Customer Support — ${STORE_INFO.name}`}
                   </p>
                   <p>
                     <strong>Email:</strong>{' '}
@@ -794,6 +885,16 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
                         {STORE_INFO.email}
                       </a>
                     )}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong>{' '}
+                    <a href={`tel:+91${STORE_INFO.phone}`} className="text-[#721B29] font-semibold underline">
+                      {STORE_INFO.phoneFormatted}
+                    </a>
+                  </p>
+                  <p>
+                    <strong>Address:</strong>{' '}
+                    {STORE_INFO.address}, {STORE_INFO.city}, {STORE_INFO.state} — {STORE_INFO.pincode}
                   </p>
                   <p>
                     <strong>Legal name / GSTIN:</strong>{' '}
@@ -849,7 +950,7 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ initialTab = 'returns' }
           <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => navigate('/contact')}
+              onClick={() => navigate('/contact-us')}
               className="flex-1 sm:flex-initial px-4 py-2.5 bg-white border border-[#D9CEBF] text-[#242120] hover:bg-[#FAF8F3] text-xs font-semibold rounded-xl transition"
             >
               Contact Us

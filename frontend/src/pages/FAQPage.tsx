@@ -34,12 +34,16 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: 'What is your return / exchange policy?',
+    q: 'What is your refund / cancellation policy?',
     a: (
       <>
-        Most styles are final sale once dispatched. Damaged or incorrect items may be eligible when reported promptly with an unboxing video. Full details:{' '}
-        <Link to="/policies/refund-policy" className="text-[#721B29] font-semibold underline">
-          Refund Policy
+        You can cancel before dispatch for a full refund. Confirmed defective, damaged, wrong, or undelivered items are eligible for replacement or refund (usually within 5–7 business days after approval). Change-of-mind returns are generally not offered. Full details:{' '}
+        <Link to="/refund-policy" className="text-[#721B29] font-semibold underline">
+          Refund &amp; Cancellation Policy
+        </Link>
+        . Contact us anytime via{' '}
+        <Link to="/contact-us" className="text-[#721B29] font-semibold underline">
+          Contact Us
         </Link>
         .
       </>

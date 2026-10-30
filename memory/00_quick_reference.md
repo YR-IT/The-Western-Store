@@ -23,9 +23,22 @@ touch backend/src/index.ts
 
 | | Value |
 |-|-------|
-| URL | `http://localhost:5173/admin/login` |
+| Local | `http://localhost:5173/admin/login` |
+| Prod | `https://www.thewesternstore.in/admin/login` |
 | Email | `admin@thewesternstore.com` |
 | Password | `admin123` |
+
+---
+
+## 🌐 Production
+
+| | URL |
+|-|-----|
+| Storefront | `https://www.thewesternstore.in` |
+| Backend | `https://the-western-store.onrender.com` |
+| ImageKit | `https://ik.imagekit.io/89dmpbgrm` |
+
+Git remotes: `origin` (thewesternstore), `western` (adityanaulakha), `yr-it` (YR-IT — Render deploy source).
 
 ---
 
@@ -33,7 +46,8 @@ touch backend/src/index.ts
 
 ```bash
 curl http://localhost:4000/api/health
-# Good response: { "status": "ok", "jwt": { "configured": true }, "supabase": { "configured": true } }
+# or: curl https://the-western-store.onrender.com/api/health
+# Good: { "status": "ok", "jwt": { "configured": true }, "supabase": { "configured": true }, "imagekit": { ... } }
 ```
 
 ---
@@ -55,11 +69,11 @@ curl http://localhost:4000/api/health
 
 ## 🌐 Third-Party Services
 
-| Service | Dashboard URL |
-|---------|--------------|
-| Supabase | https://supabase.com/dashboard |
-| ImageKit | https://imagekit.io/dashboard |
-| Razorpay | https://dashboard.razorpay.com |
+| Service | Dashboard URL | Notes |
+|---------|--------------|-------|
+| Supabase | https://supabase.com/dashboard | Project `ghdrlqzcdmysnpmlkeju` |
+| ImageKit | https://imagekit.io/dashboard | Account `89dmpbgrm`; uploads via `POST /api/imagekit/upload` |
+| Razorpay | https://dashboard.razorpay.com | Keys often unset → sandbox mode |
 
 ---
 

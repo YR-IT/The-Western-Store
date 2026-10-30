@@ -224,7 +224,7 @@ export const CheckoutPage: React.FC = () => {
     setErrorMessage('');
 
     if (!agreedToPolicies) {
-      setErrorMessage('Please accept the store policies and Final Sale terms to continue.');
+      setErrorMessage('Please accept the Refund & Cancellation Policy and Terms & Conditions to continue.');
       return;
     }
 
@@ -487,13 +487,14 @@ export const CheckoutPage: React.FC = () => {
                 />
                 <span className="text-[#5C544B] leading-relaxed">
                   I acknowledge and accept the{' '}
-                  <Link to="/policies/refund-policy" target="_blank" className="font-bold text-[#721B29] underline">
-                    No Exchange & No Return Policy (Final Sale)
+                  <Link to="/refund-policy" target="_blank" className="font-bold text-[#721B29] underline">
+                    Refund &amp; Cancellation Policy
                   </Link>{' '}
                   and agree to the{' '}
-                  <Link to="/policies/terms" target="_blank" className="font-bold text-[#721B29] underline">
-                    Terms & Conditions
-                  </Link>.
+                  <Link to="/terms-and-conditions" target="_blank" className="font-bold text-[#721B29] underline">
+                    Terms &amp; Conditions
+                  </Link>
+                  .
                 </span>
               </label>
             </div>

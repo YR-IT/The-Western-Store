@@ -17,7 +17,7 @@ There are **two completely separate auth systems** in this project:
 1. Admin visits `/admin/login` → `AdminLoginPage.tsx`
 2. Submits email + password form
 3. `loginAsAdmin(email, password)` in `StoreContext` is called
-4. POST to `http://localhost:4000/api/admin/login`
+4. POST to `${VITE_BACKEND_URL}/api/admin/login` (local default `http://localhost:4000`)
 5. Backend validates against `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars using `crypto.timingSafeEqual`
 6. On success: backend returns `{ success: true, token: "JWT...", user: { id, name, email, role: 'admin' } }`
 7. Frontend stores token in `sessionStorage` as `tws_admin_token`

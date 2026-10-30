@@ -55,10 +55,11 @@
 | **Icons** | Lucide React |
 | **Backend** | Node.js + Express + TypeScript (`tsx watch`) |
 | **Auth (Customer)** | Supabase Auth (Google OAuth + email/password) |
-| **Auth (Admin)** | Custom JWT (RS256 via `jsonwebtoken`) |
-| **Database** | Supabase (PostgreSQL) |
-| **Image CDN** | ImageKit.io |
-| **Payments** | Razorpay (integration in progress / sandbox mode) |
+| **Auth (Admin)** | Custom JWT (HS256 via `jsonwebtoken`) |
+| **Database** | Supabase (PostgreSQL) — `ghdrlqzcdmysnpmlkeju` |
+| **Image CDN** | ImageKit.io (`89dmpbgrm`; server upload via `/api/imagekit/upload`) |
+| **Payments** | Razorpay (code live; keys/KYC often pending → sandbox mode) |
+| **Hosting** | Frontend Vercel (`thewesternstore.in`); backend Render |
 | **Rate Limiting** | `express-rate-limit` |
 | **Security** | `helmet` middleware, CORS allowlist |
 
@@ -74,4 +75,4 @@ cd frontend && npm run dev
 cd backend && npm run dev
 ```
 
-Frontend accesses backend at: `http://localhost:4000` (configurable via `VITE_BACKEND_URL`)
+Local backend: `http://localhost:4000`. Production: `VITE_BACKEND_URL=https://the-western-store.onrender.com`.

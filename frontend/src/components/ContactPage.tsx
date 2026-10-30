@@ -51,9 +51,9 @@ export const ContactPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
       <SEOHead
-        title="Contact Us & Visit Boutique"
-        description="Visit The Western Store boutique at Railway Road & Mohan Nagar Kurukshetra or reach our stylists on WhatsApp."
-        canonical="/contact"
+        title="Contact Us"
+        description={`Contact The Western Store Kurukshetra — address, phone ${STORE_INFO.phoneFormatted}, email ${STORE_INFO.email}, and boutique visit details.`}
+        canonical="/contact-us"
       />
       {/* Hero Banner */}
       <div className="relative bg-gradient-to-b from-[#F6F0E6] via-[#EFE5D5] to-[#FDFBF7] border-b border-[#E3D6C5] overflow-hidden">
@@ -101,7 +101,7 @@ export const ContactPage: React.FC = () => {
         >
           <h2 className="font-serif text-2xl font-bold text-[#242120] mb-1">Send us a message</h2>
           <p className="text-xs text-[#736B63] mb-7">
-            Fill the form below and we'll send it directly to our WhatsApp for the fastest reply.
+            Submit the form below and we will follow up by phone, email, or WhatsApp. You can also reach us directly using the business contact details on this page.
           </p>
 
           {submitted ? (
@@ -112,9 +112,13 @@ export const ContactPage: React.FC = () => {
             >
               <CheckCircle className="w-12 h-12 text-[#721B29]" strokeWidth={1.5} />
               <div>
-                <p className="font-bold text-[#242120] text-lg">Message sent!</p>
+                <p className="font-bold text-[#242120] text-lg">Message received!</p>
                 <p className="text-xs text-[#736B63] mt-1">
-                  Your message was opened in WhatsApp. We'll reply shortly. 🙏
+                  We saved your enquiry and opened a WhatsApp draft for faster follow-up. You can also email us at{' '}
+                  <a href={`mailto:${STORE_INFO.email}`} className="font-semibold text-[#721B29] underline">
+                    {STORE_INFO.email}
+                  </a>{' '}
+                  or call {STORE_INFO.phoneFormatted}.
                 </p>
               </div>
               <button
@@ -191,7 +195,7 @@ export const ContactPage: React.FC = () => {
                   <option>Product Enquiry</option>
                   <option>Bulk / Wholesale Order</option>
                   <option>Order Status / Tracking</option>
-                  <option>Return / Exchange</option>
+                  <option>Refund / Cancellation / Defect Claim</option>
                   <option>Custom Stitching</option>
                   <option>Other</option>
                 </select>
@@ -230,12 +234,12 @@ export const ContactPage: React.FC = () => {
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Send via WhatsApp
+                    Send message
                   </>
                 )}
               </button>
               <p className="text-[11px] text-[#A3998C] text-center">
-                Clicking "Send" will open WhatsApp with your message pre-filled.
+                We also open WhatsApp with your message pre-filled so you can send it instantly if you prefer.
               </p>
             </form>
           )}
@@ -248,9 +252,56 @@ export const ContactPage: React.FC = () => {
           transition={{ duration: 0.55, delay: 0.25 }}
           className="space-y-6"
         >
-          {/* Quick Contact */}
+          {/* Business contact — Razorpay / consumer-facing essentials */}
           <div className="rounded-2xl border border-[#EAE4D9] bg-white p-6 shadow-sm space-y-4">
-            <h3 className="font-serif text-lg font-bold text-[#242120] mb-3">Quick Contact</h3>
+            <h3 className="font-serif text-lg font-bold text-[#242120] mb-1">Business contact details</h3>
+            <p className="text-[11px] text-[#736B63] mb-2">
+              Registered boutique contact for orders, refunds, cancellations, and customer support.
+            </p>
+
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9]">
+              <span className="w-9 h-9 rounded-full bg-[#721B29]/10 flex items-center justify-center shrink-0 mt-0.5">
+                <MapPin className="w-4 h-4 text-[#721B29]" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-[#242120]">Business address</p>
+                <p className="text-xs text-[#736B63] leading-relaxed mt-0.5">
+                  {STORE_INFO.name}
+                  <br />
+                  {STORE_INFO.address}
+                  <br />
+                  {STORE_INFO.city}, {STORE_INFO.state} — {STORE_INFO.pincode}
+                  <br />
+                  {STORE_INFO.country}
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={`tel:+91${STORE_INFO.phone}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9] hover:bg-[#F3EEE4] transition"
+            >
+              <span className="w-9 h-9 rounded-full bg-[#721B29]/10 flex items-center justify-center shrink-0">
+                <Phone className="w-4 h-4 text-[#721B29]" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-[#242120]">Phone</p>
+                <p className="text-xs text-[#736B63]">{STORE_INFO.phoneFormatted}</p>
+              </div>
+            </a>
+
+            <a
+              href={`mailto:${STORE_INFO.email}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-[#FAF8F3] border border-[#EAE4D9] hover:bg-[#F3EEE4] transition"
+            >
+              <span className="w-9 h-9 rounded-full bg-[#721B29]/10 flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4 text-[#721B29]" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-[#242120]">Email</p>
+                <p className="text-xs text-[#736B63]">{STORE_INFO.email}</p>
+              </div>
+            </a>
 
             <a
               href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
@@ -262,8 +313,8 @@ export const ContactPage: React.FC = () => {
                 <MessageCircle className="w-4 h-4 text-white fill-white" />
               </span>
               <div>
-                <p className="text-xs font-bold text-emerald-800">WhatsApp</p>
-                <p className="text-xs text-emerald-600">{STORE_INFO.whatsappNumber}</p>
+                <p className="text-xs font-bold text-emerald-800">WhatsApp (optional)</p>
+                <p className="text-xs text-emerald-600">{STORE_INFO.phoneFormatted}</p>
               </div>
             </a>
 
@@ -287,8 +338,8 @@ export const ContactPage: React.FC = () => {
                 <Clock className="w-4 h-4 text-[#721B29]" />
               </span>
               <div>
-                <p className="text-xs font-bold text-[#242120]">Store Hours</p>
-                <p className="text-xs text-[#736B63]">Mon – Sun · 10:00 AM – 8:30 PM</p>
+                <p className="text-xs font-bold text-[#242120]">Store hours</p>
+                <p className="text-xs text-[#736B63]">{STORE_INFO.operatingHours}</p>
               </div>
             </div>
           </div>

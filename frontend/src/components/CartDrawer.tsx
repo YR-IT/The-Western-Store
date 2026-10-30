@@ -226,7 +226,7 @@ export const CartDrawer: React.FC = () => {
 
                   <div className="pt-2 border-t border-[#EAE4D9] space-y-1.5 text-[10px] text-[#8C8276]">
                     <div className="flex items-center justify-center gap-1.5 text-[#8C2220] font-semibold">
-                      <span>⚠️ Final Sale: Strict No Exchange & No Return Policy</span>
+                      <span>Refunds available for defective / wrong / undelivered items — see Refund Policy</span>
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />

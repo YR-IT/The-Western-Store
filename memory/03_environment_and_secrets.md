@@ -1,6 +1,6 @@
 # 03 — Environment Variables & Secrets
 
-> ⚠️ **NEVER commit this file or the `.env` file to git.** The `.gitignore` excludes `.env`.
+> ⚠️ **NEVER commit real production secrets carelessly.** Prefer mirroring values from `backend/.env` locally; keep Render/Vercel dashboards as source of truth for prod.
 
 ---
 
@@ -8,19 +8,19 @@
 
 | Variable | Value / Status | Notes |
 |----------|---------------|-------|
-| `PORT` | `4000` | Express server port |
+| `PORT` | `4000` | Express server port (Render also sets `PORT`) |
 | `ADMIN_EMAIL` | `admin@thewesternstore.com` | Admin login email |
-| `ADMIN_PASSWORD` | `admin123` | Admin login password — **change before production** |
+| `ADMIN_PASSWORD` | `admin123` | Admin login password — **change before hard launch** |
 | `ADMIN_SECRET` | `westernstore_admin_2026` | Legacy secret (kept for compatibility) |
-| `JWT_SECRET` | `tws_jwt_super_secret_2026_western_store_secure_key` | Signs admin JWT tokens (12h expiry) — **must be strong in prod** |
-| `FRONTEND_URL` | `http://localhost:3000` | CORS allowlist entry for production URL |
-| `IMAGEKIT_PRIVATE_KEY` | `private_7xyIsY7IQdFAl+ggCJD/Luu9rDk=` | ImageKit server-side upload auth |
-| `IMAGEKIT_PUBLIC_KEY` | `public_K6Mwc5OpDWUwOwpLt1E1Biulzfw=` | ImageKit public identifier |
-| `IMAGEKIT_URL_ENDPOINT` | `https://ik.imagekit.io/kndawzmos` | Base URL for all ImageKit images |
-| `SUPABASE_URL` | `https://tgvqrxnyrougiidkdwkg.supabase.co` | Supabase project URL |
-| `SUPABASE_KEY` | (anon key — see .env) | Supabase anon/public key |
-| `RAZORPAY_KEY_ID` | ⚠️ **Not set** | Razorpay live key — KYC not yet completed |
-| `RAZORPAY_KEY_SECRET` | ⚠️ **Not set** | Razorpay secret — KYC not yet completed |
+| `JWT_SECRET` | `tws_jwt_super_secret_2026_western_store_secure_key` | Signs admin JWT tokens (12h expiry) |
+| `FRONTEND_URL` | `http://localhost:3000` locally | Prod CORS also allowlists `thewesternstore.in` + Vercel previews |
+| `IMAGEKIT_PRIVATE_KEY` | `private_Zg4KcBf6/Y1qlE/UL1Q9nkLVEeI=` | ImageKit account **89dmpbgrm** |
+| `IMAGEKIT_PUBLIC_KEY` | `public_T/sj0t3BMoUZCztm+VThmtygX8s=` | Must match private key account |
+| `IMAGEKIT_URL_ENDPOINT` | `https://ik.imagekit.io/89dmpbgrm` | CDN base URL |
+| `SUPABASE_URL` | `https://ghdrlqzcdmysnpmlkeju.supabase.co` | Active Supabase project |
+| `SUPABASE_KEY` | (service role / key in `.env`) | Backend catalog + orders |
+| `RAZORPAY_KEY_ID` | ⚠️ **Not set on Render** | Sandbox notification mode until set |
+| `RAZORPAY_KEY_SECRET` | ⚠️ **Not set on Render** | Same |
 
 ### ⚠️ Important: `tsx watch` & `.env` Changes
 `tsx watch` only watches `.ts` files. If you edit `.env`, the server **will NOT auto-restart**.  
@@ -28,47 +28,55 @@
 
 ---
 
-## 🔧 Frontend — `frontend/.env` (if exists) / Vite env
+## 🔧 Frontend — Vite env
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `VITE_BACKEND_URL` | `http://localhost:4000` (default) | Override to point to production backend |
+| `VITE_BACKEND_URL` | Prod: `https://the-western-store.onrender.com` | Baked at build time on Vercel |
+| `VITE_SUPABASE_URL` | Same Supabase project | Customer auth + public catalog reads |
+| `VITE_SUPABASE_ANON_KEY` | Anon key | Public client |
 
-If `VITE_BACKEND_URL` is not set, the frontend defaults to `http://localhost:4000`.
+Local default if unset: `http://localhost:4000` for backend (ImageKit uploader also falls back to Render URL off-localhost).
 
 ---
 
 ## 🔑 Third-Party Services
 
-### ImageKit.io
-- **Endpoint:** `https://ik.imagekit.io/kndawzmos`
-- **Usage:** All product images, hero banners, category images are uploaded to and served from ImageKit
-- **Auth flow:** Frontend requests a signed token from `/api/imagekit/auth`, then uploads directly
-- **Transforms used:** Width + quality params for responsive images
+### ImageKit.io (account id `89dmpbgrm`)
+- **Endpoint:** `https://ik.imagekit.io/89dmpbgrm`
+- **Usage:** Product photos, hero banners, budget cards, promo banners
+- **Upload flow (current):** Admin JWT → `POST /api/imagekit/upload` (base64) → backend uploads with private key → returns CDN URL
+- **Also available:** `GET /api/imagekit/auth` (legacy client-side signature) and media library list/delete
+- **UI:** No paste-image-URL fields — upload + media library only
+- **Safari note:** File input must not use restrictive `accept` / programmatic `click()` or macOS greys out Upload
 
 ### Supabase
-- **Project URL:** `https://tgvqrxnyrougiidkdwkg.supabase.co`
-- **Auth:** Google OAuth + email/password (for customers only)
-- **Database:** PostgreSQL — tables for products, categories, orders, hero slides, etc.
-- **Storage:** Not used — images go through ImageKit
+- **Project URL:** `https://ghdrlqzcdmysnpmlkeju.supabase.co`
+- **Auth:** Google OAuth + email/password (customers)
+- **Database:** products, categories, orders, store_settings, etc.
+- **Images:** Stored as ImageKit URLs in DB (not Supabase Storage)
 
 ### Razorpay
-- **Status:** 🟡 Integration code exists, sandbox mode only
-- **KYC Status:** ⚠️ Not completed — owner needs to submit:
-  - Business website (for verification)
-  - Legal business name
-  - GSTIN
-  - Bank account details
-- **Behavior without keys:** Backend runs in "sandbox notification mode" — no real payments processed
-- **Note:** Owner can submit website for KYC verification first, then fill remaining details later
+- **Status:** 🟡 Code present; keys often unset → sandbox notification mode
+- **KYC:** Owner action still required for live payments
 
 ---
 
 ## 🔐 CORS Allowlist (Backend)
 
-Requests are allowed from:
-- `FRONTEND_URL` env var
-- `http://localhost:3000`
-- `http://localhost:5173`
+Allowed origins include:
+- `FRONTEND_URL`
+- `http://localhost:3000` / `5173` / `4173`
+- `https://www.thewesternstore.in` / `https://thewesternstore.in`
+- `*.vercel.app` previews
+- `trust proxy` enabled for Render / Cloudflare `X-Forwarded-For`
 
-Add production domain to `FRONTEND_URL` in `.env` when deploying.
+---
+
+## ☁️ Production hosts
+
+| Layer | Host |
+|-------|------|
+| Frontend | `https://www.thewesternstore.in` (Vercel) |
+| Backend | `https://the-western-store.onrender.com` (Render, repo `YR-IT/The-Western-Store`, `rootDir: backend/`) |
+| Remotes | `origin` (thewesternstore), `western` (adityanaulakha), `yr-it` (YR-IT — Render auto-deploy source) |

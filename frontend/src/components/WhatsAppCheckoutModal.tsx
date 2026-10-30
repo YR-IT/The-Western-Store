@@ -341,7 +341,7 @@ export const WhatsAppCheckoutModal: React.FC = () => {
 
               {/* Policy Notice */}
               <div className="p-2.5 rounded-lg bg-amber-50/90 border border-amber-200 text-[#8C3E00] text-[11px] font-medium flex items-center gap-2">
-                <span>⚠️ Note: All garments are sold under a strict <strong>No Exchange & No Return Policy</strong>.</span>
+                <span>Note: See our <strong>Refund &amp; Cancellation Policy</strong> for cancellations, defective/wrong items, and refund timelines.</span>
               </div>
 
               <button

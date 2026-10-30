@@ -637,7 +637,7 @@ export const ProductDetailPage: React.FC = () => {
                     >
                       <span className="flex items-center gap-1.5 text-[#721B29]">
                         <ShieldAlert className="w-4 h-4" />
-                        <span>No Return & No Exchange Policy</span>
+                        <span>Refund &amp; Cancellation Policy</span>
                       </span>
                       <motion.span animate={{ rotate: accordionOpen.returnPolicy ? 180 : 0 }} transition={{ duration: 0.25 }}>
                         <ChevronDown className="w-4 h-4" />
@@ -654,23 +654,23 @@ export const ProductDetailPage: React.FC = () => {
                           style={{ overflow: 'hidden' }}
                         >
                           <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed text-[11px]">
-                            <div className="p-2.5 bg-amber-50/80 border border-amber-200 text-[#8C3E00] rounded font-medium">
-                              ⚠️ <strong>Final Sale:</strong> We follow a strict <strong>No Exchange and No Return Policy</strong> for all ordered garments.
+                            <div className="p-2.5 bg-[#FAF8F3] border border-[#EAE4D9] text-[#4A453E] rounded font-medium">
+                              Refunds and replacements apply for cancelled (pre-dispatch), undelivered, defective, damaged, or wrong items as described in our policy. Change-of-mind returns are generally not offered on correctly delivered garments.
                             </div>
                             {product.customReturnPolicy ? (
                               <p className="whitespace-pre-line">• {product.customReturnPolicy}</p>
                             ) : (
                               <>
-                                <p>• Please double-check your sizing using our size guide or message our store stylist on WhatsApp before confirming your order.</p>
-                                <p>• Every piece undergoes a rigorous quality check at our store prior to dispatch to ensure pristine craftsmanship.</p>
+                                <p>• Please double-check sizing using our size guide or contact us before ordering.</p>
+                                <p>• Every piece is quality-checked before dispatch from our Kurukshetra boutique.</p>
                               </>
                             )}
                             <button
                               type="button"
-                              onClick={() => navigate('/policies/refund-policy')}
+                              onClick={() => navigate('/refund-policy')}
                               className="text-[11px] font-bold text-[#721B29] underline hover:text-[#52131D] inline-flex items-center gap-1 pt-1"
                             >
-                              <span>Read Full Defect Claims & Store Policies →</span>
+                              <span>Read Refund &amp; Cancellation Policy →</span>
                             </button>
                           </div>
                         </motion.div>
@@ -1051,10 +1051,9 @@ export const ProductDetailPage: React.FC = () => {
                       <Truck className="w-4 h-4 text-[#721B29] flex-shrink-0" />
                       <span>Pan-India Courier & Worldwide Shipping Available</span>
                     </div>
-                    {/* No Exchange & No Return Notice */}
                     <div className="flex items-center gap-2 text-[#721B29] font-semibold bg-[#721B29]/10 p-2 rounded-md border border-[#721B29]/20">
                       <AlertTriangle className="w-4 h-4 text-[#721B29] flex-shrink-0" />
-                      <span>No Exchange and No Return Policy</span>
+                      <span>Refunds for defective / wrong / undelivered items</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-800 flex-shrink-0" />
@@ -1108,7 +1107,7 @@ export const ProductDetailPage: React.FC = () => {
                       >
                         <span className="flex items-center gap-1.5 text-[#721B29]">
                           <ShieldAlert className="w-4 h-4" />
-                          <span>No Return & No Exchange Policy</span>
+                          <span>Refund &amp; Cancellation Policy</span>
                         </span>
                         <motion.span animate={{ rotate: accordionOpen.returnPolicy ? 180 : 0 }} transition={{ duration: 0.25 }}>
                           <ChevronDown className="w-4 h-4" />
@@ -1125,23 +1124,23 @@ export const ProductDetailPage: React.FC = () => {
                             style={{ overflow: 'hidden' }}
                           >
                             <div className="pb-4 text-[#5C544B] space-y-2 leading-relaxed text-[11px]">
-                              <div className="p-2.5 bg-amber-50/80 border border-amber-200 text-[#8C3E00] rounded font-medium">
-                                ⚠️ <strong>Final Sale:</strong> We follow a strict <strong>No Exchange and No Return Policy</strong> for all ordered garments.
+                              <div className="p-2.5 bg-[#FAF8F3] border border-[#EAE4D9] text-[#4A453E] rounded font-medium">
+                                Refunds and replacements apply for cancelled (pre-dispatch), undelivered, defective, damaged, or wrong items as described in our policy. Change-of-mind returns are generally not offered on correctly delivered garments.
                               </div>
                               {product.customReturnPolicy ? (
                                 <p className="whitespace-pre-line">• {product.customReturnPolicy}</p>
                               ) : (
                                 <>
-                                  <p>• Please double-check your sizing using our size guide or message our store stylist on WhatsApp before confirming your order.</p>
-                                  <p>• Every piece undergoes a rigorous quality check at our store prior to dispatch to ensure pristine craftsmanship.</p>
+                                  <p>• Please double-check sizing using our size guide or contact us before ordering.</p>
+                                  <p>• Every piece is quality-checked before dispatch from our Kurukshetra boutique.</p>
                                 </>
                               )}
                               <button
                                 type="button"
-                                onClick={() => navigate('/policies/refund-policy')}
+                                onClick={() => navigate('/refund-policy')}
                                 className="text-[11px] font-bold text-[#721B29] underline hover:text-[#52131D] inline-flex items-center gap-1 pt-1"
                               >
-                                <span>Read Full Defect Claims & Store Policies →</span>
+                                <span>Read Refund &amp; Cancellation Policy →</span>
                               </button>
                             </div>
                           </motion.div>

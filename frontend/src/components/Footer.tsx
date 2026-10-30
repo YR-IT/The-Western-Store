@@ -80,13 +80,17 @@ export const Footer: React.FC = () => {
 
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#E6C280] flex-shrink-0" />
+                <a href={`tel:+91${STORE_INFO.phone}`} className="hover:text-[#E6C280] transition-colors">
+                  Phone: {STORE_INFO.phoneFormatted}
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2.5 pl-6">
                 <a
-                  href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-[#E6C280] transition-colors"
+                  href={`mailto:${STORE_INFO.email}`}
+                  className="hover:text-[#E6C280] transition-colors text-xs"
                 >
-                  WhatsApp: +91 {STORE_INFO.phone}
+                  Email: {STORE_INFO.email}
                 </a>
               </div>
 
@@ -175,38 +179,47 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
               <li>
                 <Link
-                  to="/policies/refund-policy"
+                  to="/refund-policy"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Refund & Cancellation Policy</span>
+                  <span>Refund &amp; Cancellation Policy</span>
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/policies/shipping-policy"
+                  to="/shipping-policy"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Shipping & Delivery Policy</span>
+                  <span>Shipping &amp; Delivery Policy</span>
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/policies/terms-and-conditions"
+                  to="/terms-and-conditions"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Terms & Conditions</span>
+                  <span>Terms &amp; Conditions</span>
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/policies/privacy-policy"
+                  to="/privacy-policy"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
                   <span>Privacy Policy</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact-us"
+                  className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
+                >
+                  <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
+                  <span>Contact Us</span>
                 </Link>
               </li>
             </ul>
@@ -247,11 +260,11 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  to="/contact"
+                  to="/contact-us"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Contact Us & Grievance Redressal</span>
+                  <span>Contact Us &amp; Grievance Redressal</span>
                 </Link>
               </li>
               <li>

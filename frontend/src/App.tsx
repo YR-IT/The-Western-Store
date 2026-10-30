@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { StoreProvider } from './context/StoreContext';
 import { useStore } from './context/StoreContext';
 import { AnnouncementBar } from './components/AnnouncementBar';
@@ -128,12 +128,19 @@ const AppLayout: React.FC = () => {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/size-guide" element={<SizeGuidePage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/policies/refund-policy" element={<PolicyPage initialTab="returns" />} />
-          <Route path="/policies/shipping-policy" element={<PolicyPage initialTab="shipping" />} />
-          <Route path="/policies/terms-and-conditions" element={<PolicyPage initialTab="terms" />} />
-          <Route path="/policies/terms" element={<PolicyPage initialTab="terms" />} />
-          <Route path="/policies/privacy-policy" element={<PolicyPage initialTab="privacy" />} />
+          {/* Razorpay / compliance: dedicated top-level policy & contact URLs */}
+          <Route path="/refund-policy" element={<PolicyPage initialTab="returns" />} />
+          <Route path="/shipping-policy" element={<PolicyPage initialTab="shipping" />} />
+          <Route path="/terms-and-conditions" element={<PolicyPage initialTab="terms" />} />
+          <Route path="/privacy-policy" element={<PolicyPage initialTab="privacy" />} />
+          <Route path="/contact-us" element={<ContactPage />} />
+          {/* Legacy aliases → canonical paths */}
+          <Route path="/contact" element={<Navigate to="/contact-us" replace />} />
+          <Route path="/policies/refund-policy" element={<Navigate to="/refund-policy" replace />} />
+          <Route path="/policies/shipping-policy" element={<Navigate to="/shipping-policy" replace />} />
+          <Route path="/policies/terms-and-conditions" element={<Navigate to="/terms-and-conditions" replace />} />
+          <Route path="/policies/terms" element={<Navigate to="/terms-and-conditions" replace />} />
+          <Route path="/policies/privacy-policy" element={<Navigate to="/privacy-policy" replace />} />
           <Route path="/policies/:policyType" element={<PolicyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

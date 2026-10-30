@@ -4,9 +4,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Project URL** | `https://tgvqrxnyrougiidkdwkg.supabase.co` |
-| **Anon Key** | In `backend/.env` as `SUPABASE_KEY` |
-| **Service Role Key** | Commented out in `.env` (not in active use) |
+| **Project URL** | `https://ghdrlqzcdmysnpmlkeju.supabase.co` |
+| **Backend key** | `SUPABASE_KEY` in `backend/.env` (service-capable key for admin/catalog) |
+| **Frontend** | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` |
 | **Auth Providers** | Google OAuth, Email/Password |
 
 ---

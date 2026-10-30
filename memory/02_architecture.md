@@ -186,4 +186,7 @@ src/
 | `POST` | `/api/payments/verify` | Rate limited (30/15min) | Verify HMAC signature, save order & decrement stock |
 | `POST` | `/api/razorpay/create-order` | None | Alias endpoint |
 | `POST` | `/api/razorpay/verify-payment` | None | Alias endpoint |
-| `POST` | `/api/imagekit/auth` | None | ImageKit upload auth |
+| `GET` | `/api/imagekit/auth` | `requireAdmin` | Legacy ImageKit client-side auth params |
+| `POST` | `/api/imagekit/upload` | `requireAdmin` | **Primary** upload (base64 → ImageKit SDK → CDN URL) |
+| `GET` | `/api/imagekit/files` | `requireAdmin` | Media library list |
+| `DELETE` | `/api/imagekit/files/:fileId` | `requireAdmin` | Delete ImageKit asset |

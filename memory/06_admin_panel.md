@@ -2,37 +2,40 @@
 
 ## Overview
 
-`AdminPanel.tsx` is the full CMS for managing the store. It's lazy-loaded at `/admin/*` and protected by both `AdminRoute` (JWT check) and an internal `isAdmin` guard.
+`AdminPanel.tsx` is the CMS for managing the store. Lazy-loaded at `/admin/*`, protected by `AdminRoute` (JWT) and an internal `isAdmin` guard.
 
-**Access URL:** `http://localhost:5173/admin/login`
+**Local:** `http://localhost:5173/admin/login`  
+**Prod:** `https://www.thewesternstore.in/admin/login`
 
 ---
 
-## 🗂️ Admin Panel Tabs
+## 🗂️ Admin Panel Tabs (simplified)
+
+Primary sidebar (store-owner focused):
 
 | Tab | Purpose |
 |-----|---------|
-| **Dashboard** | Overview stats — total orders, revenue, product count |
-| **Orders** | View all orders, update status, add tracking info, delete |
-| **Products** | Add / edit / delete products, manage images via ImageKit |
+| **Home** | Overview stats — orders, revenue, product count |
+| **Orders** | View orders, update status, tracking, delete |
+| **Products** | Add / edit / delete products; images via ImageKit |
 | **Categories** | Add / edit / delete / reorder categories |
-| **Hero Banners** | Manage hero carousel slides (desktop + mobile images) |
-| **Home Sections** | Reorder/enable/disable homepage sections |
-| **Testimonials** | Manage customer testimonials |
-| **Instagram** | Manage Instagram feed posts |
-| **Budget Tiles** | Edit Shop By Budget section tiles |
-| **Trust Strip** | Edit trust feature icons & text |
-| **Filters** | Manage PLP filters (fabrics, occasions, sizes, colors) |
-| **Settings** | Store info, announcement bar, store hours |
+| **Homepage** | Hero banners, home sections, budget tiles, trust, Instagram, testimonials (grouped) |
+| **Filters** | PLP filters (fabrics, occasions, sizes, colors) |
+
+Settings / store info remain reachable from Homepage or Settings flows as implemented in the panel.
+
+**Removed / simplified (Oct 2026):**
+- No “restore categories” / demo-seed helpers in the admin UI
+- No paste-image-URL fields — upload + media library only
+- Storefront header share button removed (not admin-specific)
 
 ---
 
 ## 🧭 Admin Navigation
 
-- **Back to Storefront** button → `navigate('/')` (top-left of admin bar)
-- **Logout** button → calls `logout()` → clears token → redirects to `/`
-- Admin panel has its **own top bar** (dark `#1C1717` background)
-- Public `Header` and `Footer` are **hidden** on all `/admin/*` routes (checked via `location.pathname.startsWith('/admin')` in `App.tsx`)
+- **Storefront** → `navigate('/')` (top-left of admin bar)
+- **Logout** → clears token → redirects
+- Own dark top bar (`#1C1717`); public Header/Footer hidden on `/admin/*`
 
 ---
 
@@ -45,37 +48,41 @@ Paid (Online via Razorpay) → Confirmed → Shipped → Delivered
                                          Cancelled (at any stage)
 ```
 
-### Tracking Fields (filled when status = Shipped)
-- Courier Name
-- Tracking Number
-- Tracking Link (auto-generated for Delhivery if only tracking number provided, or custom carrier link)
-- Shipped Date
-- Estimated Delivery
-- Tracking Notes
+### Tracking Fields (when status = Shipped)
+- Courier Name, Tracking Number, Tracking Link, Shipped Date, Estimated Delivery, Tracking Notes
 
 ### Orders API
-- `GET /api/admin/orders` — fetches from Supabase with JWT auth
-- `PUT /api/admin/orders/:id` — updates status and tracking info, records timestamped status history entry
-- `PUT /api/admin/orders/:id/status` — updates status field
-- `PUT /api/admin/orders/:id/tracking` — updates tracking fields
-- `DELETE /api/admin/orders/:id` — hard deletes the order
+- `GET /api/admin/orders` — JWT
+- `PUT /api/admin/orders/:id` — status + tracking + history
+- `PUT /api/admin/orders/:id/status`
+- `PUT /api/admin/orders/:id/tracking`
+- `DELETE /api/admin/orders/:id`
 
-### Catalog Management (Products & Categories)
-- **Supabase Service-Role Proxy:** Frontend client admin operations route through Express backend endpoints (`POST/PUT/DELETE /api/admin/products`, `POST/PUT/DELETE /api/admin/categories`) with `requireAdmin` JWT verification. This executes mutations via backend `service_role` Supabase client, avoiding client-side Row-Level Security (RLS) permission rejections.
+### Catalog (Products & Categories)
+Mutations go through Express (`POST/PUT/DELETE /api/admin/products|categories`) with `requireAdmin` + Supabase **service_role** (bypasses anon RLS).
 
 ### Admin Order Polling
 StoreContext polls `/api/admin/orders` every **25 seconds** when admin is logged in.
 
 ---
 
-## 🖼️ Image Upload Flow (ImageKit)
+## 🖼️ Image Upload Flow (ImageKit) — current
 
-1. Admin selects image in product/hero editor
-2. Frontend calls `/api/imagekit/auth` on backend
-3. Backend generates signed upload token using `IMAGEKIT_PRIVATE_KEY`
-4. Frontend uploads directly to ImageKit using the signed token
-5. ImageKit returns the `url` of the uploaded file
-6. URL is stored in Supabase
+1. Admin picks a file in `ImageKitUploader` (product / hero / homepage editors)
+2. Frontend reads file → base64 → `POST /api/imagekit/upload` with `Authorization: Bearer <admin JWT>`
+3. Backend uses ImageKit Node SDK + `IMAGEKIT_PRIVATE_KEY` → uploads → returns CDN `url`
+4. URL is stored on the entity in Supabase
+
+**Also available (admin JWT):**
+- `GET /api/imagekit/auth` — legacy client-side signature params
+- `GET /api/imagekit/files` — media library list
+- `DELETE /api/imagekit/files/:fileId` — delete asset
+
+**Account:** `https://ik.imagekit.io/89dmpbgrm` (keys in `backend/.env` + Render env)
+
+**Safari / macOS:** Do **not** use restrictive `accept="image/*"` or programmatic `.click()` on a hidden input — Upload becomes greyed out. Use a visible label / opacity-0 overlay input without image-only accept.
+
+**UI rule:** No “paste image URL” fields anywhere in admin.
 
 ---
 
@@ -83,13 +90,8 @@ StoreContext polls `/api/admin/orders` every **25 seconds** when admin is logged
 
 ```
 Route: /admin/*
-  └── AdminRoute.tsx         → checks: sessionStorage.tws_admin_token exists
-        └── AdminPanel.tsx   → checks: currentUser?.isAdmin === true
-              └── (shows panel)
+  └── AdminRoute.tsx         → sessionStorage.tws_admin_token / adminToken
+        └── AdminPanel.tsx   → currentUser?.isAdmin === true
 ```
 
-If **either** fails:
-- `AdminRoute` fails → redirects to `/admin/login`
-- `AdminPanel` fails → shows "Admin Access Required" message inline
-
-**Both must be satisfied** for the panel to render.
+Both must pass or login / “Admin Access Required” is shown.

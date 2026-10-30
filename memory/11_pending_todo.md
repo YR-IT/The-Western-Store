@@ -2,47 +2,46 @@
 
 ## 🔴 Critical / Blocking
 
-- [ ] **Razorpay KYC** — Complete KYC verification to enable live payments
-  - Submit website URL first (can be done now)
-  - Provide legal business name, GSTIN, bank details, PAN
-- [ ] **Legal Business Name** — Needed in `STORE_INFO.legalName` in `mockData.ts`
-- [ ] **GSTIN** — Needed in `STORE_INFO.gstin` (or confirm unregistered)
-- [ ] **Grievance Officer** — Required under Consumer Protection Rules 2020:
-  - Name → `STORE_INFO.grievanceOfficer`
-  - Email → `STORE_INFO.grievanceEmail`
+- [ ] **Razorpay KYC** — Complete KYC for live payments (website URL, legal name, GSTIN, bank, PAN)
+- [ ] **Legal Business Name** — `STORE_INFO.legalName` in `mockData.ts`
+- [ ] **GSTIN** — `STORE_INFO.gstin` (or confirm unregistered)
+- [ ] **Grievance Officer** — Consumer Protection Rules 2020 (`grievanceOfficer` / `grievanceEmail`)
+- [ ] **Prod catalog content** — Ensure products/heroes exist in live Supabase (empty catalog = data/sync, not upload bug)
 
 ---
 
 ## 🟡 Important / Soon
 
-- [ ] **Add actual products** to Supabase via Admin Panel
-- [ ] **Upload hero banner images** for desktop (16:9) and mobile (9:16) via Admin Panel
-- [ ] **Set category images** for all categories
-- [ ] **Configure home sections** — enable/disable and order in Admin Panel
-- [ ] **Update `FRONTEND_URL`** in `backend/.env` to actual production domain before deploy
-- [ ] **Change `ADMIN_PASSWORD`** from `admin123` before going live
-- [ ] **Change `JWT_SECRET`** to a long random string before production
+- [ ] **Add / sync products** via Admin Panel on production
+- [ ] **Hero banners** desktop 16:9 + mobile 9:16
+- [ ] **Category images** for all categories
+- [ ] **Homepage sections** enable/order in Admin → Homepage
+- [ ] **Change `ADMIN_PASSWORD`** from `admin123` before hard launch
+- [ ] **Rotate `JWT_SECRET`** to a long random string (then redeploy Render)
+- [x] **Production frontend + backend live** — Vercel + Render (`thewesternstore.in` / `the-western-store.onrender.com`)
+- [x] **ImageKit account `89dmpbgrm`** + server upload path
+- [x] **Admin panel simplified** (no URL paste, no restore-categories, no navbar share)
 
 ---
 
 ## 🟢 Nice to Have / Future
 
-- [x] **Razorpay Exclusive Checkout** — completely switched from WhatsApp checkout to direct Razorpay online payment
-- [x] **Admin RLS Proxy** — added backend service_role endpoints for catalog mutations
-- [x] **Guest Cart Merge** — implemented non-destructive cart merging on login
-- [x] **Live Inventory Decrement** — automated stock count decrement post-payment
-- [x] **PLP Search & Filter Wiring** — connected `?q=`, `?budget=`, "In Stock Only", Rating and Discount sort
-- [ ] **Order Email Notifications** — send confirmation emails via Nodemailer or Resend
-- [ ] **WhatsApp Business API** — automated order notifications via official API
-- [ ] **Google Merchant Center** — product feed for Google Shopping
-- [ ] **Instagram Shopping** — tag products in Instagram posts
-- [ ] **Analytics** — add Google Analytics 4 or Plausible
-- [ ] **Push Notifications** — PWA push for order updates
-- [ ] **Supabase Realtime** — replace 25-second polling with live order updates in Admin Panel
-- [ ] **Product Reviews** — allow customers to submit reviews post-delivery
-- [ ] **Size Guide** — upload size chart image per category
-- [ ] **Coupon/Discount Codes** — promo code system at checkout
-- [ ] **Multi-location Inventory** — if store expands to second location
+- [x] **Razorpay Exclusive Checkout** — WhatsApp checkout removed
+- [x] **Admin RLS Proxy** — service_role catalog mutations
+- [x] **Guest Cart Merge**
+- [x] **Live Inventory Decrement**
+- [x] **PLP Search & Filter Wiring**
+- [ ] **Order Email Notifications** — Nodemailer / Resend
+- [ ] **WhatsApp Business API** — order notifications
+- [ ] **Google Merchant Center**
+- [ ] **Instagram Shopping**
+- [ ] **Analytics** — GA4 or Plausible
+- [ ] **Push Notifications** — PWA
+- [ ] **Supabase Realtime** — replace 25s admin order polling
+- [ ] **Product Reviews**
+- [ ] **Size Guide**
+- [ ] **Coupon/Discount Codes**
+- [ ] **Multi-location Inventory**
 
 ---
 
@@ -50,25 +49,24 @@
 
 | Item | Where Used |
 |------|-----------|
-| Legal business name | `STORE_INFO.legalName`, Policy pages, Razorpay KYC |
-| GSTIN | `STORE_INFO.gstin`, Policy pages, Razorpay KYC |
-| Grievance Officer name | `STORE_INFO.grievanceOfficer`, Privacy Policy |
-| Grievance Officer email | `STORE_INFO.grievanceEmail`, Privacy Policy |
-| Bank account details | Razorpay KYC |
-| PAN card | Razorpay KYC |
-| Product catalog with images | Admin Panel → Products |
-| Hero banner images (desktop + mobile) | Admin Panel → Hero Banners |
-| Category images | Admin Panel → Categories |
+| Legal business name | `STORE_INFO.legalName`, policies, Razorpay KYC |
+| GSTIN | `STORE_INFO.gstin`, policies, Razorpay KYC |
+| Grievance Officer name/email | Privacy Policy |
+| Bank + PAN | Razorpay KYC |
+| Product catalog with images | Admin → Products (ImageKit upload) |
+| Hero banner images | Admin → Homepage / Hero |
+| Category images | Admin → Categories |
 
 ---
 
-## 🐛 Potential Future Issues to Watch
+## 🐛 Watch List
 
-- **Supabase RLS** — Double-check that guest orders (null `user_id`) can be created but not publicly read
-- **ImageKit Storage Limits** — Monitor usage as product images grow
-- **Admin JWT Expiry** — Token expires in 12 hours; admin will need to re-login daily
-- **Rate Limiter Reset** — If backend restarts, all rate limit counters reset (in-memory)
-- **tsx watch `.env` blindspot** — Always `touch src/index.ts` after editing `.env`
+- **Supabase RLS** — guest orders (`user_id` null) create OK, not publicly readable
+- **ImageKit limits** — account `89dmpbgrm`
+- **Admin JWT** — 12h expiry
+- **Render cold starts** — free tier ~15 min idle spin-down
+- **tsx watch / Render env** — restart after `.env` changes
+- **Safari uploads** — keep ImageKit input without restrictive `accept` / `.click()`
 
 ---
 
@@ -76,14 +74,7 @@
 
 | Date | Milestone |
 |------|-----------|
-| Oct 9, 2026 | Routing refactored from single-page view state to React Router |
-| Oct 9, 2026 | Admin JWT auth fully working |
-| Oct 9, 2026 | Mobile hero carousel aspect ratio fixed |
-| Oct 9, 2026 | Memory folder created |
-| Oct 13, 2026 | Removed WhatsApp order redirection; converted exclusively to Razorpay payments |
-| Oct 13, 2026 | Restricted PDP buttons to Buy Now and Add to Bag only |
-| Oct 13, 2026 | Built backend admin catalog API proxy (service_role RLS bypass) |
-| Oct 13, 2026 | Fixed wishlist table schema, guest cart merge, stock decrementing, and PLP search/filters |
-| TBD | Products added to catalog |
-| TBD | Razorpay KYC completed |
-| TBD | Production deployment |
+| Oct 9, 2026 | React Router + admin JWT + hero aspect fix; memory folder created |
+| Oct 13, 2026 | Razorpay-only checkout; admin catalog proxy; cart/stock/PLP fixes |
+| Oct 2026 | Prod Vercel + Render; ImageKit `89dmpbgrm` server upload; Safari upload fix; admin UX simplify |
+| TBD | Full catalog on prod; Razorpay KYC; harden secrets |
