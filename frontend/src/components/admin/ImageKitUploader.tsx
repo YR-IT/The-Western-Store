@@ -1,4 +1,4 @@
-import React, { useState, useRef, useId } from 'react';
+import React, { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { compressAndResizeImage } from '../../utils/imageUtils';
 
@@ -19,6 +19,11 @@ const BACKEND_URL =
     ? 'http://localhost:4000'
     : 'https://the-western-store.onrender.com');
 
+/** Explicit extensions — macOS Chrome often greys out Upload for camera JPGs when only `image/*` is set. */
+const IMAGE_ACCEPT =
+  'image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,.JPG,.JPEG,.PNG,.WEBP,.GIF,.HEIC,.HEIF';
+const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.MP4,.WEBM,.MOV';
+
 async function fileToBase64(file: File): Promise<string> {
   // FileReader avoids spreading large typed arrays into String.fromCharCode,
   // which throws "Maximum call stack size exceeded" on real camera photos.
@@ -38,6 +43,16 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function isLikelyImage(file: File): boolean {
+  if (file.type.startsWith('image/')) return true;
+  return /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || '');
+}
+
+function isLikelyVideo(file: File): boolean {
+  if (file.type.startsWith('video/')) return true;
+  return /\.(mp4|webm|mov|m4v)$/i.test(file.name || '');
+}
+
 export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   onUploadSuccess,
   onSuccess,
@@ -52,9 +67,17 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const uniqueInputId = useId();
 
-  const resolvedAccept = accept || (folder.includes('video') ? 'video/*' : 'image/*');
+  const isVideoFolder = folder.includes('video');
+  const resolvedAccept = accept || (isVideoFolder ? VIDEO_ACCEPT : IMAGE_ACCEPT);
+
+  const openPicker = () => {
+    if (isUploading) return;
+    setErrorMsg(null);
+    // Reset value so picking the same file again still fires onChange
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
@@ -66,9 +89,18 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
     setProgress(10);
 
     try {
+      if (isVideoFolder) {
+        if (!isLikelyVideo(rawFile)) {
+          throw new Error('Please choose a video file (MP4, WebM, or MOV).');
+        }
+      } else if (!isLikelyImage(rawFile)) {
+        throw new Error('Please choose an image file (JPG, PNG, WEBP, or HEIC).');
+      }
+
       let file = rawFile;
-      if (rawFile.type.startsWith('image/')) {
-        file = await compressAndResizeImage(rawFile, 2560, 2560, 0.92);
+      if (isLikelyImage(rawFile)) {
+        // Compress large camera files (e.g. 15MB JPG) before upload
+        file = await compressAndResizeImage(rawFile, 2560, 2560, 0.88);
       }
       setProgress(35);
 
@@ -80,7 +112,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       const fileBase64 = await fileToBase64(file);
       setProgress(55);
 
-      // Upload through the backend so ImageKit private-key signing stays server-side.
       const uploadRes = await fetch(`${BACKEND_URL}/api/imagekit/upload`, {
         method: 'POST',
         headers: {
@@ -89,7 +120,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         },
         body: JSON.stringify({
           fileBase64,
-          fileName: file.name || rawFile.name || 'upload.jpg',
+          fileName: file.name || rawFile.name || (isVideoFolder ? 'upload.mp4' : 'upload.jpg'),
           folder,
           tags,
         }),
@@ -118,8 +149,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       if (typeof callback === 'function') {
         callback(finalUrl);
       }
-
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
       console.error('[ImageKit Uploader]', err);
       setErrorMsg(
@@ -128,6 +157,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       );
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(() => {
         setSuccessMsg(null);
         setProgress(0);
@@ -142,17 +172,19 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         type="file"
         accept={resolvedAccept}
         onChange={handleFileChange}
-        className="hidden"
-        id={uniqueInputId}
-        disabled={isUploading}
+        className="sr-only"
+        tabIndex={-1}
+        // Keep enabled so macOS file dialog can confirm selection; we block via button instead
       />
 
       <div className="flex items-center gap-3">
-        <label
-          htmlFor={uniqueInputId}
+        <button
+          type="button"
+          onClick={openPicker}
+          disabled={isUploading}
           className={`px-3.5 py-2 rounded-sm text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${
             isUploading
-              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF] cursor-not-allowed pointer-events-none'
+              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF] cursor-not-allowed'
               : 'bg-[#721B29] text-white hover:bg-[#852031] border-[#721B29] shadow-xs cursor-pointer'
           }`}
         >
@@ -167,7 +199,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
               <span>{buttonText}</span>
             </>
           )}
-        </label>
+        </button>
       </div>
 
       {isUploading && (
@@ -190,7 +222,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
         <div className="flex items-start gap-1.5 text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded-sm text-[11px]">
           <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">ImageKit Upload Note:</p>
+            <p className="font-semibold">Upload failed</p>
             <p>{errorMsg}</p>
           </div>
         </div>

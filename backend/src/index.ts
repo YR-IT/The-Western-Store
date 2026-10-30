@@ -131,7 +131,7 @@ app.use((req, res, next) => {
   if (req.originalUrl === '/api/payments/webhook') {
     express.raw({ type: 'application/json' })(req, res, next);
   } else if (req.originalUrl === '/api/imagekit/upload') {
-    express.json({ limit: '15mb' })(req, res, next);
+    express.json({ limit: '25mb' })(req, res, next);
   } else {
     express.json({ limit: '5mb' })(req, res, next);
   }
@@ -1307,9 +1307,9 @@ app.post('/api/imagekit/upload', requireAdmin, async (req, res) => {
       res.status(400).json({ error: 'Invalid file data. Could not decode base64 payload.' });
       return;
     }
-    // Guard against oversized payloads (compressed catalogue photos should stay well under this)
-    if (buffer.length > 12 * 1024 * 1024) {
-      res.status(413).json({ error: 'Image is too large. Please use a photo under 12 MB.' });
+    // Guard against oversized payloads (client compresses first; allow headroom for rare large files)
+    if (buffer.length > 20 * 1024 * 1024) {
+      res.status(413).json({ error: 'File is too large. Please use a photo under 20 MB (or a shorter video).' });
       return;
     }
 
