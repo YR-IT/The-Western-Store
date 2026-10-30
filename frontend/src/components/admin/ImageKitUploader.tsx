@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { compressAndResizeImage } from '../../utils/imageUtils';
 
@@ -9,6 +9,7 @@ interface ImageKitUploaderProps {
   tags?: string[];
   buttonText?: string;
   className?: string;
+  /** Ignored for images — Safari greys out Upload when accept filters are set. */
   accept?: string;
 }
 
@@ -20,8 +21,6 @@ const BACKEND_URL =
     : 'https://the-western-store.onrender.com');
 
 async function fileToBase64(file: File): Promise<string> {
-  // FileReader avoids spreading large typed arrays into String.fromCharCode,
-  // which throws "Maximum call stack size exceeded" on real camera photos.
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -55,30 +54,21 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
   tags,
   buttonText = 'Upload Image to ImageKit CDN',
   className = '',
-  accept,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Safari breaks label↔input pairing when IDs contain ":". Strip them.
+  const inputId = `ik-upload-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   const isVideoFolder = folder.includes('video');
-  // Do NOT set accept for images — macOS Chrome/Safari greys out the native Upload
-  // button for many camera JPGs when accept filters are present (even image/* / .jpg).
-  // Validate the chosen file in JS instead. Videos keep a light filter when requested.
-  const resolvedAccept = accept || (isVideoFolder ? 'video/*,.mp4,.webm,.mov,.MP4,.WEBM,.MOV' : undefined);
-
-  const openPicker = () => {
-    if (isUploading) return;
-    setErrorMsg(null);
-    // Reset value so picking the same file again still fires onChange
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    fileInputRef.current?.click();
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawFile = e.target.files?.[0];
+    // Always clear so the same file can be re-selected later
+    e.target.value = '';
     if (!rawFile) return;
 
     setErrorMsg(null);
@@ -97,7 +87,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
 
       let file = rawFile;
       if (isLikelyImage(rawFile)) {
-        // Compress large camera files (e.g. 15MB JPG) before upload
         file = await compressAndResizeImage(rawFile, 2560, 2560, 0.88);
       }
       setProgress(35);
@@ -155,7 +144,6 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
       );
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
       setTimeout(() => {
         setSuccessMsg(null);
         setProgress(0);
@@ -165,24 +153,28 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        {...(resolvedAccept ? { accept: resolvedAccept } : {})}
-        onChange={handleFileChange}
-        className="sr-only"
-        tabIndex={-1}
-      />
-
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={openPicker}
+      <div className="relative inline-flex">
+        {/*
+          Safari: do NOT use input.click() and do NOT use display:none.
+          A real <label htmlFor> + opacity-0 input is the reliable activation path.
+          No accept= on images — Safari greys out the dialog Upload button otherwise.
+        */}
+        <input
+          ref={fileInputRef}
+          id={inputId}
+          type="file"
+          onChange={handleFileChange}
           disabled={isUploading}
-          className={`px-3.5 py-2 rounded-sm text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${
+          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+          style={{ fontSize: 0 }}
+          aria-label={buttonText}
+        />
+        <label
+          htmlFor={inputId}
+          className={`pointer-events-none px-3.5 py-2 rounded-sm text-xs font-semibold flex items-center justify-center gap-2 transition-all border ${
             isUploading
-              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF] cursor-not-allowed'
-              : 'bg-[#721B29] text-white hover:bg-[#852031] border-[#721B29] shadow-xs cursor-pointer'
+              ? 'bg-[#EAE4D9] text-[#736B63] border-[#D9CEBF]'
+              : 'bg-[#721B29] text-white border-[#721B29] shadow-xs'
           }`}
         >
           {isUploading ? (
@@ -196,7 +188,7 @@ export const ImageKitUploader: React.FC<ImageKitUploaderProps> = ({
               <span>{buttonText}</span>
             </>
           )}
-        </button>
+        </label>
       </div>
 
       {isUploading && (
