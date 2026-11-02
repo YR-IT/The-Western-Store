@@ -28,6 +28,62 @@ export const AboutUsPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Business identity — clear for payment / KYC reviewers */}
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-[#EAE4D9] shadow-sm space-y-3 text-xs sm:text-sm text-[#4A453E]">
+          <h2 className="font-serif text-xl font-bold text-[#242120]">Business details</h2>
+          <p>
+            <strong>Business name:</strong> {STORE_INFO.legalName || STORE_INFO.name}
+            {STORE_INFO.legalName && STORE_INFO.legalName !== STORE_INFO.name ? (
+              <> (trading as {STORE_INFO.name})</>
+            ) : null}
+          </p>
+          <p>
+            <strong>Category:</strong> Retail — women&apos;s ethnic wear, western wear, suits, co-ords &amp; boutique fashion (physical store + online shop).
+          </p>
+          <p>
+            <strong>Address:</strong> {STORE_INFO.address}, {STORE_INFO.city}, {STORE_INFO.state} — {STORE_INFO.pincode},{' '}
+            {STORE_INFO.country}
+          </p>
+          <p>
+            <strong>Phone:</strong>{' '}
+            <a href={`tel:+91${STORE_INFO.phone}`} className="text-[#721B29] font-semibold underline">
+              {STORE_INFO.phoneFormatted}
+            </a>
+            {' · '}
+            <strong>Email:</strong>{' '}
+            <a href={`mailto:${STORE_INFO.email}`} className="text-[#721B29] font-semibold underline">
+              {STORE_INFO.email}
+            </a>
+          </p>
+          {STORE_INFO.gstin ? (
+            <p>
+              <strong>GSTIN:</strong> {STORE_INFO.gstin}
+            </p>
+          ) : null}
+          <p className="text-[#736B63]">
+            Policies:{' '}
+            <Link to="/refund-policy" className="text-[#721B29] underline">
+              Refund
+            </Link>
+            {' · '}
+            <Link to="/shipping-policy" className="text-[#721B29] underline">
+              Shipping
+            </Link>
+            {' · '}
+            <Link to="/terms-and-conditions" className="text-[#721B29] underline">
+              Terms
+            </Link>
+            {' · '}
+            <Link to="/privacy-policy" className="text-[#721B29] underline">
+              Privacy
+            </Link>
+            {' · '}
+            <Link to="/contact-us" className="text-[#721B29] underline">
+              Contact Us
+            </Link>
+          </p>
+        </div>
+
         {/* Story Section */}
         <div className="bg-white p-6 sm:p-10 rounded-2xl border border-[#EAE4D9] shadow-sm space-y-6">
           <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#242120]">

@@ -30,17 +30,14 @@ export const ProductCardSkeleton: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Price & Swatches Row */}
-        <div className="pt-2 border-t border-[#F0EBE1] flex items-center justify-between">
-          <div className="flex items-baseline gap-1.5">
-            <div className="h-5 w-16 bg-[#EAE4D9] rounded-xs" />
-            <div className="h-3.5 w-10 bg-[#EAE4D9] rounded-xs" />
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#EAE4D9]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#EAE4D9]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#EAE4D9]" />
-          </div>
+        <div className="mt-1">
+          <div className="h-5 w-16 bg-[#EAE4D9] rounded-xs" />
+        </div>
+
+        {/* Horizontal Add to Cart + Buy Now placeholders */}
+        <div className="flex flex-row gap-2 pt-2 border-t border-[#F0EBE1]">
+          <div className="flex-1 h-10 bg-[#EAE4D9] rounded-md" />
+          <div className="flex-1 h-10 bg-[#EAE4D9] rounded-md" />
         </div>
       </div>
     </div>

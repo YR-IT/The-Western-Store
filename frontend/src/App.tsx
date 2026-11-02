@@ -17,7 +17,6 @@ import { CartPage } from './components/CartPage';
 import { WishlistPage } from './components/WishlistPage';
 import { OrderTrackingPage } from './components/OrderTrackingPage';
 import { ContactPage } from './components/ContactPage';
-import { PolicyPage } from './components/PolicyPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
@@ -30,6 +29,10 @@ import { AccountPage } from './pages/AccountPage';
 import { FAQPage } from './pages/FAQPage';
 import { SizeGuidePage } from './pages/SizeGuidePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { RefundPolicyPage } from './pages/RefundPolicyPage';
+import { ShippingPolicyPage } from './pages/ShippingPolicyPage';
+import { TermsAndConditionsPage } from './pages/TermsAndConditionsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 
 // Lazy Loaded Admin Panel
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
@@ -128,11 +131,11 @@ const AppLayout: React.FC = () => {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/size-guide" element={<SizeGuidePage />} />
-          {/* Razorpay / compliance: dedicated top-level policy & contact URLs */}
-          <Route path="/refund-policy" element={<PolicyPage initialTab="returns" />} />
-          <Route path="/shipping-policy" element={<PolicyPage initialTab="shipping" />} />
-          <Route path="/terms-and-conditions" element={<PolicyPage initialTab="terms" />} />
-          <Route path="/privacy-policy" element={<PolicyPage initialTab="privacy" />} />
+          {/* Razorpay / compliance: one page per policy URL (no tab switcher) */}
+          <Route path="/refund-policy" element={<RefundPolicyPage />} />
+          <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/contact-us" element={<ContactPage />} />
           {/* Legacy aliases → canonical paths */}
           <Route path="/contact" element={<Navigate to="/contact-us" replace />} />
@@ -141,7 +144,11 @@ const AppLayout: React.FC = () => {
           <Route path="/policies/terms-and-conditions" element={<Navigate to="/terms-and-conditions" replace />} />
           <Route path="/policies/terms" element={<Navigate to="/terms-and-conditions" replace />} />
           <Route path="/policies/privacy-policy" element={<Navigate to="/privacy-policy" replace />} />
-          <Route path="/policies/:policyType" element={<PolicyPage />} />
+          <Route path="/policies/return" element={<Navigate to="/refund-policy" replace />} />
+          <Route path="/policies/returns" element={<Navigate to="/refund-policy" replace />} />
+          <Route path="/policies/shipping" element={<Navigate to="/shipping-policy" replace />} />
+          <Route path="/policies/privacy" element={<Navigate to="/privacy-policy" replace />} />
+          <Route path="/policies/:policyType" element={<Navigate to="/refund-policy" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
