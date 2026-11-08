@@ -138,15 +138,6 @@ async function runTests() {
     corsHeader: corsTest.headers['access-control-allow-origin'] || 'NONE',
   });
 
-  // Test 12: Order tracking with mismatched phone
-  const trackMismatch = await makeRequest({
-    host: 'localhost',
-    port: 4000,
-    path: '/api/orders/track?orderNumber=TWS-2026-1000&phone=0000000000',
-    method: 'GET',
-  });
-  results.push({ test: 'GET /api/orders/track (mismatch)', status: trackMismatch.statusCode, body: trackMismatch.body });
-
   console.log(JSON.stringify(results, null, 2));
 }
 

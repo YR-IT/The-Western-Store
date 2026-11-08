@@ -14,6 +14,8 @@ import {
   saveStoreSettingToSupabase,
 } from '../lib/supabaseServices';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { generateOrderId, generateOrderNumber } from '../utils/orderId';
+import { sanitizeAnnouncement } from '../utils/sanitizeAnnouncement';
 import {
   Product,
   Category,
@@ -80,8 +82,8 @@ interface CheckoutFormData {
 
 interface StoreContextType {
   // Navigation (legacy shim — prefer useNavigate() in components)
-  view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
-  currentView: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'track-order' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
+  view: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
+  currentView: 'home' | 'plp' | 'pdp' | 'cart' | 'wishlist' | 'admin' | 'order-history' | 'contact' | 'policy-returns' | 'policy-shipping' | 'policy-terms' | 'policy-privacy';
   /** @deprecated Use useNavigate() directly in components. This is a no-op shim kept for backward compatibility. */
   setView: (view: string) => void;
   /** Inject react-router navigate function so StoreContext can perform programmatic routing */
@@ -211,8 +213,6 @@ interface StoreContextType {
   navigateToCategory: (category: ProductCategory) => void;
   navigateToBudget: (tier: BudgetTier) => void;
   navigateToProduct: (productId: string) => void;
-  openOrderTracking: (orderNumber?: string, phone?: string) => void;
-  trackingPrefill: { orderNumber: string; phone: string } | null;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -245,8 +245,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [adminActiveTab, setAdminActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'categories' | 'homepage' | 'sections' | 'filters'>(
     () => (localStorage.getItem('tws_admin_active_tab') as any) || 'dashboard'
   );
-  const [trackingPrefill, setTrackingPrefill] = useState<{ orderNumber: string; phone: string } | null>(null);
-
   // Clear legacy navigation keys on startup to prevent session leaks
   useEffect(() => {
     try {
@@ -297,7 +295,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deletedSlideIds = useRef<Set<string>>(new Set());
 
   const [announcementText, setAnnouncementText] = useState<string>(() => {
-    return localStorage.getItem('tws_announcement') || STORE_INFO.announcement;
+    return sanitizeAnnouncement(localStorage.getItem('tws_announcement') || STORE_INFO.announcement);
   });
 
   const [budgetTiles, setBudgetTiles] = useState<BudgetTileConfig[]>(() => {
@@ -1052,7 +1050,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setTrustFeatures(settings.trust_features);
         }
         if (settings.announcement_text !== undefined && typeof settings.announcement_text === 'string') {
-          setAnnouncementText(settings.announcement_text);
+          setAnnouncementText(sanitizeAnnouncement(settings.announcement_text));
         }
         if (settings.instagram_handle && typeof settings.instagram_handle === 'string') {
           setInstagramHandle(settings.instagram_handle);
@@ -1093,7 +1091,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             } else if (key === 'trust_features' && Array.isArray(val)) {
               setTrustFeatures((prev) => JSON.stringify(prev) === JSON.stringify(val) ? prev : val);
             } else if (key === 'announcement_text' && typeof val === 'string') {
-              setAnnouncementText((prev) => prev === val ? prev : val);
+              const cleaned = sanitizeAnnouncement(val);
+              setAnnouncementText((prev) => (prev === cleaned ? prev : cleaned));
             } else if (key === 'instagram_handle' && typeof val === 'string') {
               setInstagramHandle((prev) => prev === val ? prev : val);
             } else if (key === 'collection_filters' && typeof val === 'object') {
@@ -1611,8 +1610,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const submitWhatsAppOrder = async (formData: CheckoutFormData) => {
     const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    let orderNumber = `TWS-2026-${randomSuffix}`;
+    let orderNumber = generateOrderNumber();
     let finalTotal = cartSubtotal;
 
     const validatedItems: OrderItemSummary[] = cart.map((item) => ({
@@ -1626,7 +1624,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }));
 
     const newOrder: Order = {
-      id: `order-${Date.now()}`,
+      id: generateOrderId(),
       orderNumber,
       userId: currentUser?.id,
       userEmail: currentUser?.email || formData.email,
@@ -1876,13 +1874,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCategories(newCategories);
   };
 
-  const openOrderTracking = (orderNumber?: string, phone?: string) => {
-    if (orderNumber || phone) {
-      setTrackingPrefill({ orderNumber: orderNumber || '', phone: phone || '' });
-    }
-    routerNavigate('/track-order');
-  };
-
   return (
     <StoreContext.Provider
       value={{
@@ -1898,8 +1889,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setSelectedProductId,
         adminActiveTab,
         setAdminActiveTab,
-        trackingPrefill,
-        openOrderTracking,
         products,
         categories,
         heroSlides,

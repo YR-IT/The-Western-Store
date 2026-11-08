@@ -40,10 +40,7 @@ export const OrderConfirmationPage: React.FC = () => {
   }, [orderId, orders, order]);
 
   const targetOrderNumber = order?.orderNumber || orderId || 'TWS-ORDER';
-  const trackPhone = order?.phone || '';
-  const trackLink = trackPhone
-    ? `/track-order?orderId=${encodeURIComponent(targetOrderNumber)}&phone=${encodeURIComponent(trackPhone)}`
-    : `/track-order?orderId=${encodeURIComponent(targetOrderNumber)}`;
+  const trackLink = '/account/orders';
   const paymentMethodText =
     order?.paymentMethod === 'razorpay' || (order as any)?.paymentStatus === 'paid'
       ? 'Paid Online (Razorpay / UPI / Card)'
@@ -208,7 +205,7 @@ export const OrderConfirmationPage: React.FC = () => {
             className="py-3.5 px-4 bg-white border border-[#D9CEBF] hover:border-[#721B29] text-[#242120] hover:text-[#721B29] text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-2xs"
           >
             <Truck className="w-4 h-4 text-[#721B29]" />
-            <span>Track Live Delivery Status</span>
+            <span>My Orders</span>
           </Link>
 
           <Link

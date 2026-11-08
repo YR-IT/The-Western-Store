@@ -1006,7 +1006,7 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="e.g. Final Sale: No exchange on customized stitched items. Standard 3-point check applied."
+                      placeholder="e.g. Refunds/replacements for damaged or wrong items as per Refund Policy. Custom stitched pieces may differ."
                       value={customReturnPolicy}
                       onChange={(e) => setCustomReturnPolicy(e.target.value)}
                       className="w-full px-3 py-2 bg-[#FAF8F3] border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"

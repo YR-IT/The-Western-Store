@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { X, Send, ShieldCheck, ShoppingBag, MapPin, Phone, User, CheckCircle2, Package } from 'lucide-react';
 import { UserAvatar } from './common/UserAvatar';
 
 export const WhatsAppCheckoutModal: React.FC = () => {
+  const navigate = useNavigate();
   const {
     isCheckoutModalOpen,
     setIsCheckoutModalOpen,
@@ -14,7 +16,6 @@ export const WhatsAppCheckoutModal: React.FC = () => {
     submitWhatsAppOrder,
     lastPlacedOrder,
     setLastPlacedOrder,
-    openOrderTracking,
     currentUser,
     openAuthModal,
   } = useStore();
@@ -101,7 +102,7 @@ export const WhatsAppCheckoutModal: React.FC = () => {
             </div>
             <div>
               <h3 className="font-serif text-lg font-bold text-[#242120]">
-                {successOrderInfo ? 'Order Created!' : 'Delivery Details & WhatsApp Order'}
+                {successOrderInfo ? 'Order Created!' : 'Delivery Details'}
               </h3>
               <p className="text-[11px] text-[#736B63]">
                 {successOrderInfo ? 'Ready for confirmation on WhatsApp' : 'Dispatch directly from Kurukshetra store'}
@@ -152,12 +153,12 @@ export const WhatsAppCheckoutModal: React.FC = () => {
                   type="button"
                   onClick={() => {
                     handleClose();
-                    openOrderTracking(successOrderInfo.orderNumber, formData.phone);
+                    navigate('/account/orders');
                   }}
                   className="inline-flex items-center justify-center gap-2 w-full py-2.5 bg-[#FAF7F0] border border-[#D9CEBF] hover:bg-[#EAE4D9] text-[#242120] font-medium text-xs rounded-sm transition-colors cursor-pointer"
                 >
                   <Package className="w-3.5 h-3.5 text-[#721B29]" />
-                  <span>Track This Order Live</span>
+                  <span>View My Orders</span>
                 </button>
               </div>
 

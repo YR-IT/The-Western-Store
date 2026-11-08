@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useStore } from '../../context/StoreContext';
-import { HomeSectionConfig, HomeSectionType, HeroSlide, Testimonial, InstagramPost, BudgetTier } from '../../types';
+import { HeroSlide, Testimonial, InstagramPost, BudgetTier } from '../../types';
 import { ImageKitUploader } from './ImageKitUploader';
 import { ImageKitMediaLibraryModal } from './ImageKitMediaLibraryModal';
 import { SupabaseVideoLibraryModal } from './SupabaseVideoLibraryModal';
@@ -15,26 +15,15 @@ import {
   EyeOff,
   Image as ImageIcon,
   RotateCcw,
-  Sparkles,
   Check,
   Edit2,
   X,
-  Link,
   Sliders,
-  Globe,
-  ShieldCheck,
-  MessageSquare,
   Star,
   Instagram,
   Tag,
-  ShoppingBag,
   ArrowRight,
-  Megaphone,
-  Layers,
-  LayoutGrid,
   ExternalLink,
-  Save,
-  MessageCircle,
   Video,
   Play,
   Folder,
@@ -44,22 +33,15 @@ import {
 
 
 type ManagerTab =
-  | 'overview'
-  | 'announcement'
   | 'hero'
-  | 'categories'
   | 'budget'
   | 'testimonials'
-  | 'instagram'
-  | 'custom-banners';
+  | 'instagram';
 
 export const HomepageSectionsManager: React.FC = () => {
   const {
     homeSections,
     updateHomeSection,
-    addHomeSection,
-    deleteHomeSection,
-    reorderHomeSections,
     resetHomeSections,
     heroSlides,
     updateHeroSlide,
@@ -67,8 +49,6 @@ export const HomepageSectionsManager: React.FC = () => {
     deleteHeroSlide,
     reorderHeroSlides,
     resetHeroSlides,
-    announcementText,
-    setAnnouncementText,
     budgetTiles,
     updateBudgetTile,
     resetBudgetTiles,
@@ -92,8 +72,7 @@ export const HomepageSectionsManager: React.FC = () => {
     products,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<ManagerTab>('overview');
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ManagerTab>('hero');
   const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [editingIgId, setEditingIgId] = useState<string | null>(null);
@@ -214,23 +193,10 @@ export const HomepageSectionsManager: React.FC = () => {
     }
   };
 
-  // New Custom Banner Section State
-  const [isAddBannerModalOpen, setIsAddBannerModalOpen] = useState(false);
-  const [newBanner, setNewBanner] = useState({
-    title: 'Festival Flash Sale',
-    tagline: 'Limited Time Edit',
-    subtitle: 'Flat 20% off on all heavy bridal lehengas and pre-stitched sarees',
-    imageUrl: '',
-    buttonText: 'Shop Sale Now',
-    buttonLink: 'plp',
-  });
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3200);
   };
-
-  const sortedSections = [...homeSections].sort((a, b) => a.order - b.order);
 
   const handleCreateSlide = (e: React.FormEvent) => {
     e.preventDefault();
@@ -316,23 +282,6 @@ export const HomepageSectionsManager: React.FC = () => {
     showToast('Added Video Reel!');
   };
 
-  const handleCreateCustomBanner = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBanner.title.trim()) return;
-    addHomeSection({
-      title: newBanner.title.trim(),
-      tagline: newBanner.tagline.trim(),
-      subtitle: newBanner.subtitle.trim(),
-      type: 'custom-banner',
-      enabled: true,
-      images: newBanner.imageUrl ? [newBanner.imageUrl.trim()] : [],
-      buttonText: newBanner.buttonText.trim(),
-      buttonLink: newBanner.buttonLink,
-    });
-    setIsAddBannerModalOpen(false);
-    showToast(`Added custom banner "${newBanner.title}" to homepage!`);
-  };
-
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Toast Notification */}
@@ -351,26 +300,18 @@ export const HomepageSectionsManager: React.FC = () => {
             <span>Visual Storefront Editor</span>
           </div>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#242120]">
-            Homepage Content & Layout Manager
+            Homepage Content Manager
           </h1>
           <p className="text-xs text-[#736B63] mt-1">
-            Directly edit titles, hero sliders, banners, budget cards, customer reviews, trust badges, and section order matching the live homepage.
+            Edit hero banners, budget cards, customer reviews, and video reels for the live homepage.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsAddBannerModalOpen(true)}
-            className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Custom Banner</span>
-          </button>
-          <button
-            type="button"
             onClick={() => {
-              if (confirm('Reset all homepage sections, hero slides, budget tiles, and guarantees to default settings?')) {
+              if (confirm('Reset hero slides, budget tiles, reviews, and guarantees to default settings?')) {
                 resetHomeSections();
                 resetHeroSlides();
                 resetBudgetTiles();
@@ -389,32 +330,6 @@ export const HomepageSectionsManager: React.FC = () => {
 
       {/* Component Tabs Bar */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 bg-white p-2 rounded-xl border border-[#EAE4D9] shadow-2xs scrollbar-none">
-        <button
-          type="button"
-          onClick={() => setActiveTab('overview')}
-          className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-            activeTab === 'overview'
-              ? 'bg-[#721B29] text-white shadow-xs'
-              : 'text-[#4A453E] hover:bg-[#FAF8F3]'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Layout</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('announcement')}
-          className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-            activeTab === 'announcement'
-              ? 'bg-[#721B29] text-white shadow-xs'
-              : 'text-[#4A453E] hover:bg-[#FAF8F3]'
-          }`}
-        >
-          <Megaphone className="w-4 h-4" />
-          <span>Announcement</span>
-        </button>
-
         <button
           type="button"
           onClick={() => setActiveTab('hero')}
@@ -466,239 +381,8 @@ export const HomepageSectionsManager: React.FC = () => {
           <Instagram className="w-4 h-4" />
           <span>Videos</span>
         </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('custom-banners')}
-          className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-            activeTab === 'custom-banners'
-              ? 'bg-[#721B29] text-white shadow-xs'
-              : 'text-[#4A453E] hover:bg-[#FAF8F3]'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Promos</span>
-        </button>
       </div>
 
-      {/* TAB 1: SECTION ORDER & VISIBILITY OVERVIEW */}
-      {activeTab === 'overview' && (
-        <div className="space-y-4">
-          <div className="bg-[#FAF8F3] p-4 rounded-xl border border-[#EAE4D9] flex items-center justify-between text-xs">
-            <span className="text-[#4A453E] font-medium">
-              💡 Reorder homepage sections or hide/show specific blocks in real time. Click <strong>Edit Section</strong> to customize section headings and hero photo arrays.
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsAddBannerModalOpen(true)}
-              className="px-3 py-1.5 bg-[#721B29] text-white text-xs font-bold rounded-md flex items-center gap-1 shrink-0 ml-4"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Banner Block</span>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {sortedSections.map((sec, index) => {
-              const isEditing = editingSectionId === sec.id;
-              return (
-                <div
-                  key={sec.id}
-                  className={`bg-white rounded-xl border transition-all shadow-xs overflow-hidden ${
-                    sec.enabled ? 'border-[#EAE4D9]' : 'border-gray-200 opacity-60 bg-gray-50'
-                  }`}
-                >
-                  <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FAF8F3]/60 border-b border-[#EAE4D9]">
-                    <div className="flex items-center gap-3">
-                      {/* Order Controls */}
-                      <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-md border border-[#EAE4D9]">
-                        <span className="text-xs font-bold text-[#721B29] w-6 text-center">#{index + 1}</span>
-                        <div className="flex flex-col">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => reorderHomeSections(sec.id, 'up')}
-                            className="p-0.5 hover:text-[#721B29] disabled:opacity-30 cursor-pointer"
-                            title="Move Section Up"
-                          >
-                            <MoveUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === sortedSections.length - 1}
-                            onClick={() => reorderHomeSections(sec.id, 'down')}
-                            className="p-0.5 hover:text-[#721B29] disabled:opacity-30 cursor-pointer"
-                            title="Move Section Down"
-                          >
-                            <MoveDown className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-serif font-bold text-base text-[#242120]">{sec.title}</h3>
-                          <span className="text-[10px] font-semibold uppercase px-2 py-0.5 bg-[#EAE4D9] text-[#4A453E] rounded-full">
-                            {sec.type}
-                          </span>
-                        </div>
-                        {sec.tagline && <p className="text-xs text-[#721B29] font-medium mt-0.5">{sec.tagline}</p>}
-                        {sec.subtitle && <p className="text-xs text-[#736B63] mt-0.5 line-clamp-1">{sec.subtitle}</p>}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          updateHomeSection(sec.id, { enabled: !sec.enabled });
-                          showToast(!sec.enabled ? `Enabled "${sec.title}"` : `Hidden "${sec.title}"`);
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
-                          sec.enabled
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        {sec.enabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                        <span>{sec.enabled ? 'Live on Home' : 'Hidden'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setEditingSectionId(isEditing ? null : sec.id)}
-                        className="px-3 py-1.5 bg-white border border-[#D9CEBF] hover:bg-[#FAF8F3] text-xs font-medium text-[#242120] rounded-lg flex items-center gap-1"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-[#721B29]" />
-                        <span>{isEditing ? 'Done' : 'Edit Text'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`Delete section "${sec.title}" from homepage?`)) {
-                            deleteHomeSection(sec.id);
-                            showToast(`Deleted section "${sec.title}"`);
-                          }
-                        }}
-                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Delete Section Block"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {isEditing && (
-                    <div className="p-4 sm:p-5 bg-[#FAF8F3] border-b border-[#EAE4D9] space-y-3 text-xs">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Section Title
-                          </label>
-                          <input
-                            type="text"
-                            value={sec.title}
-                            onChange={(e) => updateHomeSection(sec.id, { title: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                            Tagline / Eyebrow Text
-                          </label>
-                          <input
-                            type="text"
-                            value={sec.tagline || ''}
-                            onChange={(e) => updateHomeSection(sec.id, { tagline: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                          Subtitle / Description
-                        </label>
-                        <input
-                          type="text"
-                          value={sec.subtitle || ''}
-                          onChange={(e) => updateHomeSection(sec.id, { subtitle: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                        />
-                      </div>
-
-                      {(sec.type === 'custom-banner' || sec.buttonText) && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                          <div>
-                            <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                              CTA Button Text
-                            </label>
-                            <input
-                              type="text"
-                              value={sec.buttonText || ''}
-                              onChange={(e) => updateHomeSection(sec.id, { buttonText: e.target.value })}
-                              className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-bold text-[#4A453E] uppercase mb-1">
-                              Button Destination
-                            </label>
-                            <select
-                              value={sec.buttonLink || 'plp'}
-                              onChange={(e) => updateHomeSection(sec.id, { buttonLink: e.target.value })}
-                              className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg font-medium focus:outline-none focus:border-[#721B29]"
-                            >
-                              <option value="plp">Collections Page (PLP)</option>
-                              <option value="whatsapp">Direct WhatsApp Chat</option>
-                            </select>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: ANNOUNCEMENT BAR */}
-      {activeTab === 'announcement' && (
-        <div className="bg-white p-6 rounded-xl border border-[#EAE4D9] shadow-xs space-y-4">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#721B29]">
-            <Megaphone className="w-5 h-5" />
-            <h2>Top Announcement Bar Text</h2>
-          </div>
-          <p className="text-xs text-[#736B63]">
-            This ticker message scrolls continuously across the top of all pages in the store.
-          </p>
-
-          <div className="space-y-2 max-w-2xl">
-            <label className="block text-xs font-bold text-[#4A453E] uppercase">
-              Announcement Message
-            </label>
-            <input
-              type="text"
-              value={announcementText}
-              onChange={(e) => setAnnouncementText(e.target.value)}
-              className="w-full px-4 py-2.5 bg-[#FAF8F3] border border-[#D9CEBF] rounded-lg text-xs font-medium focus:outline-none focus:border-[#721B29]"
-              placeholder="e.g. Worldwide Shipping | 📲 9729515288 | DM us on Instagram to Order"
-            />
-          </div>
-
-          <div className="p-4 bg-[#721B29] text-white rounded-lg text-xs flex items-center gap-3">
-            <span className="font-bold uppercase tracking-wider text-[10px] bg-white/20 px-2 py-0.5 rounded">
-              Live Preview
-            </span>
-            <span className="truncate">{announcementText}</span>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: HERO CAROUSEL SLIDES */}
       {activeTab === 'hero' && (
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#EAE4D9]">
@@ -1715,72 +1399,6 @@ export const HomepageSectionsManager: React.FC = () => {
         );
       })()}
 
-      {/* TAB 8: CUSTOM BANNERS */}
-      {activeTab === 'custom-banners' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#EAE4D9]">
-            <div>
-              <h2 className="font-serif text-lg font-bold text-[#242120]">Custom Promotional Banners</h2>
-              <p className="text-xs text-[#736B63]">
-                Create custom full-width promotion banners for sale events, festive edits, or special announcements.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsAddBannerModalOpen(true)}
-              className="px-4 py-2 bg-[#721B29] hover:bg-[#57141F] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create New Banner Block</span>
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {homeSections
-              .filter((s) => s.type === 'custom-banner' || s.id.startsWith('sec_'))
-              .map((sec) => (
-                <div key={sec.id} className="bg-[#241C1D] text-white rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xl border border-white/10">
-                  {sec.images?.[0] && (
-                    <img src={sec.images[0]} alt={sec.title} className="absolute inset-0 w-full h-full object-cover opacity-40" />
-                  )}
-                  <div className="relative z-10 max-w-xl space-y-2">
-                    {sec.tagline && (
-                      <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-[#E6C280] bg-[#E6C280]/20 px-3 py-1 rounded-full border border-[#E6C280]/30">
-                        {sec.tagline}
-                      </span>
-                    )}
-                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white">{sec.title}</h3>
-                    {sec.subtitle && <p className="text-xs text-gray-200">{sec.subtitle}</p>}
-                    {sec.buttonText && (
-                      <button
-                        type="button"
-                        className="mt-3 px-5 py-2 bg-[#721B29] text-white text-xs font-bold rounded-md"
-                      >
-                        {sec.buttonText}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm(`Delete banner "${sec.title}"?`)) {
-                          deleteHomeSection(sec.id);
-                          showToast('Banner deleted');
-                        }
-                      }}
-                      className="p-2 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
       {/* MODAL: ADD HERO SLIDE */}
       {isAddSlideModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1986,127 +1604,6 @@ export const HomepageSectionsManager: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL: ADD CUSTOM BANNER SECTION */}
-      {isAddBannerModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#EAE4D9] max-w-lg w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#EAE4D9] pb-3">
-              <h3 className="font-serif font-bold text-lg text-[#242120]">Add Custom Banner Block</h3>
-              <button
-                type="button"
-                onClick={() => setIsAddBannerModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCustomBanner} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Banner Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Kurukshetra Festive Clearance"
-                  value={newBanner.title}
-                  onChange={(e) => setNewBanner({ ...newBanner, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Tagline / Eyebrow
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Limited Festive Edit"
-                  value={newBanner.tagline}
-                  onChange={(e) => setNewBanner({ ...newBanner, tagline: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                  Subtitle
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Flat discounts on pre-stitched sarees & fusion sets"
-                  value={newBanner.subtitle}
-                  onChange={(e) => setNewBanner({ ...newBanner, subtitle: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block font-bold uppercase text-[11px] text-[#4A453E]">
-                  Banner background photo
-                </label>
-                {newBanner.imageUrl ? (
-                  <img src={newBanner.imageUrl} alt="Banner preview" className="w-full h-28 object-cover rounded border border-[#EAE4D9]" />
-                ) : (
-                  <p className="text-[11px] text-[#8C8276]">Upload a photo for this banner section.</p>
-                )}
-                <ImageKitUploader
-                  folder="/banners"
-                  buttonText="Upload banner photo"
-                  onUploadSuccess={(url) => {
-                    setNewBanner((prev) => ({ ...prev, imageUrl: url }));
-                    showToast('Banner photo uploaded!');
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                    Button Text
-                  </label>
-                  <input
-                    type="text"
-                    value={newBanner.buttonText}
-                    onChange={(e) => setNewBanner({ ...newBanner, buttonText: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
-                    Button Action
-                  </label>
-                  <select
-                    value={newBanner.buttonLink}
-                    onChange={(e) => setNewBanner({ ...newBanner, buttonLink: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
-                  >
-                    <option value="plp">Collections Page (PLP)</option>
-                    <option value="whatsapp">WhatsApp Order Chat</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-2 border-t border-[#EAE4D9]">
-                <button
-                  type="button"
-                  onClick={() => setIsAddBannerModalOpen(false)}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#721B29] hover:bg-[#57141F] text-white font-bold rounded-lg shadow-sm"
-                >
-                  Add Banner Section
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* MODAL: ADD VIDEO REEL */}
       {isAddIgModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">

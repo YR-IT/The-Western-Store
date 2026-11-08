@@ -37,8 +37,6 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
   const {
     currentUser,
     orders,
-    openAuthModal,
-    openOrderTracking,
     addToCart,
     setSelectedCategory,
   } = useStore();
@@ -121,7 +119,11 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
   };
 
   const handleTrackClick = (order: Order) => {
-    openOrderTracking(order.orderNumber, order.phone);
+    if (order.trackingLink) {
+      window.open(order.trackingLink, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    setExpandedOrderId(order.id);
   };
 
   const toggleExpand = (id: string) => {
@@ -150,10 +152,10 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
               <span>Customer Account Portal</span>
             </div>
             <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#242120] tracking-tight">
-              Order History & Tracking
+              My Orders
             </h1>
             <p className="text-xs sm:text-sm text-[#736B63] mt-1">
-              Review past boutique purchases, dispatch statuses, and courier tracking details.
+              Review your purchases, dispatch status, and courier tracking.
             </p>
           </div>
 
@@ -185,18 +187,18 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
               <User className="w-8 h-8" />
             </div>
             <h2 className="font-serif text-2xl font-bold text-[#242120] mb-2">
-              Sign In to View Your Order History
+              Login first to view your orders
             </h2>
             <p className="text-xs sm:text-sm text-[#736B63] mb-6 leading-relaxed max-w-md mx-auto">
-              Please sign in to your account to associate past orders, access live courier tracking links, and manage your profile.
+              Sign in to see every order linked to your account, including status and tracking details.
             </p>
             <button
               type="button"
-              onClick={() => openAuthModal('customer', 'Sign in to view your order history.')}
+              onClick={() => navigate('/login?redirect=/account/orders')}
               className="px-6 py-3 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 inline-flex items-center gap-2"
             >
               <User className="w-4 h-4" />
-              <span>Sign In / Register</span>
+              <span>Login</span>
             </button>
           </motion.div>
         ) : (
@@ -242,16 +244,14 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
             </div>
 
             {/* ORDERS LIST */}
-            {filteredOrders.length === 0 ? (
+            {userOrders.length === 0 ? (
               <div className="bg-white rounded-2xl p-10 text-center border border-[#EAE4D9]">
                 <ShoppingBag className="w-12 h-12 text-[#A39B8F] mx-auto mb-3" />
                 <h3 className="font-serif text-lg font-bold text-[#242120] mb-1">
-                  No Orders Found
+                  No orders yet
                 </h3>
                 <p className="text-xs text-[#736B63] mb-5">
-                  {searchQuery
-                    ? `No orders matching "${searchQuery}"`
-                    : 'You have not placed any boutique orders yet.'}
+                  When you place an order, it will show up here with live status updates.
                 </p>
                 <button
                   type="button"
@@ -261,9 +261,21 @@ export const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ embedded = f
                   }}
                   className="px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2"
                 >
-                  <span>Explore Collection</span>
+                  <span>Start Shopping</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl p-10 text-center border border-[#EAE4D9]">
+                <ShoppingBag className="w-12 h-12 text-[#A39B8F] mx-auto mb-3" />
+                <h3 className="font-serif text-lg font-bold text-[#242120] mb-1">
+                  No matching orders
+                </h3>
+                <p className="text-xs text-[#736B63] mb-5">
+                  {searchQuery
+                    ? `No orders matching "${searchQuery}"`
+                    : 'Nothing in this filter right now. Try All Orders.'}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">

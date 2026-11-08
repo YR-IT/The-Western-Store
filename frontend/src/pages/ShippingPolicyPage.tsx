@@ -92,11 +92,11 @@ export const ShippingPolicyPage: React.FC = () => {
             <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[#FDFBF7] border border-[#EAE4D9]">
               <Package className="w-4 h-4 text-[#721B29] shrink-0 mt-0.5" />
               <p className="text-xs leading-relaxed">
-                You will receive tracking details by SMS / WhatsApp / email after dispatch. Track anytime on our{' '}
-                <Link to="/track-order" className="font-semibold text-[#721B29] underline">
-                  Track Order
+                You will receive tracking details by SMS / WhatsApp / email after dispatch. Sign in and open{' '}
+                <Link to="/account/orders" className="font-semibold text-[#721B29] underline">
+                  My Orders
                 </Link>{' '}
-                page.
+                to view status anytime.
               </p>
             </div>
           </div>
@@ -141,13 +141,13 @@ export const ShippingPolicyPage: React.FC = () => {
           </div>
 
           <div className="pt-2 flex items-center justify-between flex-wrap gap-3">
-            <p className="text-xs text-[#736B63]">Already ordered? Track dispatch and delivery progress.</p>
+            <p className="text-xs text-[#736B63]">Already ordered? Sign in to view dispatch and delivery progress.</p>
             <Link
-              to="/track-order"
+              to="/account/orders"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#721B29] hover:bg-[#52131D] text-white text-xs font-bold rounded-xl shadow-sm transition-all"
             >
               <Truck className="w-4 h-4" />
-              <span>Track Order Status</span>
+              <span>My Orders</span>
             </Link>
           </div>
         </div>

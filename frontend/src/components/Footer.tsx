@@ -233,11 +233,11 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2.5 text-xs text-[#B5ABA0]">
               <li>
                 <Link
-                  to="/track-order"
+                  to="/account/orders"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Track Order Status</span>
+                  <span>My Orders</span>
                 </Link>
               </li>
               <li>
@@ -269,13 +269,13 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20need%20assistance%20with%20sizing%20and%20orders.`}
+                  href={`https://wa.me/${STORE_INFO.whatsappNumber}?text=Hi%20The%20Western%20Store%2C%20I%20need%20help%20with%20sizing%20or%20an%20existing%20order.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-[#E6C280] transition-colors text-left flex items-center gap-1.5 text-white font-medium group"
                 >
                   <ChevronRight className="w-3 h-3 text-[#E6C280] group-hover:translate-x-0.5 transition-transform" />
-                  <span>Direct WhatsApp Order</span>
+                  <span>WhatsApp Customer Support</span>
                 </a>
               </li>
               <li>
@@ -310,7 +310,7 @@ export const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Payment & WhatsApp ordering badges */}
+          {/* Payment & support badges */}
           <div className="flex items-center flex-wrap gap-2 text-[11px]">
             {['UPI / QR', 'Cards & NetBanking', 'Razorpay Secure'].map((method, idx) => (
               <motion.span

@@ -13,9 +13,9 @@ const HARDCODED_TRUST_FEATURES = [
     lottie: shoppingCartLottie,
   },
   {
-    id: 'no-returns',
-    title: 'NO RETURN / NO EXCHANGE',
-    description: '(No Refunds)',
+    id: 'refund-damaged',
+    title: 'REFUND / REPLACEMENT',
+    description: '(On damaged or wrong items — see Refund Policy)',
     lottie: supportIconLottie,
   },
   {

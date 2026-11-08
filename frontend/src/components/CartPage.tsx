@@ -242,7 +242,7 @@ export const CartPage: React.FC = () => {
                 <div className="flex items-start gap-2.5">
                   <Truck className="w-4 h-4 text-[#721B29] flex-shrink-0 mt-0.5" />
                   <p>
-                    <strong>Dispatched From:</strong> Opp. Hotel Pearl Marc, Railway Road, Kurukshetra-136118.
+                    <strong>Dispatched From:</strong> Partap Colony, Basement Ujjivan Bank, Behind Hotel Pearl Marc, Thanesar, Kurukshetra-136118.
                   </p>
                 </div>
                 <div className="flex items-start gap-2.5">

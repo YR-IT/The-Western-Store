@@ -10,7 +10,6 @@ const routesToTest = [
   '/checkout',
   '/order-confirmation',
   '/wishlist',
-  '/track-order',
   '/account',
   '/account/orders',
   '/login',

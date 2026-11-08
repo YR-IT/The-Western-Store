@@ -1057,7 +1057,7 @@ export const ProductDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-800 flex-shrink-0" />
-                      <span>Verified Kurukshetra Boutique: Railway Road near Ujjivan Bank</span>
+                      <span>Verified Kurukshetra Boutique: Behind Hotel Pearl Marc, Thanesar</span>
                     </div>
                   </div>
 

@@ -314,73 +314,43 @@ export const Header: React.FC = () => {
                   {/* Customer account actions — hidden while admin is logged in */}
                   {!isAdminSession && (
                     <>
-                      <button
-                        id="header-account-profile-btn"
-                        type="button"
-                        onClick={() => {
-                          navigate('/account?tab=profile');
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-[#721B29]" />
-                          <span>My Profile</span>
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                      </button>
+                      {isCustomerSession && (
+                        <button
+                          id="header-account-profile-btn"
+                          type="button"
+                          onClick={() => {
+                            navigate('/account?tab=profile');
+                            setAccountMenuOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-[#721B29]" />
+                            <span>My Profile</span>
+                          </span>
+                          <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
+                        </button>
+                      )}
 
                       <button
                         id="header-order-history-btn"
                         type="button"
                         onClick={() => {
-                          navigate('/account');
+                          navigate('/account/orders');
                           setAccountMenuOpen(false);
                         }}
                         className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
                       >
                         <span className="flex items-center gap-2">
                           <ShoppingBag className="w-4 h-4 text-[#721B29]" />
-                          <span>My Order History</span>
+                          <span>My Orders</span>
                         </span>
                         <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
                       </button>
                     </>
                   )}
 
-                  <button
-                    id="header-track-order-btn"
-                    type="button"
-                    onClick={() => {
-                      navigate('/track-order');
-                      setAccountMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium group cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-[#721B29]" />
-                      <span>Track Order Status</span>
-                    </span>
-                    <span className="text-[10px] text-[#721B29] font-bold uppercase bg-[#721B29]/10 px-1.5 py-0.5 rounded-xs">
-                      Live
-                    </span>
-                  </button>
-
-                  <a
-                    href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>WhatsApp Support</span>
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                  </a>
-
-                  {/* Admin Login only for guests; Admin Panel only when admin session */}
-                  {isAdminSession ? (
+                  {isAdminSession && (
                     <>
                       <div className="my-1 border-t border-[#EAE4D9]" />
                       <button
@@ -400,26 +370,7 @@ export const Header: React.FC = () => {
                         <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
                       </button>
                     </>
-                  ) : !isCustomerSession ? (
-                    <>
-                      <div className="my-1 border-t border-[#EAE4D9]" />
-                      <button
-                        id="header-staff-login-btn"
-                        type="button"
-                        onClick={() => {
-                          navigate('/admin/login');
-                          setAccountMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs text-[#242120] hover:bg-[#F3EFE6] flex items-center justify-between font-medium cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-[#721B29]" />
-                          <span>Admin Login</span>
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#A39B8F]" />
-                      </button>
-                    </>
-                  ) : null}
+                  )}
 
                   {(isCustomerSession || isAdminSession) && (
                     <button
@@ -548,18 +499,16 @@ export const Header: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    navigate('/track-order');
+                    navigate('/account/orders');
                     setMobileMenuOpen(false);
                   }}
                   className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#721B29]/10 border border-[#721B29]/20 text-[#721B29] font-medium text-xs"
                 >
                   <span className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-[#721B29]" />
-                    <span>Track Order Status</span>
+                    <span>My Orders</span>
                   </span>
-                  <span className="text-[10px] font-bold uppercase bg-[#721B29] text-white px-2 py-0.5 rounded-xs">
-                    Lookup
-                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#721B29]" />
                 </button>
               </div>
 
@@ -600,26 +549,9 @@ export const Header: React.FC = () => {
                   >
                     <span className="flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4 text-[#721B29]" />
-                      <span>My Order History</span>
+                      <span>My Orders</span>
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-[#B3A99D]" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate('/track-order');
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full py-2.5 px-4 bg-[#FAF8F3] hover:bg-[#F3EFE6] border border-[#EAE4D9] rounded-xl text-xs font-bold text-[#242120] flex items-center justify-between transition-colors shadow-2xs"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-[#721B29]" />
-                      <span>Track Order Status</span>
-                    </span>
-                    <span className="text-[10px] text-[#721B29] font-bold uppercase bg-[#721B29]/10 px-2 py-0.5 rounded-full">
-                      Live
-                    </span>
                   </button>
 
                   <button
@@ -644,7 +576,7 @@ export const Header: React.FC = () => {
                     <span>Kurukshetra Walk-in Store</span>
                   </div>
                   <p className="text-[11px] text-[#736B63] leading-relaxed">
-                    Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank, Kurukshetra - 136118
+                    Partap Colony, Basement Ujjivan Bank, Behind Hotel Pearl Marc, Thanesar, Kurukshetra - 136118
                   </p>
                   <div className="mt-3 flex items-center gap-3">
                     <a

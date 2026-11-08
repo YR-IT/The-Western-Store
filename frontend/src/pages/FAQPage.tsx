@@ -25,11 +25,11 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: 'How do I track my order?',
     a: (
       <>
-        Use{' '}
-        <Link to="/track-order" className="text-[#721B29] font-semibold underline">
-          Track Order
+        Open{' '}
+        <Link to="/account/orders" className="text-[#721B29] font-semibold underline">
+          My Orders
         </Link>{' '}
-        with your order number and the phone number used at checkout. Logged-in customers can also open My Account → Orders.
+        after signing in to view status and tracking for every purchase linked to your account.
       </>
     ),
   },
@@ -127,7 +127,7 @@ export const FAQPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-lg"
           >
             <MessageCircle className="w-4 h-4" />
-            WhatsApp Concierge
+            WhatsApp Support
           </a>
         </div>
       </div>

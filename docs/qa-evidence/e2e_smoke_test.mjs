@@ -119,12 +119,12 @@ async function runE2ESmoke() {
     status: tamperOrder.status,
   });
 
-  // Test 8: Order Tracking Lookup endpoint (HIGH-03 verification)
-  const trackOrder = await fetchBackend('/api/orders/track?orderNumber=NONEXISTENT-999&phone=9999999999');
+  // Test 8: My Orders page is public (login gate is in-page)
+  const myOrders = await fetchRoute('/account/orders');
   results.push({
-    test: 'Order Tracking API Endpoint (HIGH-03)',
-    passed: trackOrder.status === 404 && trackOrder.body.includes('No order found'),
-    status: trackOrder.status,
+    test: 'My Orders page responds',
+    passed: myOrders.status === 200,
+    status: myOrders.status,
   });
 
   // Test 9: Admin Authentication Gate (CRIT-01/HIGH-01 verification)

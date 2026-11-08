@@ -97,7 +97,7 @@ export const AboutUsPage: React.FC = () => {
               Every garment in our catalog is thoughtfully selected from artisan looms and experienced design houses across India. We obsess over the tactile details: breathability of pure cottons, luster of Chanderi silks, depth of hand-embroidery, and longevity of every seam.
             </p>
             <p>
-              Whether you visit our brick-and-mortar boutique on Railway Road or shop via our digital storefront, our commitment remains identical: transparent pricing, authentic photography, and dedicated personalized support.
+              Whether you visit our brick-and-mortar boutique in Thanesar (Behind Hotel Pearl Marc) or shop via our digital storefront, our commitment remains identical: transparent pricing, authentic photography, and dedicated personalized support.
             </p>
           </div>
         </div>

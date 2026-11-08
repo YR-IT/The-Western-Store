@@ -6,6 +6,7 @@ import { STORE_INFO } from '../data/mockData';
 import { SEOHead } from '../components/common/SEOHead';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
 import { loadRazorpayScript, RazorpayOptions } from '../utils/razorpay';
+import { generateOrderId, generateOrderNumber } from '../utils/orderId';
 import {
   ShieldCheck,
   CreditCard,
@@ -60,7 +61,7 @@ export const CheckoutPage: React.FC = () => {
     notes: '',
   });
 
-  const [agreedToPolicies, setAgreedToPolicies] = useState(true);
+  const [agreedToPolicies, setAgreedToPolicies] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -200,7 +201,7 @@ export const CheckoutPage: React.FC = () => {
               status: 'Paid' as const,
             };
 
-            // Prefill /track-order and account history after redirect
+            // Account order history after redirect
             setLastPlacedOrder(confirmationOrder as any);
 
             // Navigate to Order Confirmation
@@ -224,7 +225,7 @@ export const CheckoutPage: React.FC = () => {
     setErrorMessage('');
 
     if (!agreedToPolicies) {
-      setErrorMessage('Please accept the Refund & Cancellation Policy and Terms & Conditions to continue.');
+      setErrorMessage('Please accept the Refund, Privacy, and Terms policies to continue.');
       return;
     }
 
@@ -235,9 +236,8 @@ export const CheckoutPage: React.FC = () => {
 
     setIsProcessing(true);
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `TWS-2026-${randomSuffix}`;
-    const orderId = `order-${Date.now()}`;
+    const orderNumber = generateOrderNumber();
+    const orderId = generateOrderId();
 
     try {
       await handleRazorpayPayment(orderId, orderNumber);
@@ -276,9 +276,16 @@ export const CheckoutPage: React.FC = () => {
           )}
         </div>
 
-        <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] mb-6 sm:mb-8 tracking-tight">
-          Checkout & Shipping
-        </h1>
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] tracking-tight">
+            Checkout & Shipping
+          </h1>
+          {String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').startsWith('rzp_test_') && (
+            <span className="self-start text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+              Razorpay Test Mode — use test cards / UPI
+            </span>
+          )}
+        </div>
 
         {errorMessage && (
           <motion.div
@@ -489,8 +496,12 @@ export const CheckoutPage: React.FC = () => {
                   I acknowledge and accept the{' '}
                   <Link to="/refund-policy" target="_blank" className="font-bold text-[#721B29] underline">
                     Refund &amp; Cancellation Policy
-                  </Link>{' '}
-                  and agree to the{' '}
+                  </Link>
+                  ,{' '}
+                  <Link to="/privacy-policy" target="_blank" className="font-bold text-[#721B29] underline">
+                    Privacy Policy
+                  </Link>
+                  , and{' '}
                   <Link to="/terms-and-conditions" target="_blank" className="font-bold text-[#721B29] underline">
                     Terms &amp; Conditions
                   </Link>

@@ -36,16 +36,17 @@ export interface StoreInfo {
 
 export const STORE_INFO: StoreInfo = {
   name: 'The Western Store',
-  // [OWNER: Provide exact legal registered business name matching bank / PAN / GST]
-  legalName: null,
-  // [OWNER: Provide 15-digit GSTIN or confirm business is currently unregistered]
-  gstin: null,
+  // Legal name as on PAN / bank / Razorpay (proprietor); trade name is The Western Store
+  legalName: 'Shweta',
+  gstin: '06FTCPS9145C1ZJ',
   tagline: 'Kurukshetra\u2019s Premier Ethnic & Western Wardrobe',
-  address: 'Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank',
+  // Matches Udyam / GST registered address
+  address: 'Partap Colony, Basement Ujjivan Bank, Behind Hotel Pearl Marc, Thanesar',
   city: 'Kurukshetra',
   state: 'Haryana',
   pincode: '136118',
   country: 'India',
+  // Customer / Razorpay support contact (not the Udyam alternate mobile)
   phone: '9729515288',
   phoneFormatted: '+91 97295 15288',
   whatsappNumber: '919729515288',
@@ -53,11 +54,9 @@ export const STORE_INFO: StoreInfo = {
   instagramUrl: 'https://instagram.com/the_western_store_kkr',
   instagramGlamifyUrl: 'https://www.instagram.com/the_western_store_glamify?stkn=ZDNlZDc0MzIxNw==',
   email: 'thewesternstorekkr@gmail.com',
-  // [OWNER: Provide designated Grievance Officer name under Consumer Protection Rules, 2020]
-  grievanceOfficer: null,
-  // [OWNER: Provide designated Grievance Officer email address]
-  grievanceEmail: null,
-  announcement: '🚚 Fast Pan-India Dispatch | 📲 WhatsApp Concierge: +91 97295 15288',
+  grievanceOfficer: 'Shweta',
+  grievanceEmail: 'thewesternstorekkr@gmail.com',
+  announcement: 'Free Pan-India Shipping on Prepaid Orders | Secure Online Checkout',
   operatingHours: '10:30 AM \u2013 9:00 PM (Mon-Sun)',
   shippingFlatRate: 0,
   freeShippingThreshold: 0,
@@ -66,7 +65,8 @@ export const STORE_INFO: StoreInfo = {
     {
       id: 'loc-1',
       name: 'Kurukshetra (Flagship Store)',
-      address: 'Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank, Kurukshetra - 136118, Haryana',
+      address:
+        'Partap Colony, Basement Ujjivan Bank, Behind Hotel Pearl Marc, Thanesar, Kurukshetra - 136118, Haryana',
       phone: '+91 97295 15288',
       hours: '10:30 AM \u2013 9:00 PM',
       mapUrl: 'https://maps.google.com/?q=The+Western+Store+Kurukshetra',
@@ -233,8 +233,8 @@ export const INITIAL_TRUST_FEATURES: TrustFeatureConfig[] = [
   },
   {
     id: 'tf-3',
-    title: 'DIRECT WHATSAPP SUPPORT',
-    description: 'Live size & styling assistance before purchase',
+    title: 'STYLING SUPPORT',
+    description: 'Size & styling help via phone or WhatsApp before you buy',
     iconType: 'whatsapp',
   },
   {

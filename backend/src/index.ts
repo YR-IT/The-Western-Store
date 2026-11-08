@@ -9,6 +9,7 @@ import Razorpay from 'razorpay';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, createRequireUser, AuthenticatedRequest } from './middleware/auth.js';
+import { generateOrderId, resolveOrderNumber } from './orderId.js';
 
 // ─── Environment Startup Verification ─────────────────────────────────────
 const REQUIRED_ENV_VARS = ['ADMIN_EMAIL', 'ADMIN_PASSWORD', 'JWT_SECRET'];
@@ -60,14 +61,6 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // Limit each IP to 20 requests per windowMs
   message: { error: 'Too many login attempts, please try again after 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const trackLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 15,
-  message: { error: 'Too many tracking requests, please try again in a minute.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -151,8 +144,15 @@ const razorpay =
       })
     : null;
 
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
+const isRazorpayTestMode = razorpayKeyId.startsWith('rzp_test_');
+
 if (!razorpay) {
   console.info('ℹ️ [Razorpay Info] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not set. Razorpay endpoints will run in sandbox notification mode.');
+} else {
+  console.info(
+    `✅ [Razorpay] Configured (${isRazorpayTestMode ? 'TEST mode' : 'LIVE mode'}) key=${razorpayKeyId.slice(0, 12)}…`
+  );
 }
 
 // Safe string comparison helper to protect against timing attacks
@@ -175,7 +175,6 @@ app.get('/', (_req, res) => {
     documentation: {
       health: 'GET /api/health',
       adminLogin: 'POST /api/admin/login',
-      trackOrder: 'GET /api/orders/track',
       createOrder: 'POST /api/orders',
     },
   });
@@ -197,6 +196,11 @@ app.get('/api/health', (_req, res) => {
     },
     jwt: {
       configured: !!process.env.JWT_SECRET,
+    },
+    razorpay: {
+      configured: !!razorpay,
+      mode: !razorpay ? 'off' : isRazorpayTestMode ? 'test' : 'live',
+      keyIdPrefix: razorpayKeyId ? razorpayKeyId.slice(0, 12) : null,
     },
   });
 });
@@ -602,72 +606,6 @@ app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// ─── Public Order Tracking Endpoint ───────────────────────────────────────
-app.get('/api/orders/track', trackLimiter, async (req, res) => {
-  const orderNumber = (req.query.orderNumber || req.query.order_number) as string;
-  const phone = req.query.phone as string;
-
-  if (!orderNumber || !phone) {
-    res.status(400).json({ error: 'Both order number and phone number are required to track an order.' });
-    return;
-  }
-
-  if (!supabase) {
-    res.status(503).json({ error: 'Order tracking service temporarily unavailable.' });
-    return;
-  }
-
-  try {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const cleanOrderNumber = orderNumber.trim();
-
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select('id, order_number, customer_name, customer_phone, status, courier_name, tracking_number, total_amount, created_at, items')
-      .eq('order_number', cleanOrderNumber)
-      .limit(1);
-
-    if (error) throw error;
-
-    if (!orders || orders.length === 0) {
-      res.status(404).json({ error: 'No order found matching the provided order number.' });
-      return;
-    }
-
-    const order = orders[0];
-    const orderPhoneClean = (order.customer_phone || '').replace(/\D/g, '');
-
-    // Verify phone match (last 10 digits or exact)
-    const phoneMatch = orderPhoneClean.endsWith(cleanPhone) || cleanPhone.endsWith(orderPhoneClean);
-    if (!phoneMatch) {
-      res.status(404).json({ error: 'Order number and phone number do not match.' });
-      return;
-    }
-
-    // Return sanitized status details (no full address PII)
-    res.json({
-      orderNumber: order.order_number,
-      status: order.status,
-      courierName: order.courier_name || null,
-      trackingNumber: order.tracking_number || null,
-      totalAmount: order.total_amount,
-      createdAt: order.created_at,
-      itemCount: Array.isArray(order.items) ? order.items.length : 1,
-      items: Array.isArray(order.items)
-        ? order.items.map((i: any) => ({
-            title: i.title,
-            size: i.size,
-            quantity: i.quantity,
-            image: i.image,
-          }))
-        : [],
-    });
-  } catch (err: any) {
-    console.error('[Track Order Error]', err);
-    res.status(500).json({ error: 'Failed to retrieve order status.' });
-  }
-});
-
 // ─── Customer Account Orders Endpoint ─────────────────────────────────────
 app.get('/api/account/orders', requireUser, async (req: AuthenticatedRequest, res) => {
   if (!supabase || !req.user) {
@@ -787,9 +725,8 @@ app.post('/api/orders', orderCreateLimiter, async (req, res) => {
       return;
     }
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = clientOrderNumber || `TWS-2026-${randomSuffix}`;
-    const newOrderId = orderId || `order-${Date.now()}`;
+    const orderNumber = resolveOrderNumber(clientOrderNumber);
+    const newOrderId = orderId || generateOrderId();
     const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
 
     const supabaseRow: any = {
@@ -842,7 +779,7 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
 
   if (!razorpay || !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
     res.status(503).json({
-      error: 'Razorpay gateway is not configured on server. Please use WhatsApp checkout or configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend environment.',
+      error: 'Razorpay gateway is not configured on server. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend environment.',
       code: 'RAZORPAY_NOT_CONFIGURED',
     });
     return;
@@ -875,39 +812,51 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
     for (const item of items) {
       const pId = item.productId || item.product?.id || item.id;
       const matched = productMap.get(pId);
+
+      // In Razorpay TEST mode, allow cart snapshots when the catalog row is missing
+      // so gateway testing can proceed before full product sync.
+      const clientPrice = Number(item.price ?? item.product?.price);
       if (!matched) {
-        res.status(400).json({ error: `Product '${item.product?.title || item.title || pId}' is not found in store catalog.` });
-        return;
+        if (!isRazorpayTestMode || !Number.isFinite(clientPrice) || clientPrice <= 0) {
+          res.status(400).json({
+            error: `Product '${item.product?.title || item.title || pId}' is not found in store catalog.`,
+          });
+          return;
+        }
       }
 
       const qty = Math.max(1, Math.min(item.quantity || 1, 10));
-      const stockCount = matched.in_stock_count !== null && matched.in_stock_count !== undefined
-        ? Number(matched.in_stock_count)
-        : null;
+      const stockCount =
+        matched && matched.in_stock_count !== null && matched.in_stock_count !== undefined
+          ? Number(matched.in_stock_count)
+          : null;
 
-      if (matched.is_sold_out === true || (stockCount !== null && stockCount <= 0)) {
-        res.status(409).json({
-          error: `"${matched.title}" is currently sold out. Please remove it from your bag to continue.`,
-          code: 'OUT_OF_STOCK',
-          productId: pId,
-        });
-        return;
-      }
-      if (stockCount !== null && qty > stockCount) {
-        res.status(409).json({
-          error: `"${matched.title}" only has ${stockCount} left in stock. Please reduce quantity.`,
-          code: 'INSUFFICIENT_STOCK',
-          productId: pId,
-          available: stockCount,
-        });
-        return;
+      if (matched) {
+        if (matched.is_sold_out === true || (stockCount !== null && stockCount <= 0)) {
+          res.status(409).json({
+            error: `"${matched.title}" is currently sold out. Please remove it from your bag to continue.`,
+            code: 'OUT_OF_STOCK',
+            productId: pId,
+          });
+          return;
+        }
+        if (stockCount !== null && qty > stockCount) {
+          res.status(409).json({
+            error: `"${matched.title}" only has ${stockCount} left in stock. Please reduce quantity.`,
+            code: 'INSUFFICIENT_STOCK',
+            productId: pId,
+            available: stockCount,
+          });
+          return;
+        }
       }
 
-      const unitPrice = Number(matched.price);
+      const unitPrice = matched ? Number(matched.price) : clientPrice;
       calculatedSubtotal += unitPrice * qty;
 
-      const title = matched.title;
-      const image = matched.images?.[0] || item.image || item.product?.images?.[0] || '';
+      const title = matched?.title || item.product?.title || item.title || 'Item';
+      const image =
+        matched?.images?.[0] || item.image || item.product?.images?.[0] || '';
 
       validatedItems.push({
         id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -918,9 +867,9 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
           id: pId,
           title,
           price: unitPrice,
-          images: matched.images || item.product?.images || (image ? [image] : []),
-          sizes: matched.sizes || item.product?.sizes || [],
-          colors: matched.colors || item.product?.colors || [],
+          images: matched?.images || item.product?.images || (image ? [image] : []),
+          sizes: matched?.sizes || item.product?.sizes || [],
+          colors: matched?.colors || item.product?.colors || [],
         },
         size: item.size || 'Free Size',
         color: item.color || 'Standard',
@@ -934,16 +883,15 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       return;
     }
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = clientOrderNumber || `TWS-2026-${randomSuffix}`;
-    const newOrderId = orderId || `order-${Date.now()}`;
+    const orderNumber = resolveOrderNumber(clientOrderNumber);
+    const newOrderId = orderId || generateOrderId();
     const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
 
-    // Create Razorpay Order
+    // Create Razorpay Order (receipt max 40 chars)
     const rzpOrder = await razorpay.orders.create({
       amount: Math.round(calculatedSubtotal * 100), // Amount in paise
       currency: 'INR',
-      receipt: newOrderId,
+      receipt: orderNumber.slice(0, 40),
       notes: {
         orderNumber,
         customerName: name,

@@ -390,16 +390,26 @@ export const ContactPage: React.FC = () => {
             <div className="text-[11px] text-[#736B63] space-y-1 leading-relaxed">
               <p>
                 <strong className="text-[#242120]">Operating Entity:</strong>{' '}
-                {STORE_INFO.legalName || 'The Western Store (Kurukshetra Boutique)'}
+                {STORE_INFO.legalName
+                  ? `${STORE_INFO.legalName} (trading as ${STORE_INFO.name})`
+                  : STORE_INFO.name}
               </p>
+              {STORE_INFO.gstin ? (
+                <p>
+                  <strong className="text-[#242120]">GSTIN:</strong> {STORE_INFO.gstin}
+                </p>
+              ) : null}
               <p>
                 <strong className="text-[#242120]">Grievance Officer:</strong>{' '}
-                {STORE_INFO.grievanceOfficer || 'Store Operations Manager'}
+                {STORE_INFO.grievanceOfficer || 'Shweta'}
               </p>
               <p>
                 <strong className="text-[#242120]">Email:</strong>{' '}
-                <a href={`mailto:${STORE_INFO.email}`} className="text-[#721B29] underline">
-                  {STORE_INFO.email}
+                <a
+                  href={`mailto:${STORE_INFO.grievanceEmail || STORE_INFO.email}`}
+                  className="text-[#721B29] underline"
+                >
+                  {STORE_INFO.grievanceEmail || STORE_INFO.email}
                 </a>
               </p>
               <p>

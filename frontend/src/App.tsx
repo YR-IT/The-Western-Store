@@ -15,7 +15,7 @@ import { ProductListingPage } from './components/ProductListingPage';
 import { ProductDetailPage } from './components/ProductDetailPage';
 import { CartPage } from './components/CartPage';
 import { WishlistPage } from './components/WishlistPage';
-import { OrderTrackingPage } from './components/OrderTrackingPage';
+import { OrderHistoryPage } from './components/OrderHistoryPage';
 import { ContactPage } from './components/ContactPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -90,15 +90,9 @@ const AppLayout: React.FC = () => {
           <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
           <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/track-order" element={<OrderTrackingPage />} />
-          <Route
-            path="/account/orders"
-            element={
-              <PrivateRoute>
-                <AccountPage />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/track-order" element={<Navigate to="/account/orders" replace />} />
+          <Route path="/my-orders" element={<Navigate to="/account/orders" replace />} />
+          <Route path="/account/orders" element={<OrderHistoryPage />} />
           <Route
             path="/account"
             element={
@@ -163,7 +157,7 @@ const AppLayout: React.FC = () => {
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Direct WhatsApp Concierge"
+            aria-label="WhatsApp customer support"
             className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20bd5a] text-white p-3.5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 flex items-center gap-2 group border border-white/20"
           >
             <MessageCircle className="w-5 h-5 fill-white" />

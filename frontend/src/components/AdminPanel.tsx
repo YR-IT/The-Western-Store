@@ -131,7 +131,6 @@ export const AdminPanel: React.FC = () => {
     updateCategory,
     deleteCategory,
     reorderCategories,
-    openOrderTracking,
     navigateToCategory,
     navigateToProduct,
     setSelectedProductId,
