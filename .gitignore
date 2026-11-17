@@ -22,4 +22,6 @@ yarn-error.log*
 .DS_Store
 .vscode/
 .idea/
+.cursor/
 backend/data/
+.agent

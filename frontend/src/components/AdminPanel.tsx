@@ -47,6 +47,10 @@ import {
   Star,
   ArrowUp,
   ArrowDown,
+  Download,
+  Flame,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 
 const CATEGORIES: ProductCategory[] = [
@@ -155,10 +159,6 @@ export const AdminPanel: React.FC = () => {
   const [orderDetailsModal, setOrderDetailsModal] = useState<Order | null>(null);
 
   // Modals state
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
 
   const [trackingForm, setTrackingForm] = useState({
@@ -191,6 +191,16 @@ export const AdminPanel: React.FC = () => {
     name: string;
     affectedCount?: number;
   } | null>(null);
+
+  // Bulk selection in Orders
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  // Critical stock products (<= 2 pieces left)
+  const criticalStockProducts = products.filter(
+    (p) => !p.isSoldOut && p.inStockCount !== undefined && p.inStockCount <= 2 && p.inStockCount > 0
+  );
+  const soldOutProducts = products.filter((p) => p.isSoldOut || (p.inStockCount !== undefined && p.inStockCount === 0));
 
   // Calculate Dashboard KPIs
   const totalRevenue = orders
@@ -377,19 +387,29 @@ export const AdminPanel: React.FC = () => {
     if (orderTrackingFilter === 'missing_tracking' && (o.trackingNumber || o.trackingLink)) return false;
     if (orderSearch) {
       const q = orderSearch.toLowerCase().trim();
+      const rawDigits = q.replace(/\D/g, '');
       const orderNum = (o.orderNumber || o.id || '').toLowerCase();
       const custName = (o.customerName || '').toLowerCase();
-      const phone = (o.phone || '');
+      const phone = o.phone || '';
+      const phoneDigits = phone.replace(/\D/g, '');
+      const email = (o.email || o.userEmail || '').toLowerCase();
       const city = (o.city || '').toLowerCase();
+      const state = (o.state || '').toLowerCase();
+      const pincode = (o.pincode || '');
       const courier = (o.courierName || '').toLowerCase();
       const tracking = (o.trackingNumber || '').toLowerCase();
       const itemsMatch = Array.isArray(o.items) && o.items.some((i) => (i?.title || '').toLowerCase().includes(q));
 
+      const phoneMatches = phone.includes(q) || (rawDigits.length >= 3 && phoneDigits.includes(rawDigits));
+
       return (
         orderNum.includes(q) ||
         custName.includes(q) ||
-        phone.includes(q) ||
+        phoneMatches ||
+        email.includes(q) ||
         city.includes(q) ||
+        state.includes(q) ||
+        pincode.includes(q) ||
         courier.includes(q) ||
         tracking.includes(q) ||
         itemsMatch
@@ -397,6 +417,98 @@ export const AdminPanel: React.FC = () => {
     }
     return true;
   });
+
+  const exportOrdersToCSV = () => {
+    if (filteredOrders.length === 0) {
+      showToast('No orders match your filter to export.');
+      return;
+    }
+
+    const headers = [
+      'Order Number',
+      'Date Placed',
+      'Customer Name',
+      'Phone',
+      'Email',
+      'City',
+      'State',
+      'Pincode',
+      'Full Address',
+      'Items Ordered',
+      'Total Amount (INR)',
+      'Payment Status',
+      'Payment Method',
+      'Order Status',
+      'Courier Name',
+      'Tracking Number / AWB',
+      'Tracking Link',
+    ];
+
+    const escapeCSV = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = filteredOrders.map((o) => {
+      const itemsSummary = (o.items || [])
+        .map((i) => `${i.title} (Size: ${i.size || 'Free'}, Qty: ${i.quantity}, Price: ${i.price})`)
+        .join('; ');
+
+      const formattedDate = o.createdAt
+        ? new Date(o.createdAt).toLocaleString('en-IN')
+        : '';
+
+      return [
+        escapeCSV(o.orderNumber || o.id),
+        escapeCSV(formattedDate),
+        escapeCSV(o.customerName || ''),
+        escapeCSV(o.phone || ''),
+        escapeCSV(o.email || o.userEmail || ''),
+        escapeCSV(o.city || ''),
+        escapeCSV(o.state || ''),
+        escapeCSV(o.pincode || ''),
+        escapeCSV(o.address || ''),
+        escapeCSV(itemsSummary),
+        escapeCSV(o.total || 0),
+        escapeCSV(o.paymentStatus || 'pending'),
+        escapeCSV(o.paymentMethod || 'Online'),
+        escapeCSV(o.status || 'Pending'),
+        escapeCSV(o.courierName || ''),
+        escapeCSV(o.trackingNumber || ''),
+        escapeCSV(o.trackingLink || ''),
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.map(escapeCSV).join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.setAttribute('download', `tws_orders_export_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${filteredOrders.length} orders to CSV successfully!`);
+  };
+
+  const handleBulkUpdateStatus = async (newStatus: OrderStatus) => {
+    if (selectedOrderIds.length === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      for (const id of selectedOrderIds) {
+        await updateOrderStatus(id, newStatus);
+      }
+      showToast(`Updated ${selectedOrderIds.length} orders to "${newStatus}"`);
+      setSelectedOrderIds([]);
+    } catch (err: any) {
+      showToast(`Bulk update error: ${err.message || 'Failed to update some orders'}`);
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
 
   const filteredProducts = products.filter((p) => {
     if (productCatFilter !== 'all' && p.category !== productCatFilter) return false;
@@ -662,6 +774,22 @@ export const AdminPanel: React.FC = () => {
                 </button>
               );
             })}
+
+            {/* Quick Cloud Media Library Button */}
+            <button
+              type="button"
+              onClick={() => setIsMediaLibraryOpen(true)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-semibold text-[#4A453E] hover:bg-[#FAF7F0] hover:text-[#721B29] transition-colors whitespace-nowrap cursor-pointer mt-2 border border-dashed border-[#D9CEBF]"
+              title="Manage and delete images directly in ImageKit Cloud"
+            >
+              <div className="flex items-center gap-2.5">
+                <HardDrive className="w-4 h-4 text-[#721B29]" />
+                <span>Media Library</span>
+              </div>
+              <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded uppercase">
+                Cloud
+              </span>
+            </button>
           </div>
 
           <div className="hidden md:block pt-6 border-t border-[#EAE4D9] text-[11px] text-[#736B63]">
@@ -688,7 +816,7 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               {/* KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="bg-white p-5 rounded-xl border border-[#EAE4D9] shadow-xs">
                   <span className="text-[11px] uppercase font-semibold text-[#8C8276] tracking-wider">
                     Total Order Volume
@@ -699,7 +827,7 @@ export const AdminPanel: React.FC = () => {
                     </span>
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <p className="text-[11px] text-[#736B63] mt-1">Across all WhatsApp inquiries</p>
+                  <p className="text-[11px] text-[#736B63] mt-1">Across all orders</p>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-[#EAE4D9] shadow-xs">
@@ -712,12 +840,12 @@ export const AdminPanel: React.FC = () => {
                     </span>
                     <Clock className="w-4 h-4 text-[#B8860B]" />
                   </div>
-                  <p className="text-[11px] text-[#736B63] mt-1">Awaiting staff chat reply</p>
+                  <p className="text-[11px] text-[#736B63] mt-1">Awaiting staff confirmation</p>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-[#EAE4D9] shadow-xs">
                   <span className="text-[11px] uppercase font-semibold text-[#8C8276] tracking-wider">
-                    Active Shipments (With Tracking)
+                    Active Shipments
                   </span>
                   <div className="mt-2 flex items-baseline justify-between">
                     <span className="font-serif text-2xl sm:text-3xl font-bold text-emerald-800">
@@ -741,18 +869,117 @@ export const AdminPanel: React.FC = () => {
                     Top Selling Category
                   </span>
                   <div className="mt-2 flex items-baseline justify-between">
-                    <span className="font-serif text-lg sm:text-xl font-bold text-[#242120]">
+                    <span className="font-serif text-lg sm:text-xl font-bold text-[#242120] truncate">
                       {topSellingCategory.name}
                     </span>
-                    <Tag className="w-4 h-4 text-[#721B29]" />
+                    <Tag className="w-4 h-4 text-[#721B29] shrink-0" />
                   </div>
-                  <p className="text-[11px] text-[#736B63] mt-1">
+                  <p className="text-[11px] text-[#736B63] mt-1 truncate">
                     {topSellingCategory.count > 0
-                      ? `${topSellingCategory.count} item${topSellingCategory.count !== 1 ? 's' : ''} ordered across all orders`
+                      ? `${topSellingCategory.count} items ordered`
                       : 'No orders yet'}
                   </p>
                 </div>
+
+                {/* Low Stock KPI */}
+                <div
+                  onClick={() => {
+                    setProductStockFilter('low_stock');
+                    setAdminActiveTab('products');
+                  }}
+                  className={`p-5 rounded-xl border shadow-xs cursor-pointer transition-all hover:scale-101 ${
+                    criticalStockProducts.length > 0
+                      ? 'bg-gradient-to-br from-rose-50 to-amber-50 border-rose-300'
+                      : 'bg-white border-[#EAE4D9]'
+                  }`}
+                >
+                  <span className="text-[11px] uppercase font-semibold text-[#8C8276] tracking-wider">
+                    Low Stock Alerts (≤2)
+                  </span>
+                  <div className="mt-2 flex items-baseline justify-between">
+                    <span className={`font-serif text-2xl sm:text-3xl font-bold ${
+                      criticalStockProducts.length > 0 ? 'text-[#721B29]' : 'text-[#242120]'
+                    }`}>
+                      {criticalStockProducts.length}
+                    </span>
+                    <Flame className={`w-4 h-4 ${
+                      criticalStockProducts.length > 0 ? 'text-[#721B29] fill-[#721B29] animate-pulse' : 'text-[#8C8276]'
+                    }`} />
+                  </div>
+                  <p className="text-[11px] text-[#736B63] mt-1">
+                    {criticalStockProducts.length > 0 ? 'Click to inspect & restock' : 'All garments well-stocked'}
+                  </p>
+                </div>
               </div>
+
+              {/* Critical Low Stock Alert Widget */}
+              {criticalStockProducts.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-rose-50/90 rounded-xl border border-amber-300/80 p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2.5 border-b border-amber-200/70">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-[#721B29] shrink-0">
+                        <Flame className="w-4 h-4 fill-[#721B29]" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-base font-bold text-[#721B29] flex items-center gap-1.5 flex-wrap">
+                          <span>Low Boutique Stock Alert</span>
+                          <span className="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full uppercase">
+                            {criticalStockProducts.length} Item{criticalStockProducts.length > 1 ? 's' : ''} Critical (≤2 units)
+                          </span>
+                        </h3>
+                        <p className="text-xs text-[#736B63]">
+                          These silhouettes have 2 or fewer units left in Kurukshetra boutique inventory.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductStockFilter('low_stock');
+                        setAdminActiveTab('products');
+                      }}
+                      className="text-xs font-semibold text-[#721B29] hover:underline cursor-pointer flex items-center gap-1 self-start sm:self-auto"
+                    >
+                      <span>Manage All Low Stock Garments →</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {criticalStockProducts.slice(0, 6).map((prod) => (
+                      <div
+                        key={prod.id}
+                        className="bg-white rounded-lg p-3 border border-amber-200/80 flex items-center justify-between gap-3 shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                          <img
+                            src={getOptimizedImageUrl(prod.images?.[0] || FALLBACK_PRODUCT_IMAGE, 80, 100)}
+                            alt={prod.title}
+                            className="w-10 h-12 object-cover rounded border border-[#EAE4D9] shrink-0"
+                          />
+                          <div className="overflow-hidden">
+                            <p className="font-semibold text-xs text-[#242120] truncate" title={prod.title}>
+                              {prod.title}
+                            </p>
+                            <p className="text-[10px] text-[#8C8276] truncate">{prod.category}</p>
+                            <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                              <Flame className="w-2.5 h-2.5" />
+                              Only {prod.inStockCount} left!
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setProductModalState({ isOpen: true, product: prod })}
+                          className="px-2.5 py-1 bg-[#FAF7F0] hover:bg-[#721B29] hover:text-white text-[#242120] border border-[#D9CEBF] rounded-xs text-[11px] font-semibold transition-colors shrink-0 cursor-pointer"
+                        >
+                          Restock
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Recent Orders Stream */}
               <div className="bg-white rounded-xl border border-[#EAE4D9] p-6 shadow-xs">
@@ -880,16 +1107,16 @@ export const AdminPanel: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Filters */}
+                {/* Filters & Export */}
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-[#998F82] absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search order, customer, AWB..."
+                      placeholder="Search order, customer, phone, email, AWB..."
                       value={orderSearch}
                       onChange={(e) => setOrderSearch(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29]"
+                      className="pl-8 pr-3 py-1.5 bg-white border border-[#D9CEBF] rounded-sm text-xs text-[#242120] focus:outline-none focus:border-[#721B29] min-w-[240px]"
                     />
                   </div>
 
@@ -918,8 +1145,75 @@ export const AdminPanel: React.FC = () => {
                     <option value="Delivered">Delivered</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
+
+                  {/* Export CSV Button */}
+                  <button
+                    type="button"
+                    onClick={exportOrdersToCSV}
+                    className="px-3 py-1.5 bg-[#FAF7F0] hover:bg-[#721B29] hover:text-white text-[#242120] border border-[#D9CEBF] rounded-sm text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="Export currently filtered orders as CSV for Excel"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export CSV ({filteredOrders.length})</span>
+                  </button>
                 </div>
               </div>
+
+              {/* Bulk Actions Floating Bar */}
+              {selectedOrderIds.length > 0 && (
+                <div className="bg-[#721B29] text-white p-3 sm:p-4 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs bg-white text-[#721B29] px-2 py-0.5 rounded-full">
+                      {selectedOrderIds.length}
+                    </span>
+                    <span className="text-xs font-medium">orders selected</span>
+                  </div>
+
+                  <div className="flex items-center flex-wrap gap-2 text-xs">
+                    <span className="text-white/70 text-[11px] font-medium mr-1">Bulk Status:</span>
+                    <button
+                      type="button"
+                      disabled={isBulkUpdating}
+                      onClick={() => handleBulkUpdateStatus('Confirmed')}
+                      className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded font-medium transition cursor-pointer border border-white/20 disabled:opacity-50"
+                    >
+                      Mark Confirmed
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBulkUpdating}
+                      onClick={() => handleBulkUpdateStatus('Paid')}
+                      className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded font-medium transition cursor-pointer border border-white/20 disabled:opacity-50"
+                    >
+                      Mark Paid
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBulkUpdating}
+                      onClick={() => handleBulkUpdateStatus('Shipped')}
+                      className="px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-900 text-white rounded font-medium transition cursor-pointer border border-indigo-400/40 disabled:opacity-50"
+                    >
+                      Mark Shipped
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isBulkUpdating}
+                      onClick={() => handleBulkUpdateStatus('Delivered')}
+                      className="px-2.5 py-1 bg-emerald-900/60 hover:bg-emerald-900 text-white rounded font-medium transition cursor-pointer border border-emerald-400/40 disabled:opacity-50"
+                    >
+                      Mark Delivered
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrderIds([])}
+                      className="ml-2 text-[11px] text-white/80 hover:text-white underline cursor-pointer"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Orders Table */}
               <div className="bg-white rounded-xl border border-[#EAE4D9] overflow-hidden shadow-xs">
@@ -927,6 +1221,21 @@ export const AdminPanel: React.FC = () => {
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#FAF8F3] border-b border-[#EAE4D9] text-[#736B63] uppercase tracking-wider font-semibold">
                       <tr>
+                        <th className="p-3.5 w-10 text-center">
+                          <input
+                            type="checkbox"
+                            checked={filteredOrders.length > 0 && filteredOrders.every((o) => selectedOrderIds.includes(o.id))}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedOrderIds(filteredOrders.map((o) => o.id));
+                              } else {
+                                setSelectedOrderIds([]);
+                              }
+                            }}
+                            className="rounded text-[#721B29] focus:ring-[#721B29] cursor-pointer"
+                            title="Select / Deselect all filtered orders"
+                          />
+                        </th>
                         <th className="p-3.5">Order</th>
                         <th className="p-3.5">Customer & Destination</th>
                         <th className="p-3.5">Garment Items</th>
@@ -939,15 +1248,31 @@ export const AdminPanel: React.FC = () => {
                     <tbody className="divide-y divide-[#F4EFE6] text-[#242120]">
                       {filteredOrders.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="p-8 text-center text-xs text-[#8C8276]">
+                          <td colSpan={8} className="p-8 text-center text-xs text-[#8C8276]">
                             No orders match your filter criteria.
                           </td>
                         </tr>
                       ) : (
                         filteredOrders.map((order) => {
                           const hasTracking = Boolean(order.trackingNumber || order.trackingLink);
+                          const isSelected = selectedOrderIds.includes(order.id);
                           return (
-                            <tr key={order.id} className="hover:bg-[#FDFBF7] transition-colors">
+                            <tr key={order.id} className={`hover:bg-[#FDFBF7] transition-colors ${isSelected ? 'bg-amber-50/40' : ''}`}>
+                              {/* Selection Checkbox */}
+                              <td className="p-3.5 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedOrderIds((prev) =>
+                                      prev.includes(order.id) ? prev.filter((id) => id !== order.id) : [...prev, order.id]
+                                    );
+                                  }}
+                                  className="rounded text-[#721B29] focus:ring-[#721B29] cursor-pointer"
+                                />
+                              </td>
+
                               {/* Order ID & Date */}
                               <td className="p-3.5 font-sans">
                                 <span className="font-bold text-[#721B29] block">
@@ -971,6 +1296,11 @@ export const AdminPanel: React.FC = () => {
                                 <p className="text-[11px] text-[#736B63]">
                                   📲 {order.phone || 'No phone'}
                                 </p>
+                                {(order.email || order.userEmail) && (
+                                  <p className="text-[10px] text-[#8C8276] truncate max-w-[200px]" title={order.email || order.userEmail}>
+                                    ✉️ {order.email || order.userEmail}
+                                  </p>
+                                )}
                                 <p className="text-[10px] text-[#8C8276] truncate max-w-[200px]" title={`${order.address || ''}, ${order.city || ''} - ${order.pincode || ''}`}>
                                   {order.address || 'Address not provided'}, {order.city || ''} {order.pincode ? `- ${order.pincode}` : ''}
                                 </p>

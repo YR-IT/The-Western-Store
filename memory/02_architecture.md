@@ -182,10 +182,10 @@ src/
 | `POST` | `/api/orders` | Rate limited | Create new order |
 | `GET` | `/api/orders/track` | None | Public order tracking |
 | `POST` | `/api/contact` | Rate limited (5/15min) | Contact form |
-| `POST` | `/api/payments/create-order` | Rate limited (30/15min) | Create Razorpay order (paise) with normalized items |
-| `POST` | `/api/payments/verify` | Rate limited (30/15min) | Verify HMAC signature, save order & decrement stock |
-| `POST` | `/api/razorpay/create-order` | None | Alias endpoint |
-| `POST` | `/api/razorpay/verify-payment` | None | Alias endpoint |
+| `POST` | `/api/payments/create-order` | Rate limited (15/15min) | Create Cashfree order (rupees) & get payment_session_id |
+| `POST` | `/api/payments/verify` | None | Re-fetch order from Cashfree, confirm PAID & decrement stock |
+| `POST` | `/api/payments/webhook` | Raw JSON | Cashfree webhook event processor (HMAC SHA-256 Base64) |
+| `POST` | `/api/payments/refund` | `requireAdmin` | Cashfree order refund |
 | `GET` | `/api/imagekit/auth` | `requireAdmin` | Legacy ImageKit client-side auth params |
 | `POST` | `/api/imagekit/upload` | `requireAdmin` | **Primary** upload (base64 → ImageKit SDK → CDN URL) |
 | `GET` | `/api/imagekit/files` | `requireAdmin` | Media library list |

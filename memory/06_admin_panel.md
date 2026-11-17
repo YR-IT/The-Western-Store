@@ -43,7 +43,7 @@ Settings / store info remain reachable from Homepage or Settings flows as implem
 
 ### Order Status Flow
 ```
-Paid (Online via Razorpay) → Confirmed → Shipped → Delivered
+Paid (Online via Cashfree) → Confirmed → Shipped → Delivered
                                              ↓
                                          Cancelled (at any stage)
 ```
@@ -57,6 +57,13 @@ Paid (Online via Razorpay) → Confirmed → Shipped → Delivered
 - `PUT /api/admin/orders/:id/status`
 - `PUT /api/admin/orders/:id/tracking`
 - `DELETE /api/admin/orders/:id`
+
+### Order Operations & Admin Features (Enhanced Nov 2026)
+- **CSV / Excel Export**: One-click download of filtered orders (`tws_orders_export_YYYY-MM-DD.csv`) with full customer names, contact info, destination, items, prices, payment status, courier, and AWB numbers. Encoded with UTF-8 BOM (`\uFEFF`) for flawless Microsoft Excel display.
+- **Bulk Status Updates**: Multi-select checkboxes on orders table with floating action bar to batch-update orders to Confirmed, Paid, Shipped, or Delivered.
+- **Customer Phone & Email Search**: Search bar directly searches by 10-digit phone number, stripped numeric substrings, and email address in addition to order ID, customer name, and AWB.
+- **Low Stock Dashboard Alert Widget**: Dedicated alert card on Home dashboard highlighting items with `<= 2` stock left in Kurukshetra boutique, with 1-click modal restock.
+- **Cloud Media Library Launcher**: Direct shortcut in admin sidebar to browse, search, and delete ImageKit cloud images with confirmation.
 
 ### Catalog (Products & Categories)
 Mutations go through Express (`POST/PUT/DELETE /api/admin/products|categories`) with `requireAdmin` + Supabase **service_role** (bypasses anon RLS).

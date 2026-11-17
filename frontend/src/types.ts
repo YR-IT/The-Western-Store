@@ -120,7 +120,7 @@ export interface Order {
   shippingFee: number;
   discount?: number;
   total: number;
-  paymentMethod?: 'razorpay' | 'whatsapp' | 'whatsapp_cod' | 'cod' | string;
+  paymentMethod?: 'cashfree' | 'whatsapp' | 'whatsapp_cod' | 'cod' | string;
   status: OrderStatus;
   // Tracking section (filled by admin once Confirmed/Shipped)
   courierName?: string;

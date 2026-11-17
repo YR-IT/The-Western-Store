@@ -19,8 +19,9 @@
 | `IMAGEKIT_URL_ENDPOINT` | `https://ik.imagekit.io/89dmpbgrm` | CDN base URL |
 | `SUPABASE_URL` | `https://ghdrlqzcdmysnpmlkeju.supabase.co` | Active Supabase project |
 | `SUPABASE_KEY` | (service role / key in `.env`) | Backend catalog + orders |
-| `RAZORPAY_KEY_ID` | ⚠️ **Not set on Render** | Sandbox notification mode until set |
-| `RAZORPAY_KEY_SECRET` | ⚠️ **Not set on Render** | Same |
+| `CASHFREE_APP_ID` | Env var in `backend/.env` | Cashfree Client App ID |
+| `CASHFREE_SECRET_KEY` | Env var in `backend/.env` | Cashfree Client Secret Key |
+| `CASHFREE_ENV` | `SANDBOX` or `PRODUCTION` | Environment selection |
 
 ### ⚠️ Important: `tsx watch` & `.env` Changes
 `tsx watch` only watches `.ts` files. If you edit `.env`, the server **will NOT auto-restart**.  
@@ -56,9 +57,10 @@ Local default if unset: `http://localhost:4000` for backend (ImageKit uploader a
 - **Database:** products, categories, orders, store_settings, etc.
 - **Images:** Stored as ImageKit URLs in DB (not Supabase Storage)
 
-### Razorpay
-- **Status:** 🟡 Code present; keys often unset → sandbox notification mode
-- **KYC:** Owner action still required for live payments
+### Cashfree Payments
+- **Status:** 🟢 Migrated from Razorpay to Cashfree Payments (`cashfree-pg` + Cashfree.js v3)
+- **Dashboard:** https://merchant.cashfree.com
+- **Checkout:** Server creates order → passes `paymentSessionId` → frontend launches Drop-in modal → backend verifies via `cashfree.PGFetchOrder`
 
 ---
 

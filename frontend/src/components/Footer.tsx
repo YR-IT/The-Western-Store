@@ -312,7 +312,7 @@ export const Footer: React.FC = () => {
 
           {/* Payment & support badges */}
           <div className="flex items-center flex-wrap gap-2 text-[11px]">
-            {['UPI / QR', 'Cards & NetBanking', 'Razorpay Secure'].map((method, idx) => (
+            {['UPI / QR', 'Cards & NetBanking', 'Cashfree Secure'].map((method, idx) => (
               <motion.span
                 key={method}
                 initial={{ opacity: 0, scale: 0.8 }}

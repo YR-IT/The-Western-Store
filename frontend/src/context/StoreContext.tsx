@@ -16,6 +16,8 @@ import {
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { generateOrderId, generateOrderNumber } from '../utils/orderId';
 import { sanitizeAnnouncement } from '../utils/sanitizeAnnouncement';
+import { resolveTrackingUrl } from '../utils/tracking';
+import { getBackendUrl } from '../utils/backendUrl';
 import {
   Product,
   Category,
@@ -192,6 +194,8 @@ interface StoreContextType {
 
   // Orders & Admin
   orders: Order[];
+  addOrder: (order: Order) => void;
+  fetchUserOrders: () => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateOrderTracking: (orderId: string, tracking: OrderTrackingUpdate) => void;
   deleteOrder: (id: string) => void;
@@ -877,7 +881,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
     if (!token) return;
 
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     try {
       const res = await fetch(`${backendUrl}/api/admin/orders`, {
         headers: {
@@ -906,9 +910,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             status: (row.status as OrderStatus) || 'Pending WhatsApp',
             courierName: row.courier_name || row.courierName || undefined,
             trackingNumber: row.tracking_number || row.trackingNumber || undefined,
-            trackingLink: row.tracking_number || row.trackingNumber
-              ? `https://delhivery.com/track/package/${row.tracking_number || row.trackingNumber}`
-              : (row.tracking_link || row.trackingLink || undefined),
+            trackingLink: resolveTrackingUrl(
+              row.courier_name || row.courierName,
+              row.tracking_number || row.trackingNumber,
+              row.tracking_link || row.trackingLink
+            ) || undefined,
             userId: row.user_id || row.userId || undefined,
           }));
           setOrders(mapped);
@@ -922,14 +928,66 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [adminToken]);
 
-  // Customer Orders Fetch from Supabase on Login
+  // Customer Orders Fetch & Tracking Sync
   const fetchUserOrders = useCallback(async () => {
+    const backendUrl = getBackendUrl();
+
+    // 1. Refresh tracking for any orders currently stored in client memory/localStorage
+    setOrders((currentOrders) => {
+      if (Array.isArray(currentOrders) && currentOrders.length > 0) {
+        currentOrders.forEach((o) => {
+          const target = (o.orderNumber || o.id || '').replace(/^#/, '').trim();
+          if (!target) return;
+          fetch(`${backendUrl}/api/orders/lookup/${encodeURIComponent(target)}`)
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (data?.success && data.order) {
+                const row = data.order;
+                setOrders((latest) => {
+                  const updated = latest.map((item) => {
+                    if (item.id === o.id || item.orderNumber === o.orderNumber) {
+                      const resolvedLink =
+                        resolveTrackingUrl(row.courier_name, row.tracking_number, row.tracking_link) ||
+                        row.tracking_link ||
+                        item.trackingLink;
+                      return {
+                        ...item,
+                        status: (row.status as OrderStatus) || item.status,
+                        courierName: row.courier_name || item.courierName,
+                        trackingNumber: row.tracking_number || item.trackingNumber,
+                        trackingLink: resolvedLink || item.trackingLink,
+                      };
+                    }
+                    return item;
+                  });
+                  try {
+                    localStorage.setItem('tws_orders', JSON.stringify(updated));
+                  } catch {}
+                  return updated;
+                });
+              }
+            })
+            .catch(() => {});
+        });
+      }
+      return currentOrders;
+    });
+
+    // 2. If user is logged in, query Supabase / Account endpoint
     if (!currentUser || !currentUser.id || !isSupabaseConfigured() || !supabase) return;
     try {
+      const isIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser.id);
+      const filters: string[] = [];
+      if (isIdUuid) filters.push(`user_id.eq.${currentUser.id}`);
+      if (currentUser.email) {
+        filters.push(`customer_email.ilike.${currentUser.email.trim()}`);
+      }
+      if (filters.length === 0) return;
+
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .or(filters.join(','))
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
@@ -953,14 +1011,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           status: (row.status as OrderStatus) || 'Pending WhatsApp',
           courierName: row.courier_name || undefined,
           trackingNumber: row.tracking_number || undefined,
-          trackingLink: row.tracking_number ? `https://delhivery.com/track/package/${row.tracking_number}` : undefined,
+          trackingLink: resolveTrackingUrl(
+            row.courier_name,
+            row.tracking_number,
+            row.tracking_link
+          ) || undefined,
           userId: row.user_id || undefined,
         }));
 
         setOrders((prev) => {
           const remoteIds = new Set(mapped.map((o) => o.id));
-          const uniqueLocal = prev.filter((o) => !remoteIds.has(o.id));
-          return [...mapped, ...uniqueLocal];
+          const remoteNumbers = new Set(mapped.map((o) => o.orderNumber));
+          const uniqueLocal = prev.filter((o) => !remoteIds.has(o.id) && !remoteNumbers.has(o.orderNumber));
+          const merged = [...mapped, ...uniqueLocal];
+          try {
+            localStorage.setItem('tws_orders', JSON.stringify(merged));
+          } catch {}
+          return merged;
         });
       }
     } catch (err) {
@@ -968,11 +1035,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [currentUser]);
 
-  // Sync customer orders when logged in
+  // Sync customer orders on mount & when user state updates
   useEffect(() => {
-    if (currentUser?.id && !currentUser.isAdmin) {
-      fetchUserOrders();
-    }
+    fetchUserOrders();
   }, [currentUser?.id, currentUser?.isAdmin, fetchUserOrders]);
 
   // 25-Second Polling for Admin Orders when logged in
@@ -1324,7 +1389,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const loginAsAdmin = async (email: string, pass: string): Promise<boolean> => {
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     try {
       const res = await fetch(`${backendUrl}/api/admin/login`, {
         method: 'POST',
@@ -1537,7 +1602,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     if (token) {
       fetch(`${backendUrl}/api/admin/orders/${orderId}`, {
         method: 'PUT',
@@ -1550,17 +1615,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const addOrder = useCallback((newOrder: Order) => {
+    setOrders((prev) => {
+      const exists = prev.some((o) => o.id === newOrder.id || o.orderNumber === newOrder.orderNumber);
+      const updated = exists
+        ? prev.map((o) => (o.id === newOrder.id || o.orderNumber === newOrder.orderNumber ? { ...o, ...newOrder } : o))
+        : [newOrder, ...prev];
+      try {
+        localStorage.setItem('tws_orders', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
+
   const updateOrderTracking = (
     orderId: string,
     tracking: OrderTrackingUpdate
   ) => {
+    const resolvedLink = resolveTrackingUrl(
+      tracking.courierName,
+      tracking.trackingNumber,
+      tracking.trackingLink
+    ) || tracking.trackingLink || '';
+
+    const fullTracking = {
+      ...tracking,
+      trackingLink: resolvedLink,
+    };
+
+    const cleanOrderId = (orderId || '').replace(/^#/, '').trim();
+
     setOrders((prev) => {
       const updatedList = prev.map((order) => {
-        if (order.id !== orderId) return order;
+        const matches =
+          order.id === orderId ||
+          order.orderNumber === orderId ||
+          (order.orderNumber && order.orderNumber.replace(/^#/, '') === cleanOrderId) ||
+          (order.id && order.id.replace(/^#/, '') === cleanOrderId);
+        if (!matches) return order;
         const updated: Order = {
           ...order,
-          ...tracking,
-          ...(tracking.status ? { status: tracking.status } : {}),
+          ...fullTracking,
+          ...(fullTracking.status ? { status: fullTracking.status } : {}),
         };
         return updated;
       });
@@ -1571,20 +1667,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     if (token) {
-      fetch(`${backendUrl}/api/admin/orders/${orderId}`, {
+      fetch(`${backendUrl}/api/admin/orders/${encodeURIComponent(cleanOrderId)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          courier_name: tracking.courierName,
-          tracking_number: tracking.trackingNumber,
-          status: tracking.status,
+          courier_name: fullTracking.courierName,
+          tracking_number: fullTracking.trackingNumber,
+          tracking_link: fullTracking.trackingLink,
+          status: fullTracking.status,
+          notes: fullTracking.trackingNotes,
         }),
-      }).catch(() => {});
+      }).catch((err) => console.error('[Update Tracking API Error]', err));
     }
   };
 
@@ -1597,7 +1695,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return updated;
     });
     const token = adminToken || (typeof window !== 'undefined' ? sessionStorage.getItem('tws_admin_token') : null);
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     if (token) {
       fetch(`${backendUrl}/api/admin/orders/${id}`, {
         method: 'DELETE',
@@ -1609,7 +1707,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const submitWhatsAppOrder = async (formData: CheckoutFormData) => {
-    const backendUrl = ((import.meta as any).env?.VITE_BACKEND_URL) || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
     let orderNumber = generateOrderNumber();
     let finalTotal = cartSubtotal;
 
@@ -1965,6 +2063,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleWishlist,
         isInWishlist,
         orders,
+        addOrder,
+        fetchUserOrders,
         updateOrderStatus,
         updateOrderTracking,
         deleteOrder,

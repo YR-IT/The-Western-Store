@@ -2,7 +2,7 @@
 
 ## 🏪 Business Context
 
-**The Western Store** is a physical ethnic & western fashion boutique based in Kurukshetra, Haryana. This project is their **full-stack e-commerce platform** built to take the store online — enabling product browsing, WhatsApp-based ordering, Razorpay payments, and an admin management console.
+**The Western Store** is a physical ethnic & western fashion boutique based in Kurukshetra, Haryana. This project is their **full-stack e-commerce platform** built to take the store online — enabling product browsing, WhatsApp-based ordering, Cashfree Payments, and an admin management console.
 
 ---
 
@@ -11,7 +11,7 @@
 | Field | Value |
 |-------|-------|
 | **Store Name** | The Western Store |
-| **Legal Name** | ⚠️ Not yet provided (needed for GST/Razorpay KYC) |
+| **Legal Name** | ⚠️ Not yet provided (needed for GST/Cashfree KYC) |
 | **GSTIN** | ⚠️ Not yet provided |
 | **Tagline** | Kurukshetra's Premier Ethnic & Western Wardrobe |
 | **Address** | Opp. Hotel Pearl Marc, Railway Road, near Ujjivan Bank |
@@ -58,7 +58,7 @@
 | **Auth (Admin)** | Custom JWT (HS256 via `jsonwebtoken`) |
 | **Database** | Supabase (PostgreSQL) — `ghdrlqzcdmysnpmlkeju` |
 | **Image CDN** | ImageKit.io (`89dmpbgrm`; server upload via `/api/imagekit/upload`) |
-| **Payments** | Razorpay (code live; keys/KYC often pending → sandbox mode) |
+| **Payments** | Cashfree Payments (`cashfree-pg` + Cashfree.js v3 Drop-in) |
 | **Hosting** | Frontend Vercel (`thewesternstore.in`); backend Render |
 | **Rate Limiting** | `express-rate-limit` |
 | **Security** | `helmet` middleware, CORS allowlist |

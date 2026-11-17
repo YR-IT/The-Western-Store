@@ -36,7 +36,7 @@ export interface StoreInfo {
 
 export const STORE_INFO: StoreInfo = {
   name: 'The Western Store',
-  // Legal name as on PAN / bank / Razorpay (proprietor); trade name is The Western Store
+  // Legal name as on PAN / bank / Cashfree KYC (proprietor); trade name is The Western Store
   legalName: 'Shweta',
   gstin: '06FTCPS9145C1ZJ',
   tagline: 'Kurukshetra\u2019s Premier Ethnic & Western Wardrobe',
@@ -46,7 +46,7 @@ export const STORE_INFO: StoreInfo = {
   state: 'Haryana',
   pincode: '136118',
   country: 'India',
-  // Customer / Razorpay support contact (not the Udyam alternate mobile)
+  // Customer / Cashfree support contact (not the Udyam alternate mobile)
   phone: '9729515288',
   phoneFormatted: '+91 97295 15288',
   whatsappNumber: '919729515288',

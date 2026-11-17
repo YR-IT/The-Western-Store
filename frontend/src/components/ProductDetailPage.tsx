@@ -560,9 +560,9 @@ export const ProductDetailPage: React.FC = () => {
                         </span>
                       )}
                       {!product.isSoldOut && product.inStockCount !== undefined && product.inStockCount > 0 && product.inStockCount <= 5 && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#C05621] text-white text-xs font-bold uppercase tracking-wider rounded-xs shadow-md backdrop-blur-xs">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#721B29] text-white text-xs font-bold uppercase tracking-wider rounded-xs shadow-md backdrop-blur-xs">
                           <Flame className="w-3.5 h-3.5 fill-amber-200 text-amber-200" />
-                          Only {product.inStockCount} left!
+                          Only {product.inStockCount} {product.inStockCount === 1 ? 'piece' : 'pieces'} left.
                         </span>
                       )}
                       {product.isSoldOut && (
@@ -795,27 +795,11 @@ export const ProductDetailPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Low Inventory Urgency Alert */}
+                  {/* Low Inventory Alert */}
                   {!product.isSoldOut && product.inStockCount !== undefined && product.inStockCount > 0 && product.inStockCount <= 5 && (
-                    <div id="pdp-low-stock-alert" className="mt-4 p-3.5 bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-200/90 rounded-md">
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-bold text-[#8C3E00] flex items-center gap-1.5">
-                          <Flame className="w-4 h-4 text-[#C05621] fill-[#C05621] animate-pulse" />
-                          <span>Hurry! Only {product.inStockCount} {product.inStockCount === 1 ? 'piece' : 'pieces'} left in stock</span>
-                        </span>
-                        <span className="text-[10px] font-semibold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-xs uppercase tracking-wide">
-                          Selling Fast
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-amber-200/60 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-amber-500 to-[#721B29] rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, Math.max(25, (product.inStockCount / 5) * 100))}%` }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-[#736B63] mt-2">
-                        Popular in Kurukshetra — complete your order before inventory runs out.
-                      </p>
+                    <div id="pdp-low-stock-alert" className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-[#721B29]/10 text-[#721B29] border border-[#721B29]/20 rounded-sm text-xs font-semibold">
+                      <Flame className="w-3.5 h-3.5 fill-[#721B29] text-[#721B29] shrink-0" />
+                      <span>Only {product.inStockCount} {product.inStockCount === 1 ? 'piece' : 'pieces'} left.</span>
                     </div>
                   )}
 

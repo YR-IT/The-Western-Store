@@ -252,7 +252,7 @@ export const ContactPage: React.FC = () => {
           transition={{ duration: 0.55, delay: 0.25 }}
           className="space-y-6"
         >
-          {/* Business contact — Razorpay / consumer-facing essentials */}
+          {/* Business contact — consumer-facing essentials */}
           <div className="rounded-2xl border border-[#EAE4D9] bg-white p-6 shadow-sm space-y-4">
             <h3 className="font-serif text-lg font-bold text-[#242120] mb-1">Business contact details</h3>
             <p className="text-[11px] text-[#736B63] mb-2">

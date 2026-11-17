@@ -73,7 +73,7 @@ curl http://localhost:4000/api/health
 |---------|--------------|-------|
 | Supabase | https://supabase.com/dashboard | Project `ghdrlqzcdmysnpmlkeju` |
 | ImageKit | https://imagekit.io/dashboard | Account `89dmpbgrm`; uploads via `POST /api/imagekit/upload` |
-| Razorpay | https://dashboard.razorpay.com | Keys often unset → sandbox mode |
+| Cashfree | https://merchant.cashfree.com | `cashfree-pg` + Cashfree.js v3 |
 
 ---
 
@@ -92,7 +92,7 @@ curl http://localhost:4000/api/health
 ---
 
 ## 💳 Checkout & Ordering Rules
-- **Pure Razorpay Checkout:** WhatsApp order redirection is completely removed. Orders are placed **only through Razorpay** (Cards, UPI, NetBanking).
+- **Pure Cashfree Checkout:** WhatsApp order redirection is completely removed. Orders are placed **only through Cashfree** (Cards, UPI, NetBanking).
 - **PDP Action Buttons:** Strictly **only "Buy Now"** and **"Add to Shopping Bag / Cart"** buttons on Product Detail Pages. No WhatsApp inquiry buttons.
 - **Admin Catalog:** Products and categories mutations use authenticated Express backend endpoints (`POST/PUT/DELETE /api/admin/products`, `POST/PUT/DELETE /api/admin/categories`) with service_role access to bypass client anon RLS restrictions.
 

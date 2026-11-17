@@ -333,6 +333,104 @@ Restrictive `accept="image/*"` and/or programmatic `.click()` on a hidden `<inpu
 
 ---
 
+## Bug #020 — Payment Gateway Migration from Razorpay to Cashfree
+**Date:** November 15, 2026  
+**Status:** ✅ Fixed / Completed
+
+### Summary
+Migrated entire payment infrastructure from Razorpay to Cashfree Payments.
+- Replaced backend SDK `razorpay` with `cashfree-pg` (v6.x).
+- Removed paise multiplication (* 100); amounts now passed in Rupees (decimal).
+- Created order endpoint returns short-lived `payment_session_id`.
+- Payment verification migrated to authoritative backend re-fetch (`cashfree.PGFetchOrder`).
+- Webhook signature verification implemented using Cashfree's HMAC SHA-256 (Base64) over `timestamp + rawBody`.
+- Frontend replaced Razorpay checkout with Cashfree.js v3 Drop-in modal.
+
+---
+
+## Bug #021 — Cashfree Post-Payment Redirection & DB Persistence Fixes
+**Date:** November 15, 2026  
+**Status:** ✅ Fixed
+
+### Symptoms
+1. **QR Scan Flow:** After paying via QR code and closing the modal, the user remained on `/cart` showing an empty cart rather than redirecting to `/order-confirmation/:orderNumber`.
+2. **Card 3DS Redirect Flow:** On card payments with 3DS bank verification, browser redirected to `/order-confirmation/:orderId` with blank/placeholder details (`Total: ₹0`, items empty, customer `Provided during checkout`, status `Order Recorded`, and raw UUID `#1c5c5355-428a-495f...` displayed instead of `TWS-YYMMDD-XXXX`).
+3. **Missing Persistence:** Orders did not appear in Supabase `orders` table, customer's account orders, or Admin Panel.
+
+### Root Causes & Fixes
+1. **Cart Empty Redirect Race:** In `CheckoutPage.tsx`, an effect redirected to `/cart` when `cart.length === 0`. When payment succeeded and `clearCart()` was called, this effect fired and interrupted navigation. Added `orderSubmittedRef` to prevent premature redirection.
+2. **Modal Close on QR:** When users scanned QR on phone and closed the desktop modal, Cashfree resolved with `result.error: "User dropped"`. Now `CheckoutPage` always performs authoritative verification with `POST /api/payments/verify` before handling error states.
+3. **Foreign Key Constraint on `user_id`:** `POST /api/payments/create-order` failed with Postgres error `23503` when `userId` did not exist in `auth.users(id)`. The old fallback performed an update on a non-existent row. Fixed by retrying insertion with `user_id: null` (guest checkout order).
+4. **Card 3DS State Loss:** Full HTTP GET redirect from Cashfree bank page loses React Router `location.state`. `OrderConfirmationPage.tsx` now calls `/api/payments/verify` and `/api/orders/lookup/:identifier` on mount, re-hydrating order details and displaying `#TWS-YYMMDD-XXXX` with `Paid & Verified`.
+5. **UUID Validation in PostgREST Queries:** Guarded `.or()` queries in `backend/src/index.ts` so `id.eq` is only queried when the identifier is a valid UUID, preventing `22P02: invalid input syntax for type uuid` errors.
+
+---
+
+## Bug #022 — Courier Tracking Link Not Opening / Syncing on Customer End
+**Date:** November 15, 2026  
+**Status:** ✅ Fixed
+
+### Symptoms
+When an admin saved tracking details (Courier Name, Waybill/AWB, and Tracking Link) in the Admin Panel, customers viewing their purchases under `/account/orders` could not open the tracking link.
+
+### Root Causes
+1. **Missing Backend Payload Field:** In `StoreContext.tsx` (`updateOrderTracking`), `tracking_link` was omitted from the `PUT /api/admin/orders/:id` request payload, so the tracking URL was never stored in the database.
+2. **Hardcoded Courier Fallback:** In `StoreContext.tsx` (`fetchUserOrders` and `fetchAdminOrders`), `trackingLink` was hardcoded to `delhivery.com/track/package/...`, ignoring custom couriers (Blue Dart, DTDC, India Post, Shiprocket, etc.) and leaving links broken or empty.
+3. **Relative URL Routing:** If a tracking link lacked `https://`, browsers treated it as a relative store route (`https://thewesternstore.in/account/www.bluedart.com/...`), triggering a 404 or router redirect.
+4. **ID Type Mismatch on Update:** `PUT /api/admin/orders/:id` only matched on `id.eq.id`. If `:id` was an order number (e.g. `TWS-261115-XXXX`), PostgREST failed against the UUID `id` column.
+
+### Fix
+- Added [`frontend/src/utils/tracking.ts`](file:///Users/aditya/Desktop/WORK/The Western Store/frontend/src/utils/tracking.ts) with `resolveTrackingUrl()` to normalize URLs to full `https://` protocols and auto-generate portal links for all major couriers (Blue Dart, Delhivery, DTDC, India Post, Shiprocket, XpressBees, Shadowfax, Trackon, TPC).
+- Updated `updateOrderTracking()` in [`StoreContext.tsx`](file:///Users/aditya/Desktop/WORK/The Western Store/frontend/src/context/StoreContext.tsx) to send `tracking_link`, `tracking_number`, `courier_name`, and `status`.
+- Updated `fetchUserOrders` and `fetchAdminOrders` to prioritize `row.tracking_link`.
+- Updated `PUT /api/admin/orders/:id` and `PUT /api/orders/:id` in [`backend/src/index.ts`](file:///Users/aditya/Desktop/WORK/The Western Store/backend/src/index.ts) to match on both `id` and `order_number`.
+- Enhanced [`OrderHistoryPage.tsx`](file:///Users/aditya/Desktop/WORK/The Western Store/frontend/src/components/OrderHistoryPage.tsx) with a **"Open Courier Portal"** direct external button and a 1-click **Copy AWB** button with feedback.
+
+---
+
+## Bug #023 — Customer Tracking Visibility & Checkout Copy Polish
+**Date:** November 15, 2026  
+**Status:** ✅ Fixed
+
+### Symptoms
+1. **Checkout Payment Copy:** Checkout page still displayed legacy Razorpay marketing copy (*"Razorpay Secure Online Checkout Instant & 256-bit Encrypted Supports all major Indian payment methods: UPI (Google Pay, PhonePe, Paytm, BHIM)... ⚡ Instant Payment Confirmation 🔒 RBI & PCI-DSS Compliant"*).
+2. **Customer Unable to See/Open Tracking Details:** Admin uploaded courier partner name, AWB tracking number, and tracking link in the Admin Panel, but the customer still could not view or track the shipment on their end.
+
+### Root Causes
+1. **Anon RLS Blocking & Guest Orders:** Orders placed as guest checkouts (`user_id = null`) cannot be queried by the frontend Supabase client using the `anon` key due to RLS policies requiring `auth.uid() = user_id`. Stored `tws_orders` in localStorage never received tracking updates from Supabase.
+2. **Guest Orders Filtered Out on Order History:** In `OrderHistoryPage.tsx`, `userOrders` returned `false` if `!currentUser`, blocking guest customers with a "Login first" prompt even when their order was stored in local storage.
+3. **Missing Production Backend URL Fallback:** Requests in production on Vercel were defaulting to `http://localhost:4000` when `VITE_BACKEND_URL` was omitted in the build environment.
+4. **Order Number Formatting Mismatch:** Order numbers entered or passed with `#` or underscore formatting (`TWS_...` vs `TWS-...`) failed lookup queries in `backend/src/index.ts`.
+
+### Fix
+- **Checkout Copy Polish:** In [`CheckoutPage.tsx`](file:///Users/aditya/Desktop/WORK/The Western Store/frontend/src/pages/CheckoutPage.tsx), replaced the verbose Razorpay card with a clean, professional boutique payment option:
+  * Title: **Online Payment** with a `Secure & Verified` badge.
+  * Description: *"UPI (Google Pay, PhonePe, Paytm), Credit & Debit Cards, or Net Banking."*
+- **Canonical Backend URL Utility:** Created [`frontend/src/utils/backendUrl.ts`](file:///Users/aditya/Desktop/WORK/The Western Store/frontend/src/utils/backendUrl.ts) with `getBackendUrl()`, automatically pointing to `https://the-western-store.onrender.com` on Vercel/production when `VITE_BACKEND_URL` is omitted.
+- **Service Role Order Lookup:** `GET /api/orders/lookup/:identifier` uses the backend's `service_role` key, sanitizing `#` prefixes and matching both `TWS-...` and `TWS_...` variants to reliably return live tracking data.
+- **Unconditional Mount Sync:** Updated `StoreContext.tsx` and `OrderHistoryPage.tsx` to automatically trigger `fetchUserOrders()`, querying `/api/orders/lookup/:identifier` for orders in `localStorage` to synchronize live tracking fields (`courier_name`, `tracking_number`, `tracking_link`).
+- **Guest Order Visibility:** Updated `OrderHistoryPage.tsx` so guest customers see their orders and live tracking buttons without being blocked by the login prompt, accompanied by a clean banner notice.
+
+---
+
+## Bug #024 — Cashfree Payment-Flow Security Loopholes & Hardening
+**Date:** November 17, 2026  
+**Status:** ✅ Fixed
+
+### Symptoms & Vulnerabilities
+1. **Webhook Signature Bypass:** In `POST /api/payments/webhook`, if `x-webhook-signature` or `x-webhook-timestamp` headers were omitted, signature verification was skipped entirely and unauthenticated payloads were processed.
+2. **Missing Amount & Currency Verification:** In `POST /api/payments/verify`, fulfillment only validated `order_status === 'PAID'` without checking whether `order_amount` matched the server-computed `total_amount` or whether `order_currency` was `INR`.
+3. **Refund Boundary Checks:** `POST /api/payments/refund` lacked checks for positive numbers and did not verify that `refundAmount <= order.total_amount`.
+4. **Webhook Raw Parser:** `express.raw({ type: 'application/json' })` only matched exact `application/json`, risking buffer parsing failure on requests with charset headers.
+
+### Fix
+- Enforced strict requirement for `x-webhook-signature` and `x-webhook-timestamp` headers; requests missing them are rejected immediately with HTTP 401.
+- Added currency assertion (`cfOrder.order_currency === 'INR'`) and amount cross-verification (`Math.abs(paidAmount - expectedAmount) < 0.01`) before marking an order as `Paid`.
+- Added validation for refund amounts (`Number.isFinite(refundAmount) && refundAmount > 0`) and capped refunds to the order's captured total in Supabase.
+- Changed webhook body parser to `express.raw({ type: '*/*' })` for reliable buffer capture across all variations of content-type headers.
+
+---
+
 ## ⚠️ Known Potential Issue — `tsx watch` + `.env`
 
 **Pattern:** Any time `backend/.env` is edited, the running server does NOT pick up changes automatically.

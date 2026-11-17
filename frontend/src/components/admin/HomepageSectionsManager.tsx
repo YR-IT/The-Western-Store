@@ -1706,6 +1706,131 @@ export const HomepageSectionsManager: React.FC = () => {
         </div>
       )}
 
+      {/* ADD CUSTOMER REVIEW MODAL */}
+      {isAddReviewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#EAE4D9] max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#EAE4D9] pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#242120]">Add Customer Review</h3>
+                <p className="text-xs text-[#736B63]">Display real customer feedback in the homepage boutique testimonials</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddReviewModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-full cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateReview} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Customer Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Priya Sharma"
+                  value={newReview.name}
+                  onChange={(e) => setNewReview({ ...newReview, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Kurukshetra"
+                    value={newReview.location}
+                    onChange={(e) => setNewReview({ ...newReview, location: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Star Rating (1 - 5)
+                  </label>
+                  <select
+                    value={newReview.rating}
+                    onChange={(e) => setNewReview({ ...newReview, rating: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  >
+                    <option value={5}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                    <option value={4}>⭐⭐⭐⭐ (4 Stars)</option>
+                    <option value={3}>⭐⭐⭐ (3 Stars)</option>
+                    <option value={2}>⭐⭐ (2 Stars)</option>
+                    <option value={1}>⭐ (1 Star)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Outfit Purchased
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Silk Anarkali Set"
+                    value={newReview.outfitPurchased}
+                    onChange={(e) => setNewReview({ ...newReview, outfitPurchased: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                    Badge / Tag
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Boutique Review"
+                    value={newReview.tag}
+                    onChange={(e) => setNewReview({ ...newReview, tag: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase text-[11px] text-[#4A453E] mb-1">
+                  Customer Comment / Testimonial *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Share what the customer loved about the fabric, fitting, or boutique service..."
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-[#D9CEBF] rounded-lg focus:outline-none focus:border-[#721B29]"
+                />
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-[#EAE4D9]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddReviewModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#721B29] hover:bg-[#57141F] text-white font-bold rounded-lg shadow-sm cursor-pointer"
+                >
+                  Add Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ImageKit Media Library Modal for Hero Slide Image Selection */}
       <ImageKitMediaLibraryModal
         isOpen={isHeroMediaModalOpen}
@@ -1735,6 +1860,19 @@ export const HomepageSectionsManager: React.FC = () => {
         mediaType="image"
         multiple={false}
         onSelectImages={handleSelectBudgetMedia}
+      />
+
+      {/* ImageKit Media Library Modal for Instagram Videos */}
+      <ImageKitMediaLibraryModal
+        isOpen={isIgMediaLibraryOpen}
+        onClose={() => {
+          setIsIgMediaLibraryOpen(false);
+          setIgTargetItemForMedia(null);
+        }}
+        currentProductFolder="/videos"
+        mediaType="video"
+        multiple={false}
+        onSelectImages={handleSelectIgVideo}
       />
     </div>
   );

@@ -13,7 +13,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
         <Link to="/shop" className="text-[#721B29] font-semibold underline">
           shop
         </Link>
-        , add items to your bag, then checkout with Razorpay (UPI, cards, net banking). Guest checkout is supported — no account required.
+        , add items to your bag, then checkout with Cashfree Payments (UPI, cards, net banking). Guest checkout is supported — no account required.
       </>
     ),
   },
@@ -63,7 +63,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: 'Do you accept Cash on Delivery (COD)?',
-    a: 'No. Orders are prepaid online via Razorpay for secure, faster dispatch. WhatsApp remains available for styling help and order support.',
+    a: 'No. Orders are prepaid online via Cashfree Payments for secure, faster dispatch. WhatsApp remains available for styling help and order support.',
   },
   {
     q: 'Can I visit the physical boutique?',

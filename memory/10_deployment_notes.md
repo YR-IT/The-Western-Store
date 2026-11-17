@@ -52,14 +52,14 @@ On **Render**, env changes need a redeploy / restart — stale JWT or ImageKit k
 | **Other remotes** | `origin` (thewesternstore), `western` (adityanaulakha) | Push all when shipping |
 | **Supabase** | Hosted | `ghdrlqzcdmysnpmlkeju` |
 | **ImageKit** | CDN | `https://ik.imagekit.io/89dmpbgrm` |
-| **Razorpay** | Pending keys/KYC | Sandbox notification mode if unset |
+| **Cashfree** | Configured via env | Sandbox / Production mode |
 
 ### Render must have
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `JWT_SECRET` (must match what admins use)
 - `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_URL_ENDPOINT` (account **89dmpbgrm**)
 - `SUPABASE_URL`, `SUPABASE_KEY`
 - `FRONTEND_URL` preferably `https://www.thewesternstore.in`
-- Optional: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
+- `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV` (SANDBOX or PRODUCTION)
 
 ### Vercel must have
 - `VITE_BACKEND_URL=https://the-western-store.onrender.com`
@@ -75,7 +75,7 @@ Free Render web services spin down after ~15 min idle — first request after sl
 
 ### Backend
 - [ ] Stronger `JWT_SECRET` + `ADMIN_PASSWORD` before hard launch
-- [ ] Live Razorpay keys after KYC
+- [ ] Live Cashfree production keys after KYC approval
 - [ ] Tighten localhost CORS if desired
 
 ### Frontend / Supabase
@@ -85,7 +85,7 @@ Free Render web services spin down after ~15 min idle — first request after sl
 
 ### General
 - [x] Custom domain + SSL (Vercel)
-- [ ] Full paid-order E2E on production after Razorpay live
+- [ ] Full paid-order E2E on production after Cashfree go-live
 - [ ] Google Search Console
 
 ---

@@ -1,80 +1,85 @@
 # 11 — Pending To-Do & Open Items
 
-## 🔴 Critical / Blocking
+## 🔴 Critical / Go-Live Actions (Before Real Customer Payments)
 
-- [ ] **Razorpay KYC** — Complete KYC for live payments (website URL, legal name, GSTIN, bank, PAN)
-- [ ] **Legal Business Name** — `STORE_INFO.legalName` in `mockData.ts`
-- [ ] **GSTIN** — `STORE_INFO.gstin` (or confirm unregistered)
-- [ ] **Grievance Officer** — Consumer Protection Rules 2020 (`grievanceOfficer` / `grievanceEmail`)
-- [ ] **Prod catalog content** — Ensure products/heroes exist in live Supabase (empty catalog = data/sync, not upload bug)
-
----
-
-## 🟡 Important / Soon
-
-- [ ] **Add / sync products** via Admin Panel on production
-- [ ] **Hero banners** desktop 16:9 + mobile 9:16
-- [ ] **Category images** for all categories
-- [ ] **Homepage sections** enable/order in Admin → Homepage
-- [ ] **Change `ADMIN_PASSWORD`** from `admin123` before hard launch
-- [ ] **Rotate `JWT_SECRET`** to a long random string (then redeploy Render)
-- [x] **Production frontend + backend live** — Vercel + Render (`thewesternstore.in` / `the-western-store.onrender.com`)
-- [x] **ImageKit account `89dmpbgrm`** + server upload path
-- [x] **Admin panel simplified** (no URL paste, no restore-categories, no navbar share)
+- [ ] **Cashfree Production Credentials** — Swap Sandbox keys (`TEST...`) with Cashfree Production API keys (`CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `CASHFREE_ENV=PRODUCTION`) in Render backend environment and `VITE_CASHFREE_MODE=production` on Vercel.
+- [ ] **Whitelist Production Domains** — In Cashfree Merchant Dashboard (`Payment Gateway > Developers > Whitelisting`), add `https://thewesternstore.in`, `https://www.thewesternstore.in`, and your Vercel production domain.
+- [ ] **Configure Cashfree Production Webhook** — Register `https://the-western-store.onrender.com/api/payments/webhook` with API version `2026-01-01` and events (`PAYMENT_SUCCESS_WEBHOOK`, `PAYMENT_FAILED_WEBHOOK`, `USER_DROPPED_WEBHOOK`) on Cashfree Merchant Dashboard.
+- [ ] **Change `ADMIN_PASSWORD`** — Change from default `admin123` in Render environment before public launch.
+- [ ] **Rotate `JWT_SECRET`** — Update to a high-entropy cryptographically random string in Render environment.
 
 ---
 
-## 🟢 Nice to Have / Future
+## 🟡 Store Content & Operations (Owner Checklist)
 
-- [x] **Razorpay Exclusive Checkout** — WhatsApp checkout removed
-- [x] **Admin RLS Proxy** — service_role catalog mutations
-- [x] **Guest Cart Merge**
-- [x] **Live Inventory Decrement**
-- [x] **PLP Search & Filter Wiring**
-- [ ] **Order Email Notifications** — Nodemailer / Resend
-- [ ] **WhatsApp Business API** — order notifications
-- [ ] **Google Merchant Center**
-- [ ] **Instagram Shopping**
-- [ ] **Analytics** — GA4 or Plausible
-- [ ] **Push Notifications** — PWA
-- [ ] **Supabase Realtime** — replace 25s admin order polling
-- [ ] **Product Reviews**
-- [ ] **Size Guide**
-- [ ] **Coupon/Discount Codes**
-- [ ] **Multi-location Inventory**
+- [x] **Legal Business Name** — Set to `'Shweta'` in `STORE_INFO` (`frontend/src/data/mockData.ts`).
+- [x] **GSTIN** — Registered `'06FTCPS9145C1ZJ'` set in `STORE_INFO` and displayed in footer/policies.
+- [x] **Grievance Officer** — Set to `'Shweta'` (`thewesternstorekkr@gmail.com`) complying with Consumer Protection (E-Commerce) Rules 2020.
+- [ ] **Live Catalog Sync** — Add/review live inventory quantities and high-res imagery for all Kurukshetra boutique silhouettes via Admin Panel.
+- [ ] **Hero Banners (High-Res)** — Upload production 16:9 desktop and 9:16 mobile banners via Admin → Homepage.
 
 ---
 
-## 📝 Content Pending from Store Owner
+## 🟢 Implemented Features (Verified in Codebase)
 
-| Item | Where Used |
-|------|-----------|
-| Legal business name | `STORE_INFO.legalName`, policies, Razorpay KYC |
-| GSTIN | `STORE_INFO.gstin`, policies, Razorpay KYC |
-| Grievance Officer name/email | Privacy Policy |
-| Bank + PAN | Razorpay KYC |
-| Product catalog with images | Admin → Products (ImageKit upload) |
-| Hero banner images | Admin → Homepage / Hero |
-| Category images | Admin → Categories |
+### Payments & Checkout
+- [x] **Cashfree Payments PG Integration** — Migrated from Razorpay to Cashfree Payments using `cashfree-pg` (v6.0.6) backend SDK and Cashfree.js (v3) Drop-in Web SDK. All references to Razorpay fully removed from production code.
+- [x] **Server-Side Authoritative Verification** — `POST /api/payments/verify` verifies status directly with Cashfree (`cashfree.PGFetchOrder`); never relies on client-side state alone.
+- [x] **Webhook Replay Protection** — Rejects webhooks with `x-webhook-timestamp` older than 300 seconds (5-minute window) to prevent replay exploits.
+- [x] **Idempotent Webhook Processing** — Signature verification via `cashfree.PGVerifyWebhookSignature`, idempotent status updates, and single-execution inventory decrements.
+- [x] **Guest Checkout Supabase Compatibility** — Foreign key constraint fallback (`23503`) so guest orders persist cleanly with `user_id = null`.
+- [x] **Post-Payment Flow & Verification** — Clean redirect to `/order-confirmation/:orderId` for both QR scan modal dismissal and Card 3DS browser redirects.
+- [x] **Payment Security Hardening** — Mandatory webhook signatures (401 on missing headers), strict INR currency and amount tamper assertions in verify, and refund upper-bound validation.
+- [x] **Removed Sandbox / Test Mode Badges** — Cleaned up checkout UI; removed all `"Cashfree Sandbox Mode — use test cards / UPI"` badges and sandbox notices. Dynamic production mode resolution for web SDK.
+
+### Customer Storefront Experience
+- [x] **Clean Low Stock Indicator** — Clean pill showing `Only {count} pieces left.` when stock `<= 5`.
+- [x] **Product Reviews** — Fully interactive rating system on PDP with submission form, star ratings, verified filter, and pagination.
+- [x] **Size Guide** — Sizing chart modal and dedicated `/size-guide` page covering Ethnic Wear (XS–XXL) and Western/Denim with inch/cm unit toggles.
+- [x] **Courier Tracking Integration** — Normalizes courier URLs (`https://`) across Delhivery, Blue Dart, DTDC, India Post, Shiprocket, XpressBees, Shadowfax with 1-click AWB copy.
+- [x] **Account Order History** — Authenticated customer order history (`/account/orders`) with direct courier tracking links and live manual sync.
+- [x] **Guest Cart Merge & Persistent Cart** — Preserves cart items across sessions and merges guest carts upon login.
+- [x] **PLP Search & Filter Wiring** — Filtering by category, fabric, occasion, size, color, price range, and in-stock availability.
+
+### Admin Panel (CMS)
+- [x] **CSV / Excel Order Export** — One-click download of filtered orders (`tws_orders_export_YYYY-MM-DD.csv`) encoded with UTF-8 BOM (`\uFEFF`) for clean Excel rendering.
+- [x] **Bulk Order Status Actions** — Multi-select checkboxes to batch-update orders to Confirmed, Paid, Shipped, or Delivered.
+- [x] **Customer Phone & Email Search** — Search bar queries raw digits, formatted phone numbers, and customer emails.
+- [x] **Low Stock Dashboard Alert Widget** — KPI card and alert box for garments with `<= 2` units left, with 1-click restock modal.
+- [x] **ImageKit Cloud Media Library** — Direct launcher in the admin sidebar navigation to browse, search, and delete ImageKit cloud assets.
+- [x] **Admin Catalog Mutations Proxy** — Service role proxy on backend (`requireAdmin`) bypassing Supabase client-side RLS restrictions.
+- [x] **Homepage Sections Manager** — Visual management of hero sliders, featured sections, budget tiles, and testimonials.
 
 ---
 
-## 🐛 Watch List
+## 🔵 Future Enhancements (Post-Launch Roadmap)
 
-- **Supabase RLS** — guest orders (`user_id` null) create OK, not publicly readable
-- **ImageKit limits** — account `89dmpbgrm`
-- **Admin JWT** — 12h expiry
-- **Render cold starts** — free tier ~15 min idle spin-down
-- **tsx watch / Render env** — restart after `.env` changes
-- **Safari uploads** — keep ImageKit input without restrictive `accept` / `.click()`
+- [ ] **Order Email Notifications** — Automated order confirmation and dispatch receipts via Nodemailer / Resend.
+- [ ] **WhatsApp Business Cloud API** — Automated transactional dispatch updates via official Meta WhatsApp Business API.
+- [ ] **Coupon / Promo Discount Codes** — Promotion engine in cart and checkout with percentage/flat discounts.
+- [ ] **Analytics Tracking** — Google Analytics 4 (GA4) or privacy-first Plausible integration.
+- [ ] **Google Merchant Center Feed** — XML/JSON automated product feed for Google Shopping listings.
+- [ ] **Instagram Shopping Integration** — Facebook Commerce catalog sync for `@the_western_store_kkr`.
+- [ ] **Supabase Realtime WebSockets** — Realtime order updates replacing 25s polling in Admin Panel.
+- [ ] **Multi-location Inventory** — Separate warehouse vs. Thanesar retail boutique inventory tracking.
 
 ---
 
-## 🗓️ Timeline Reference
+## 📝 Compliance & Legal Reference Status
 
-| Date | Milestone |
-|------|-----------|
-| Oct 9, 2026 | React Router + admin JWT + hero aspect fix; memory folder created |
-| Oct 13, 2026 | Razorpay-only checkout; admin catalog proxy; cart/stock/PLP fixes |
-| Oct 2026 | Prod Vercel + Render; ImageKit `89dmpbgrm` server upload; Safari upload fix; admin UX simplify |
-| TBD | Full catalog on prod; Razorpay KYC; harden secrets |
+| Requirement | Implementation Detail | Status |
+|---|---|---|
+| **Legal Entity Name** | `STORE_INFO.legalName = 'Shweta'` | ✅ Implemented |
+| **GSTIN** | `STORE_INFO.gstin = '06FTCPS9145C1ZJ'` | ✅ Implemented |
+| **Grievance Redressal** | `STORE_INFO.grievanceOfficer = 'Shweta'`, `thewesternstorekkr@gmail.com` | ✅ Implemented |
+| **Boutique Address** | Behind Hotel Pearl Marc, Thanesar, Kurukshetra, Haryana | ✅ Implemented |
+| **Customer Support** | Phone + WhatsApp: `+91 9729515288` | ✅ Implemented |
+| **Mandatory Policies** | Privacy Policy, Refund Policy, Shipping Policy, Terms & Conditions | ✅ Implemented |
+
+---
+
+## 🐛 Watch List & Operational Notes
+
+- **Render Idle Spin-Down:** Render free tier spins down after ~15 minutes of inactivity; first request after spin-down takes 30-50 seconds (cold start).
+- **Restarting Backend after `.env` edits:** Remember to run `touch backend/src/index.ts` so `tsx watch` reloads updated environment variables.
+- **Admin JWT Expiry:** Admin session token expires after 12 hours (`sessionStorage.tws_admin_token`).

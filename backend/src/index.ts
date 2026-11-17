@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import ImageKit, { toFile } from '@imagekit/nodejs';
-import Razorpay from 'razorpay';
+import { Cashfree, CFEnvironment } from 'cashfree-pg';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, createRequireUser, AuthenticatedRequest } from './middleware/auth.js';
@@ -118,12 +118,13 @@ app.use(
 );
 
 // ─── Body parsers ─────────────────────────────────────────────────────────
-// Razorpay webhook needs the raw buffer for signature verification.
+// Cashfree webhook needs the raw buffer for HMAC-SHA256 signature verification.
 // ImageKit admin uploads send base64 payloads that can exceed the default 5mb JSON limit.
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/payments/webhook') {
-    express.raw({ type: 'application/json' })(req, res, next);
-  } else if (req.originalUrl === '/api/imagekit/upload') {
+  const cleanPath = req.path || req.originalUrl.split('?')[0];
+  if (cleanPath === '/api/payments/webhook') {
+    express.raw({ type: '*/*' })(req, res, next);
+  } else if (cleanPath === '/api/imagekit/upload') {
     express.json({ limit: '25mb' })(req, res, next);
   } else {
     express.json({ limit: '5mb' })(req, res, next);
@@ -135,23 +136,24 @@ const imagekit = new ImageKit({
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY || '',
 });
 
-// ─── Razorpay SDK Setup ───────────────────────────────────────────────────
-const razorpay =
-  process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
-    ? new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET,
-      })
-    : null;
+// ─── Cashfree PG SDK Setup ────────────────────────────────────────────────
+const cashfreeAppId = process.env.CASHFREE_APP_ID || '';
+const cashfreeSecretKey = process.env.CASHFREE_SECRET_KEY || '';
+const cashfreeEnv =
+  (process.env.CASHFREE_ENV || 'SANDBOX').toUpperCase() === 'PRODUCTION'
+    ? CFEnvironment.PRODUCTION
+    : CFEnvironment.SANDBOX;
 
-const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
-const isRazorpayTestMode = razorpayKeyId.startsWith('rzp_test_');
+const isCashfreeConfigured = !!(cashfreeAppId && cashfreeSecretKey);
+const cashfree = isCashfreeConfigured
+  ? new Cashfree(cashfreeEnv, cashfreeAppId, cashfreeSecretKey)
+  : null;
 
-if (!razorpay) {
-  console.info('ℹ️ [Razorpay Info] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is not set. Razorpay endpoints will run in sandbox notification mode.');
+if (!cashfree) {
+  console.info('ℹ️ [Cashfree Info] CASHFREE_APP_ID or CASHFREE_SECRET_KEY is not set. Cashfree endpoints will run in sandbox notification mode.');
 } else {
   console.info(
-    `✅ [Razorpay] Configured (${isRazorpayTestMode ? 'TEST mode' : 'LIVE mode'}) key=${razorpayKeyId.slice(0, 12)}…`
+    `✅ [Cashfree] Configured (${cashfreeEnv === CFEnvironment.PRODUCTION ? 'PRODUCTION' : 'SANDBOX'} mode) appId=${cashfreeAppId.slice(0, 8)}…`
   );
 }
 
@@ -197,10 +199,10 @@ app.get('/api/health', (_req, res) => {
     jwt: {
       configured: !!process.env.JWT_SECRET,
     },
-    razorpay: {
-      configured: !!razorpay,
-      mode: !razorpay ? 'off' : isRazorpayTestMode ? 'test' : 'live',
-      keyIdPrefix: razorpayKeyId ? razorpayKeyId.slice(0, 12) : null,
+    cashfree: {
+      configured: isCashfreeConfigured,
+      mode: !cashfree ? 'off' : cashfreeEnv === CFEnvironment.PRODUCTION ? 'production' : 'sandbox',
+      appIdPrefix: cashfreeAppId ? cashfreeAppId.slice(0, 8) : null,
     },
   });
 });
@@ -275,6 +277,30 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
   }
 
   try {
+    const cleanId = (id || '').replace(/^#/, '').trim();
+    const isIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+    const withHyphens = cleanId.replace(/_/g, '-');
+    const withUnderscores = cleanId.replace(/-/g, '_');
+    const orFilters = [
+      `order_number.eq.${cleanId}`,
+      `order_number.eq.${withHyphens}`,
+      `order_number.eq.${withUnderscores}`,
+      `order_number.ilike.${cleanId}`,
+    ];
+    if (isIdUuid) orFilters.push(`id.eq.${cleanId}`);
+
+    const { data: currentOrder } = await supabase
+      .from('orders')
+      .select('id, shipping_address, status_history')
+      .or(orFilters.join(','))
+      .maybeSingle();
+
+    const targetId = currentOrder?.id || (isIdUuid ? id : null);
+    if (!targetId) {
+      res.status(404).json({ success: false, error: 'Order not found for update.' });
+      return;
+    }
+
     const dbUpdates: Record<string, any> = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.courier_name !== undefined || updates.courierName !== undefined) {
@@ -287,15 +313,12 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
       dbUpdates.tracking_link = updates.tracking_link || updates.trackingLink;
     }
     if (updates.notes !== undefined) {
-      // Notes are stored in shipping_address JSONB object to match Supabase schema
-      const { data: currentOrder } = await supabase.from('orders').select('shipping_address').eq('id', id).single();
       const currentAddr = currentOrder?.shipping_address || {};
       dbUpdates.shipping_address = { ...currentAddr, notes: updates.notes };
     }
     if (updates.payment_status !== undefined) dbUpdates.payment_status = updates.payment_status;
 
     if (updates.status !== undefined) {
-      const { data: currentOrder } = await supabase.from('orders').select('status_history').eq('id', id).single();
       const hist = Array.isArray(currentOrder?.status_history) ? currentOrder.status_history : [];
       hist.push({
         status: updates.status,
@@ -306,7 +329,7 @@ app.put('/api/admin/orders/:id', requireAdmin, async (req, res) => {
     }
 
     if (Object.keys(dbUpdates).length > 0) {
-      const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
+      const { error } = await supabase.from('orders').update(dbUpdates).eq('id', targetId);
       if (error) throw error;
     }
     res.json({ success: true, message: 'Order updated successfully.' });
@@ -569,6 +592,30 @@ app.put('/api/orders/:id', requireAdmin, async (req, res) => {
   }
 
   try {
+    const cleanId = (id || '').replace(/^#/, '').trim();
+    const isIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+    const withHyphens = cleanId.replace(/_/g, '-');
+    const withUnderscores = cleanId.replace(/-/g, '_');
+    const orFilters = [
+      `order_number.eq.${cleanId}`,
+      `order_number.eq.${withHyphens}`,
+      `order_number.eq.${withUnderscores}`,
+      `order_number.ilike.${cleanId}`,
+    ];
+    if (isIdUuid) orFilters.push(`id.eq.${cleanId}`);
+
+    const { data: currentOrder } = await supabase
+      .from('orders')
+      .select('id')
+      .or(orFilters.join(','))
+      .maybeSingle();
+
+    const targetId = currentOrder?.id || (isIdUuid ? id : null);
+    if (!targetId) {
+      res.status(404).json({ success: false, error: 'Order not found for update.' });
+      return;
+    }
+
     const dbUpdates: Record<string, any> = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.courier_name !== undefined || updates.courierName !== undefined) {
@@ -577,8 +624,11 @@ app.put('/api/orders/:id', requireAdmin, async (req, res) => {
     if (updates.tracking_number !== undefined || updates.trackingNumber !== undefined) {
       dbUpdates.tracking_number = updates.tracking_number || updates.trackingNumber;
     }
+    if (updates.tracking_link !== undefined || updates.trackingLink !== undefined) {
+      dbUpdates.tracking_link = updates.tracking_link || updates.trackingLink;
+    }
     if (Object.keys(dbUpdates).length > 0) {
-      const { error } = await supabase.from('orders').update(dbUpdates).eq('id', id);
+      const { error } = await supabase.from('orders').update(dbUpdates).eq('id', targetId);
       if (error) throw error;
     }
     res.json({ success: true });
@@ -614,10 +664,15 @@ app.get('/api/account/orders', requireUser, async (req: AuthenticatedRequest, re
   }
 
   try {
+    const filters = [`user_id.eq.${req.user.id}`];
+    if (req.user.email) {
+      filters.push(`customer_email.ilike.${req.user.email.trim()}`);
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('user_id', req.user.id)
+      .or(filters.join(','))
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -768,19 +823,19 @@ app.post('/api/orders', orderCreateLimiter, async (req, res) => {
   }
 });
 
-// ─── Razorpay Payment Gateway Endpoints ───────────────────────────────────
+// ─── Cashfree Payment Gateway Endpoints ───────────────────────────────────
 
-// 1. Create Razorpay Order
+// 1. Create Cashfree Order
 app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
   if (!supabase) {
     res.status(503).json({ error: 'Database service is temporarily unavailable.' });
     return;
   }
 
-  if (!razorpay || !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  if (!cashfree || !cashfreeAppId || !cashfreeSecretKey) {
     res.status(503).json({
-      error: 'Razorpay gateway is not configured on server. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend environment.',
-      code: 'RAZORPAY_NOT_CONFIGURED',
+      error: 'Cashfree gateway is not configured on server. Set CASHFREE_APP_ID and CASHFREE_SECRET_KEY in backend environment.',
+      code: 'CASHFREE_NOT_CONFIGURED',
     });
     return;
   }
@@ -813,11 +868,10 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       const pId = item.productId || item.product?.id || item.id;
       const matched = productMap.get(pId);
 
-      // In Razorpay TEST mode, allow cart snapshots when the catalog row is missing
-      // so gateway testing can proceed before full product sync.
+      // In Sandbox mode, allow cart snapshots when the catalog row is missing so gateway testing can proceed
       const clientPrice = Number(item.price ?? item.product?.price);
       if (!matched) {
-        if (!isRazorpayTestMode || !Number.isFinite(clientPrice) || clientPrice <= 0) {
+        if (cashfreeEnv !== CFEnvironment.SANDBOX || !Number.isFinite(clientPrice) || clientPrice <= 0) {
           res.status(400).json({
             error: `Product '${item.product?.title || item.title || pId}' is not found in store catalog.`,
           });
@@ -887,18 +941,47 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
     const newOrderId = orderId || generateOrderId();
     const isUuid = userId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId) : false;
 
-    // Create Razorpay Order (receipt max 40 chars)
-    const rzpOrder = await razorpay.orders.create({
-      amount: Math.round(calculatedSubtotal * 100), // Amount in paise
-      currency: 'INR',
-      receipt: orderNumber.slice(0, 40),
-      notes: {
-        orderNumber,
-        customerName: name,
-        customerPhone: phone,
-        customerEmail: formData.email || '',
+    // Cashfree order_id accepts alphanumeric, '-', '_' (max 45 chars)
+    const cfOrderId = orderNumber.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 45);
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10) || '9999999999';
+    const customerId = (userId || `cust_${cleanPhone}`).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
+
+    const backendPublicUrl = process.env.RENDER_EXTERNAL_URL || 'https://the-western-store.onrender.com';
+
+    let returnBaseUrl = FRONTEND_URL;
+    const requestOrigin = (req.headers.origin || req.headers.referer || '').trim();
+    if (requestOrigin) {
+      try {
+        const parsed = new URL(requestOrigin);
+        const originBase = `${parsed.protocol}//${parsed.host}`;
+        if (allowedOrigins.includes(originBase) || vercelPreviewRegex.test(originBase)) {
+          returnBaseUrl = originBase;
+        }
+      } catch {}
+    }
+    if (cashfreeEnv === CFEnvironment.PRODUCTION && returnBaseUrl.includes('localhost')) {
+      returnBaseUrl = 'https://thewesternstore.in';
+    }
+
+    // Create Cashfree Order (Rupees, decimal — NO paise multiplication)
+    const cfResponse = await cashfree.PGCreateOrder({
+      order_id: cfOrderId,
+      order_amount: Number(calculatedSubtotal.toFixed(2)),
+      order_currency: 'INR',
+      customer_details: {
+        customer_id: customerId,
+        customer_phone: cleanPhone,
+        customer_name: (name || 'Customer').trim().slice(0, 100),
+        customer_email: (formData.email || 'customer@thewesternstore.in').trim(),
       },
+      order_meta: {
+        return_url: `${returnBaseUrl}/order-confirmation/${orderNumber}?order_id={order_id}`,
+        notify_url: `${backendPublicUrl}/api/payments/webhook`,
+      },
+      order_note: `The Western Store Order ${orderNumber}`,
     });
+
+    const paymentSessionId = cfResponse.data.payment_session_id;
 
     // Record pending order in Supabase
     const supabaseRow: any = {
@@ -917,201 +1000,359 @@ app.post('/api/payments/create-order', orderCreateLimiter, async (req, res) => {
       },
       total_amount: calculatedSubtotal,
       status: 'Pending Payment',
-      payment_method: 'razorpay',
+      payment_method: 'cashfree',
       payment_status: 'awaiting_payment',
-      razorpay_order_id: rzpOrder.id,
       items: validatedItems,
       status_history: [
         {
           status: 'Pending Payment',
           timestamp: new Date().toISOString(),
-          note: 'Online checkout initiated via Razorpay',
+          note: `Online checkout initiated via Cashfree (Order ID: ${cfOrderId})`,
         },
       ],
     };
 
-    const { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
+    let { error: insertErr } = await supabase.from('orders').insert([supabaseRow]);
+    // If insert fails for any reason (e.g. foreign key constraint on user_id not in auth.users), retry as guest order
     if (insertErr) {
-      const { error: updateErr } = await supabase.from('orders').update(supabaseRow).eq('id', newOrderId);
-      if (updateErr) throw updateErr;
+      console.warn(`[Order Create] Initial insert failed (${insertErr.message || insertErr.code}). Retrying with user_id = null...`);
+      supabaseRow.user_id = null;
+      const retryResult = await supabase.from('orders').insert([supabaseRow]);
+      insertErr = retryResult.error;
+    }
+    if (insertErr) {
+      console.error('[Order Insert Failed]', insertErr);
+      throw insertErr;
     }
 
     res.json({
       success: true,
       orderId: newOrderId,
       orderNumber,
-      razorpayOrderId: rzpOrder.id,
-      amount: rzpOrder.amount,
-      currency: rzpOrder.currency,
-      keyId: process.env.RAZORPAY_KEY_ID,
+      cfOrderId,
+      paymentSessionId,
+      amount: calculatedSubtotal,
+      currency: 'INR',
     });
   } catch (err: any) {
-    console.error('[Razorpay Create Order Error]', err);
-    res.status(500).json({ success: false, error: err.message || 'Failed to create payment order.' });
+    const errorDetails = err?.response?.data || err?.message || err;
+    console.error('[Cashfree Create Order Error]', errorDetails);
+    res.status(500).json({ success: false, error: err?.response?.data?.message || err.message || 'Failed to create payment order.' });
   }
 });
 
-// 2. Verify Razorpay Payment Signature
+// 2. Verify Cashfree Payment
 app.post('/api/payments/verify', async (req, res) => {
   if (!supabase) {
     res.status(503).json({ error: 'Database service is temporarily unavailable.' });
     return;
   }
 
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = req.body || {};
+  if (!cashfree) {
+    res.status(503).json({ error: 'Cashfree gateway is not configured on server.' });
+    return;
+  }
 
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    res.status(400).json({ error: 'Missing payment verification credentials.' });
+  const { order_id, orderId } = req.body || {};
+  const queryOrderId = order_id || orderId;
+
+  if (!queryOrderId) {
+    res.status(400).json({ error: 'Missing order_id for payment verification.' });
     return;
   }
 
   try {
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
-    const generatedSignature = crypto
-      .createHmac('sha256', keySecret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
+    // 1. Fetch authoritative order state from Cashfree
+    const cfOrderResponse = await cashfree.PGFetchOrder(queryOrderId);
+    const cfOrder = cfOrderResponse.data;
 
-    const isAuthentic = safeStringCompare(generatedSignature, razorpay_signature);
-
-    if (!isAuthentic) {
-      console.warn(`⚠️ [Payment Signature Mismatch] Order ${order_id || razorpay_order_id}`);
-      if (order_id) {
-        await supabase.from('orders').update({
-          payment_status: 'failed',
-          updated_at: new Date().toISOString(),
-        }).eq('id', order_id);
-      }
-      res.status(400).json({ success: false, verified: false, error: 'Payment signature verification failed.' });
+    if (!cfOrder) {
+      res.status(404).json({ success: false, verified: false, error: 'Order not found in Cashfree.' });
       return;
     }
 
-    // Determine target order id
-    let targetOrderId = order_id;
-    if (!targetOrderId) {
-      const { data: matchedOrder } = await supabase.from('orders').select('id').eq('razorpay_order_id', razorpay_order_id).single();
-      if (matchedOrder?.id) targetOrderId = matchedOrder.id;
+    const isPaid = cfOrder.order_status === 'PAID';
+
+    // Assert payment currency is INR
+    if (cfOrder.order_currency && cfOrder.order_currency.toUpperCase() !== 'INR') {
+      console.error(`🚨 [Currency Mismatch] Order ${queryOrderId}: expected INR, got ${cfOrder.order_currency}`);
+      res.status(400).json({ error: 'Payment currency mismatch.', verified: false });
+      return;
     }
 
-    // Retrieve existing status_history to append
-    let currentHistory = [];
-    if (targetOrderId) {
-      const { data: existing } = await supabase.from('orders').select('status_history, items').eq('id', targetOrderId).single();
-      if (Array.isArray(existing?.status_history)) {
-        currentHistory = existing.status_history;
+    // 2. Match local order in Supabase (flexible matching by id, order_number, or clean cfOrderId)
+    const normalizedNumber = queryOrderId.replace(/_/g, '-');
+    const isQueryUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(queryOrderId);
+    const isParamUuid = orderId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId) : false;
+
+    const orFilters = [
+      `order_number.eq.${queryOrderId}`,
+      `order_number.eq.${normalizedNumber}`,
+    ];
+    if (isQueryUuid) orFilters.push(`id.eq.${queryOrderId}`);
+    if (isParamUuid) orFilters.push(`id.eq.${orderId}`);
+
+    const { data: matchedOrder } = await supabase
+      .from('orders')
+      .select('*')
+      .or(orFilters.join(','))
+      .maybeSingle();
+
+    const targetOrderId = matchedOrder?.id || (isQueryUuid ? queryOrderId : isParamUuid ? orderId : null);
+
+    if (!isPaid) {
+      console.warn(`⚠️ [Cashfree Payment Incomplete] Order ${queryOrderId} status is ${cfOrder.order_status}`);
+      if (matchedOrder && cfOrder.order_status !== 'ACTIVE' && targetOrderId) {
+        await supabase.from('orders').update({
+          payment_status: 'failed',
+          updated_at: new Date().toISOString(),
+        }).eq('id', targetOrderId);
+      }
+      res.json({
+        success: false,
+        verified: false,
+        status: cfOrder.order_status,
+        order: matchedOrder,
+        message: `Payment status is ${cfOrder.order_status}`,
+      });
+      return;
+    }
+
+    // 3. Payment confirmed as PAID
+    if (matchedOrder) {
+      const expectedAmount = Number(matchedOrder.total_amount);
+      const paidAmount = Number(cfOrder.order_amount);
+      if (Number.isFinite(expectedAmount) && expectedAmount > 0 && Math.abs(paidAmount - expectedAmount) > 0.01) {
+        console.error(`🚨 [Amount Mismatch] Order ${queryOrderId}: expected ₹${expectedAmount}, got ₹${paidAmount}`);
+        res.status(400).json({ error: 'Payment amount mismatch detected.', verified: false });
+        return;
       }
     }
-    currentHistory.push({
-      status: 'Paid',
-      timestamp: new Date().toISOString(),
-      note: `Payment verified via Razorpay ID: ${razorpay_payment_id}`,
-    });
 
-    // Update order status to paid in Supabase
-    const updateData: any = {
-      status: 'Paid',
-      payment_status: 'paid',
-      razorpay_payment_id,
-      razorpay_signature,
-      paid_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      status_history: currentHistory,
-    };
+    const currentHistory = Array.isArray(matchedOrder?.status_history) ? matchedOrder.status_history : [];
+    const alreadyPaid = matchedOrder?.payment_status === 'paid';
 
-    if (targetOrderId) {
-      // Skip inventory if already paid (idempotent re-verify)
-      const { data: prior } = await supabase
-        .from('orders')
-        .select('payment_status, items')
-        .eq('id', targetOrderId)
-        .single();
-      const alreadyPaid = prior?.payment_status === 'paid';
+    if (matchedOrder && targetOrderId) {
+      if (!alreadyPaid) {
+        currentHistory.push({
+          status: 'Paid',
+          timestamp: new Date().toISOString(),
+          note: `Payment verified via Cashfree (CF Order ID: ${cfOrder.cf_order_id})`,
+        });
 
-      await supabase.from('orders').update(updateData).eq('id', targetOrderId);
+        const updateData: any = {
+          status: 'Paid',
+          payment_status: 'paid',
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          status_history: currentHistory,
+        };
 
-      if (!alreadyPaid && prior && Array.isArray(prior.items)) {
-        await decrementInventoryForItems(prior.items);
+        await supabase.from('orders').update(updateData).eq('id', targetOrderId);
+
+        if (Array.isArray(matchedOrder.items)) {
+          await decrementInventoryForItems(matchedOrder.items);
+        }
       }
+    } else {
+      // Order row was somehow missing in DB; reconstruct from Cashfree so payment is never lost
+      const restoredId = isParamUuid ? orderId : isQueryUuid ? queryOrderId : crypto.randomUUID();
+      const restoredNumber = normalizedNumber.startsWith('TWS-') ? normalizedNumber : `TWS-${normalizedNumber}`;
+      const newOrderRow = {
+        id: restoredId,
+        order_number: restoredNumber,
+        user_id: null,
+        customer_name: cfOrder.customer_details?.customer_name || 'Customer',
+        customer_phone: cfOrder.customer_details?.customer_phone || '',
+        customer_email: cfOrder.customer_details?.customer_email || null,
+        shipping_address: {
+          address: 'Recorded during checkout',
+          city: '',
+          state: '',
+          pincode: '',
+          notes: '',
+        },
+        total_amount: Number(cfOrder.order_amount) || 0,
+        status: 'Paid',
+        payment_method: 'cashfree',
+        payment_status: 'paid',
+        paid_at: new Date().toISOString(),
+        items: [],
+        status_history: [
+          {
+            status: 'Paid',
+            timestamp: new Date().toISOString(),
+            note: `Payment verified via Cashfree (CF Order ID: ${cfOrder.cf_order_id})`,
+          },
+        ],
+      };
+      await supabase.from('orders').insert([newOrderRow]);
     }
+
+    // Retrieve fresh updated order row to return to client
+    const { data: finalOrder } = await supabase
+      .from('orders')
+      .select('*')
+      .or(orFilters.join(','))
+      .maybeSingle();
 
     res.json({
       success: true,
       verified: true,
-      orderId: targetOrderId,
+      orderId: finalOrder?.id || targetOrderId || queryOrderId,
+      orderNumber: finalOrder?.order_number || matchedOrder?.order_number || normalizedNumber,
+      status: 'PAID',
+      order: finalOrder || matchedOrder,
       message: 'Payment verified successfully.',
     });
   } catch (err: any) {
-    console.error('[Payment Verification Error]', err);
-    res.status(500).json({ success: false, error: err.message || 'Payment verification failed.' });
+    const errorDetails = err?.response?.data || err?.message || err;
+    console.error('[Cashfree Payment Verification Error]', errorDetails);
+    res.status(500).json({ success: false, error: err?.response?.data?.message || err.message || 'Payment verification failed.' });
   }
 });
 
-// 3. Razorpay Webhook Handler (Idempotent)
-app.post('/api/payments/webhook', async (req, res) => {
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  const signature = req.headers['x-razorpay-signature'] as string;
+// 2b. Public Lookup Order Endpoint (for Order Confirmation & Tracking)
+app.get('/api/orders/lookup/:identifier', async (req, res) => {
+  if (!supabase) {
+    res.status(503).json({ error: 'Database service is temporarily unavailable.' });
+    return;
+  }
+  const { identifier } = req.params;
+  const cleanIdentifier = (identifier || '').replace(/^#/, '').trim();
+  const withHyphens = cleanIdentifier.replace(/_/g, '-');
+  const withUnderscores = cleanIdentifier.replace(/-/g, '_');
+  try {
+    const isIdUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanIdentifier);
+    const orFilters = [
+      `order_number.eq.${cleanIdentifier}`,
+      `order_number.eq.${withHyphens}`,
+      `order_number.eq.${withUnderscores}`,
+      `order_number.ilike.${cleanIdentifier}`,
+    ];
+    if (isIdUuid) orFilters.push(`id.eq.${cleanIdentifier}`);
 
-  if (webhookSecret && signature) {
-    try {
-      const rawBody = req.body.toString('utf8');
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(rawBody)
-        .digest('hex');
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*')
+      .or(orFilters.join(','))
+      .maybeSingle();
 
-      if (!safeStringCompare(expectedSignature, signature)) {
-        console.warn('⚠️ [Razorpay Webhook] Invalid signature received');
-        res.status(400).json({ error: 'Invalid webhook signature.' });
-        return;
-      }
-    } catch (err) {
-      console.error('[Razorpay Webhook Error]', err);
-      res.status(400).json({ error: 'Signature verification error.' });
+    if (error || !order) {
+      res.status(404).json({ error: 'Order not found' });
       return;
     }
+    res.json({ success: true, order });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Error looking up order' });
+  }
+});
+
+// 3. Cashfree Webhook Handler (Idempotent with Replay Defense)
+app.post('/api/payments/webhook', async (req, res) => {
+  const signature = req.headers['x-webhook-signature'] as string;
+  const timestamp = req.headers['x-webhook-timestamp'] as string;
+  const rawBody = req.body ? req.body.toString('utf8') : '';
+
+  if (!signature || !timestamp) {
+    console.warn('⚠️ [Cashfree Webhook] Rejected: Missing signature or timestamp headers.');
+    res.status(401).json({ error: 'Missing webhook signature or timestamp.' });
+    return;
+  }
+
+  // Webhook Replay Protection: reject payloads older than 300 seconds (5 minutes)
+  const rawTs = Number(timestamp);
+  if (isNaN(rawTs) || rawTs <= 0) {
+    res.status(400).json({ error: 'Invalid webhook timestamp.' });
+    return;
+  }
+  const tsInSeconds = rawTs > 1e11 ? Math.floor(rawTs / 1000) : rawTs;
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  const ageInSeconds = Math.abs(nowInSeconds - tsInSeconds);
+  if (ageInSeconds > 300) {
+    console.warn(`⚠️ [Cashfree Webhook] Webhook timestamp expired (${ageInSeconds}s difference). Rejecting potential replay.`);
+    res.status(400).json({ error: 'Webhook timestamp expired.' });
+    return;
+  }
+
+  if (cashfree) {
+    try {
+      cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
+    } catch (err) {
+      console.warn('⚠️ [Cashfree Webhook] Invalid signature received:', err);
+      res.status(400).json({ error: 'Invalid webhook signature.' });
+      return;
+    }
+  } else {
+    res.status(503).json({ error: 'Cashfree gateway is not configured on server.' });
+    return;
   }
 
   try {
-    const rawBody = req.body.toString('utf8');
     const event = JSON.parse(rawBody);
-    const eventType = event.event;
-    const payload = event.payload?.payment?.entity || event.payload?.order?.entity;
+    const eventType = event.type;
+    const eventData = event.data;
 
-    if (supabase && payload) {
-      const rzpOrderId = payload.order_id || payload.id;
-      const rzpPaymentId = payload.id;
+    if (supabase && eventData) {
+      const cfOrderId = eventData.order?.order_id || eventData.order_id || '';
+      const payment = eventData.payment;
+      const paymentStatus = payment?.payment_status;
 
-      if (eventType === 'payment.captured' || eventType === 'order.paid') {
-        // Idempotent: only decrement stock when transitioning into paid
+      const isCfUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cfOrderId);
+      const normalizedCfNumber = cfOrderId.replace(/_/g, '-');
+      const cfFilters = [`order_number.eq.${cfOrderId}`, `order_number.eq.${normalizedCfNumber}`];
+      if (isCfUuid) cfFilters.push(`id.eq.${cfOrderId}`);
+      const cfFilterStr = cfFilters.join(',');
+
+      if (eventType === 'PAYMENT_SUCCESS_WEBHOOK' || paymentStatus === 'SUCCESS') {
         const { data: existingOrder } = await supabase
           .from('orders')
-          .select('id, payment_status, items')
-          .eq('razorpay_order_id', rzpOrderId)
+          .select('id, payment_status, items, status_history, total_amount')
+          .or(cfFilterStr)
           .maybeSingle();
 
-        await supabase
-          .from('orders')
-          .update({
-            status: 'Paid',
-            payment_status: 'paid',
-            razorpay_payment_id: rzpPaymentId,
-            paid_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('razorpay_order_id', rzpOrderId);
+        if (existingOrder) {
+          const paidAmount = Number(eventData.order?.order_amount || payment?.payment_amount);
+          const expectedAmount = Number(existingOrder.total_amount);
+          if (Number.isFinite(expectedAmount) && expectedAmount > 0 && Number.isFinite(paidAmount) && paidAmount > 0) {
+            if (Math.abs(paidAmount - expectedAmount) > 0.01) {
+              console.error(`🚨 [Webhook Amount Mismatch] Order ${cfOrderId}: expected ₹${expectedAmount}, got ₹${paidAmount}`);
+              res.status(200).send('AMOUNT_MISMATCH');
+              return;
+            }
+          }
 
-        if (existingOrder && existingOrder.payment_status !== 'paid' && Array.isArray(existingOrder.items)) {
-          await decrementInventoryForItems(existingOrder.items);
+          const currentHistory = Array.isArray(existingOrder.status_history) ? existingOrder.status_history : [];
+          currentHistory.push({
+            status: 'Paid',
+            timestamp: new Date().toISOString(),
+            note: `Payment confirmed via Cashfree webhook (CF Payment ID: ${payment?.cf_payment_id || 'N/A'})`,
+          });
+
+          await supabase
+            .from('orders')
+            .update({
+              status: 'Paid',
+              payment_status: 'paid',
+              paid_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              status_history: currentHistory,
+            })
+            .eq('id', existingOrder.id);
+
+          if (existingOrder.payment_status !== 'paid' && Array.isArray(existingOrder.items)) {
+            await decrementInventoryForItems(existingOrder.items);
+          }
         }
-      } else if (eventType === 'payment.failed') {
+      } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || paymentStatus === 'FAILED') {
         await supabase
           .from('orders')
           .update({
             payment_status: 'failed',
             updated_at: new Date().toISOString(),
           })
-          .eq('razorpay_order_id', rzpOrderId);
-      } else if (eventType === 'refund.processed') {
+          .or(cfFilterStr);
+      } else if (eventType === 'REFUND_STATUS_WEBHOOK') {
         await supabase
           .from('orders')
           .update({
@@ -1119,50 +1360,85 @@ app.post('/api/payments/webhook', async (req, res) => {
             payment_status: 'refunded',
             updated_at: new Date().toISOString(),
           })
-          .eq('razorpay_order_id', rzpOrderId);
+          .or(cfFilterStr);
       }
     }
 
-    res.json({ status: 'ok' });
+    res.status(200).send('OK');
   } catch (err) {
-    console.error('[Webhook Processing Error]', err);
-    res.json({ status: 'ok' }); // Always return 200 to webhook caller to prevent retries
+    console.error('[Cashfree Webhook Processing Error]', err);
+    res.status(200).send('OK'); // Always return 200 to prevent retry storms
   }
 });
 
-// 4. Admin Razorpay Refund Trigger
+// 4. Admin Cashfree Refund Trigger
 app.post('/api/payments/refund', requireAdmin, async (req, res) => {
-  if (!razorpay) {
-    res.status(503).json({ error: 'Razorpay is not configured on server.' });
+  if (!cashfree) {
+    res.status(503).json({ error: 'Cashfree is not configured on server.' });
     return;
   }
 
-  const { paymentId, amount, notes, orderId } = req.body || {};
+  const { orderId, orderNumber, amount, note } = req.body || {};
+  const targetOrderId = orderNumber || orderId;
 
-  if (!paymentId) {
-    res.status(400).json({ error: 'Missing paymentId for refund.' });
+  if (!targetOrderId) {
+    res.status(400).json({ error: 'Missing orderId / orderNumber for refund.' });
     return;
   }
 
   try {
-    const refundOptions: any = {};
-    if (amount) refundOptions.amount = Math.round(Number(amount) * 100);
-    if (notes) refundOptions.notes = notes;
+    const refundId = `refund_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const refundAmount = Number(amount);
 
-    const refund = await razorpay.payments.refund(paymentId, refundOptions);
+    if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+      res.status(400).json({ error: 'Invalid refund amount. Must be a positive number.' });
+      return;
+    }
 
-    if (supabase && orderId) {
+    if (supabase) {
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('total_amount, payment_status')
+        .or(`id.eq.${targetOrderId},order_number.eq.${targetOrderId}`)
+        .maybeSingle();
+
+      if (orderData) {
+        if (orderData.payment_status && orderData.payment_status !== 'paid') {
+          res.status(400).json({
+            error: `Cannot refund order with payment status '${orderData.payment_status}'. Only 'paid' orders can be refunded.`,
+          });
+          return;
+        }
+        if (Number.isFinite(Number(orderData.total_amount))) {
+          if (refundAmount > Number(orderData.total_amount)) {
+            res.status(400).json({ error: `Refund amount (₹${refundAmount}) cannot exceed order total (₹${orderData.total_amount}).` });
+            return;
+          }
+        }
+      }
+    }
+
+    const response = await cashfree.PGOrderCreateRefund(targetOrderId, {
+      refund_id: refundId,
+      refund_amount: refundAmount,
+      refund_note: note || 'Refund processed by store admin',
+    });
+
+    if (supabase && targetOrderId) {
       await supabase.from('orders').update({
         status: 'Refunded',
         payment_status: 'refunded',
+        refund_status: 'PROCESSED',
+        refund_id: refundId,
+        refund_amount: refundAmount,
         updated_at: new Date().toISOString(),
-      }).eq('id', orderId);
+      }).or(`id.eq.${targetOrderId},order_number.eq.${targetOrderId}`);
     }
 
-    res.json({ success: true, refund, message: 'Refund initiated successfully.' });
+    res.json({ success: true, refund: response.data, message: 'Refund initiated successfully via Cashfree.' });
   } catch (err: any) {
-    console.error('[Razorpay Refund Error]', err);
-    res.status(500).json({ error: err.message || 'Failed to process refund with Razorpay.' });
+    console.error('[Cashfree Refund Error]', err?.response?.data || err);
+    res.status(500).json({ error: err?.response?.data?.message || err.message || 'Failed to process refund with Cashfree.' });
   }
 });
 

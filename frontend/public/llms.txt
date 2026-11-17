@@ -20,5 +20,5 @@ The Western Store is a physical boutique and pan-India online retailer offering 
 
 ## Service & Delivery
 - **Shipping:** Pan-India express dispatch with tracking.
-- **Ordering Methods:** Direct online checkout via Razorpay (UPI, Credit/Debit cards, Net Banking) and instant WhatsApp Concierge ordering.
+- **Ordering Methods:** Direct online checkout via Cashfree Payments (UPI, Credit/Debit cards, Net Banking) and instant WhatsApp Concierge ordering.
 - **Customer Redressal:** Transparent 7-day return/exchange assistance and direct WhatsApp photo/video consultation before dispatch.

@@ -86,7 +86,7 @@ interface CartItem {
 ```typescript
 type OrderStatus =
   | 'Pending'           // Awaiting payment or processing
-  | 'Paid'              // Razorpay payment verified
+  | 'Paid'              // Cashfree payment verified
   | 'Confirmed'
   | 'Shipped'
   | 'Delivered'
@@ -122,9 +122,9 @@ interface Order {
   shippingFee: number;
   total: number;
   status: OrderStatus;
-  paymentMethod: 'razorpay';
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
+  paymentMethod: 'cashfree';
+  cashfreeOrderId?: string;
+  cashfreePaymentId?: string;
   // Tracking (filled by admin after ship)
   courierName?: string;
   trackingNumber?: string;

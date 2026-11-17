@@ -15,7 +15,7 @@ This folder contains all project context, architecture notes, known bugs, decisi
 | [06_admin_panel.md](./06_admin_panel.md) | Admin panel features, access, navigation, ImageKit upload |
 | [07_bugs_and_fixes.md](./07_bugs_and_fixes.md) | All known bugs encountered and fixes applied |
 | [08_supabase.md](./08_supabase.md) | Supabase config, tables, RLS policies |
-| [09_payments_razorpay.md](./09_payments_razorpay.md) | Razorpay integration status and notes |
+| [09_payments_cashfree.md](./09_payments_cashfree.md) | Cashfree Payments integration notes |
 | [10_deployment_notes.md](./10_deployment_notes.md) | Local + live deploy (Vercel / Render) |
 | [11_pending_todo.md](./11_pending_todo.md) | Pending tasks, open items, and future improvements |
 

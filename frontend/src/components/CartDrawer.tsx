@@ -203,7 +203,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Proceed to Razorpay Online Checkout */}
+                  {/* Proceed to Cashfree Online Checkout */}
                   <motion.button
                     id="cart-drawer-checkout-btn"
                     type="button"
@@ -230,7 +230,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>100% Secure Payments Powered by Razorpay (UPI, Cards)</span>
+                      <span>100% Secure Payments via Cashfree (UPI, Cards)</span>
                     </div>
                   </div>
                 </motion.div>

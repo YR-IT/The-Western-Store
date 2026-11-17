@@ -125,7 +125,7 @@ const AppLayout: React.FC = () => {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/size-guide" element={<SizeGuidePage />} />
-          {/* Razorpay / compliance: one page per policy URL (no tab switcher) */}
+          {/* Compliance: one page per policy URL (no tab switcher) */}
           <Route path="/refund-policy" element={<RefundPolicyPage />} />
           <Route path="/shipping-policy" element={<ShippingPolicyPage />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />

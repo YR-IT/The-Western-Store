@@ -5,7 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { STORE_INFO } from '../data/mockData';
 import { SEOHead } from '../components/common/SEOHead';
 import { getOptimizedImageUrl, FALLBACK_PRODUCT_IMAGE } from '../utils/imageUtils';
-import { loadRazorpayScript, RazorpayOptions } from '../utils/razorpay';
+import { getCashfreeInstance } from '../utils/cashfree';
 import { generateOrderId, generateOrderNumber } from '../utils/orderId';
 import {
   ShieldCheck,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { CartItem } from '../types';
 import { getDefaultAddress, loadCustomerProfile } from '../utils/customerProfile';
+import { getBackendUrl } from '../utils/backendUrl';
 
 export const CheckoutPage: React.FC = () => {
   const location = useLocation();
@@ -38,7 +39,10 @@ export const CheckoutPage: React.FC = () => {
     currentUser,
     orders,
     setLastPlacedOrder,
+    addOrder,
   } = useStore();
+
+  const orderSubmittedRef = React.useRef(false);
 
   // Check if this is an isolated "Buy Now" checkout (single item, does not touch shopping cart)
   const buyNowItem: CartItem | null = (location.state as any)?.buyNowItem || null;
@@ -84,6 +88,7 @@ export const CheckoutPage: React.FC = () => {
 
   // If user arrives at checkout with 0 items, redirect to cart or shop
   useEffect(() => {
+    if (orderSubmittedRef.current) return;
     if (!isBuyNow && cart.length === 0) {
       navigate('/cart', { replace: true });
     }
@@ -94,13 +99,22 @@ export const CheckoutPage: React.FC = () => {
     if (errorMessage) setErrorMessage('');
   };
 
-  const handleRazorpayPayment = async (orderId: string, orderNumber: string) => {
-    const isScriptLoaded = await loadRazorpayScript();
-    if (!isScriptLoaded || !window.Razorpay) {
-      throw new Error('Razorpay SDK could not be loaded. Please check your internet connection and try again.');
+  const handleCashfreePayment = async (orderId: string, orderNumber: string) => {
+    const configuredMode = import.meta.env.VITE_CASHFREE_MODE?.toLowerCase();
+    const cashfreeMode: 'sandbox' | 'production' =
+      configuredMode === 'production'
+        ? 'production'
+        : configuredMode === 'sandbox'
+        ? 'sandbox'
+        : import.meta.env.PROD
+        ? 'production'
+        : 'sandbox';
+    const cashfree = await getCashfreeInstance(cashfreeMode);
+    if (!cashfree) {
+      throw new Error('Cashfree SDK could not be loaded. Please check your internet connection and try again.');
     }
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+    const backendUrl = getBackendUrl();
 
     // 1. Create order on backend
     const res = await fetch(`${backendUrl}/api/payments/create-order`, {
@@ -121,103 +135,117 @@ export const CheckoutPage: React.FC = () => {
       throw new Error(data.error || 'Failed to initialize payment.');
     }
 
-    const { razorpayOrderId, amount, currency, keyId } = data;
+    const { paymentSessionId, cfOrderId } = data;
+    if (!paymentSessionId) {
+      throw new Error('Payment session was not generated. Please try again.');
+    }
 
-    // 2. Open Razorpay Modal
-    return new Promise<void>((resolve, reject) => {
-      const options: RazorpayOptions = {
-        key: keyId || (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || '',
-        amount,
-        currency: currency || 'INR',
-        name: 'The Western Store',
-        description: `Order #${orderNumber}`,
-        image: 'https://ik.imagekit.io/thewesternstore/logo/Logo_Final.jpg',
-        order_id: razorpayOrderId,
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.phone,
-        },
-        theme: {
-          color: '#721B29',
-        },
-        modal: {
-          ondismiss: () => {
-            setIsProcessing(false);
-            setErrorMessage('Payment window was closed. Please retry to complete your purchase.');
-          },
-        },
-        handler: async (response) => {
-          try {
-            // 3. Verify signature on backend
-            const verifyRes = await fetch(`${backendUrl}/api/payments/verify`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                order_id: orderId,
-              }),
-            });
+    const pendingOrder: any = {
+      id: orderId,
+      orderNumber,
+      createdAt: new Date().toISOString(),
+      userId: currentUser?.id,
+      userEmail: currentUser?.email || formData.email,
+      customerName: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      notes: formData.notes,
+      items: activeItems.map((item) => ({
+        id: item.id || `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        productId: item.productId,
+        title: item.product.title,
+        image: item.product.images?.[0] || '',
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price,
+        product: item.product,
+      })),
+      subtotal: activeSubtotal,
+      shippingFee: 0,
+      total: activeSubtotal,
+      paymentMethod: 'cashfree' as const,
+      status: 'Paid' as const,
+    };
 
-            const verifyData = await verifyRes.json();
-            if (!verifyRes.ok || !verifyData.success) {
-              throw new Error(verifyData.error || 'Payment verification failed.');
-            }
+    // Stash pending order in localStorage for instant hydration on 3DS card redirect
+    try {
+      localStorage.setItem('tws_pending_order', JSON.stringify(pendingOrder));
+    } catch {}
 
-            // Clear cart if this was standard cart checkout
-            if (!isBuyNow) {
-              clearCart();
-            }
-
-            const confirmationOrder = {
-              id: orderId,
-              orderNumber,
-              createdAt: new Date().toISOString(),
-              userId: currentUser?.id,
-              userEmail: currentUser?.email || formData.email,
-              customerName: formData.name,
-              phone: formData.phone,
-              email: formData.email,
-              address: formData.address,
-              city: formData.city,
-              state: formData.state,
-              pincode: formData.pincode,
-              notes: formData.notes,
-              items: activeItems.map((item) => ({
-                productId: item.productId,
-                title: item.product.title,
-                image: item.product.images?.[0] || '',
-                size: item.size,
-                color: item.color,
-                quantity: item.quantity,
-                price: item.price,
-              })),
-              subtotal: activeSubtotal,
-              shippingFee: 0,
-              total: activeSubtotal,
-              paymentMethod: 'razorpay' as const,
-              status: 'Paid' as const,
-            };
-
-            // Account order history after redirect
-            setLastPlacedOrder(confirmationOrder as any);
-
-            // Navigate to Order Confirmation
-            navigate(`/order-confirmation/${orderId}`, {
-              state: { order: confirmationOrder },
-            });
-            resolve();
-          } catch (err: any) {
-            reject(err);
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay!(options);
-      rzp.open();
+    // 2. Open Cashfree Drop-in Checkout modal
+    const result = await cashfree.checkout({
+      paymentSessionId,
+      redirectTarget: '_modal',
     });
+
+    // Handle full-page redirect (e.g. 3DS bank challenge)
+    if (result.redirect) {
+      orderSubmittedRef.current = true;
+      if (!isBuyNow) {
+        clearCart();
+      }
+      return;
+    }
+
+    // 3. User submitted payment or closed modal after QR scan -> authoritative verify
+    try {
+      const verifyRes = await fetch(`${backendUrl}/api/payments/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: cfOrderId || orderNumber,
+          orderId,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (verifyRes.ok && verifyData.verified) {
+        orderSubmittedRef.current = true;
+        const confirmedOrder = {
+          ...pendingOrder,
+          id: verifyData.orderId || orderId,
+          orderNumber: verifyData.orderNumber || orderNumber,
+          status: 'Paid' as const,
+          paymentMethod: 'cashfree' as const,
+        };
+
+        // Sync to StoreContext and persistent storage
+        addOrder(confirmedOrder);
+        setLastPlacedOrder(confirmedOrder);
+        try {
+          localStorage.removeItem('tws_pending_order');
+        } catch {}
+
+        if (!isBuyNow) {
+          clearCart();
+        }
+
+        // Navigate to canonical order confirmation URL
+        navigate(`/order-confirmation/${orderNumber}`, {
+          state: { order: confirmedOrder },
+        });
+        return;
+      }
+
+      // If backend reports not paid and SDK returned error/close
+      if (result.error) {
+        setIsProcessing(false);
+        setErrorMessage(result.error.message || 'Payment was not completed. You can try again.');
+        return;
+      }
+
+      throw new Error(verifyData.message || verifyData.error || 'Payment verification is pending or failed.');
+    } catch (err: any) {
+      console.error('[Payment Verification Error]', err);
+      setErrorMessage(err.message || 'Payment confirmation failed. If amount was debited, our team will verify and update your order.');
+      setIsProcessing(false);
+    }
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -240,7 +268,7 @@ export const CheckoutPage: React.FC = () => {
     const orderId = generateOrderId();
 
     try {
-      await handleRazorpayPayment(orderId, orderNumber);
+      await handleCashfreePayment(orderId, orderNumber);
     } catch (err: any) {
       console.error('[Checkout Submission Error]', err);
       setErrorMessage(err.message || 'Payment could not be completed. Please try again.');
@@ -280,11 +308,6 @@ export const CheckoutPage: React.FC = () => {
           <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#242120] tracking-tight">
             Checkout & Shipping
           </h1>
-          {String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').startsWith('rzp_test_') && (
-            <span className="self-start text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-              Razorpay Test Mode — use test cards / UPI
-            </span>
-          )}
         </div>
 
         {errorMessage && (
@@ -462,24 +485,19 @@ export const CheckoutPage: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="p-4 rounded-xl border-2 border-[#721B29] bg-[#721B29]/5 space-y-3">
+              <div className="p-4 rounded-xl border border-[#D9CEBF] bg-white space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-bold text-[#242120] flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-[#721B29]" />
-                    <span>Razorpay Secure Online Checkout</span>
+                  <span className="text-sm font-semibold text-[#242120] flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#721B29]" />
+                    <span>Online Payment</span>
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                    <span>Instant & 256-bit Encrypted</span>
+                  <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    Secure &amp; Verified
                   </span>
                 </div>
-                <p className="text-xs text-[#736B63] leading-relaxed">
-                  Supports all major Indian payment methods: <strong>UPI (Google Pay, PhonePe, Paytm, BHIM)</strong>, <strong>Credit & Debit Cards (Visa, Mastercard, RuPay)</strong>, <strong>NetBanking (50+ Banks)</strong>, and <strong>Wallets</strong>.
+                <p className="text-xs text-[#5C544B] leading-relaxed">
+                  UPI (Google Pay, PhonePe, Paytm), Credit &amp; Debit Cards, or Net Banking.
                 </p>
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-[#8C8276]">
-                  <span className="bg-white px-2 py-0.5 rounded border border-[#EAE4D9] font-medium">⚡ Instant Payment Confirmation</span>
-                  <span className="bg-white px-2 py-0.5 rounded border border-[#EAE4D9] font-medium">🔒 RBI & PCI-DSS Compliant</span>
-                </div>
               </div>
             </div>
 
@@ -525,7 +543,7 @@ export const CheckoutPage: React.FC = () => {
               ) : (
                 <>
                   <Lock className="w-4 h-4 text-[#E6C280]" />
-                  <span>Pay ₹{activeSubtotal.toLocaleString('en-IN')} via Razorpay</span>
+                  <span>Pay ₹{activeSubtotal.toLocaleString('en-IN')} via Cashfree</span>
                 </>
               )}
             </button>

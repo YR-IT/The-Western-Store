@@ -227,7 +227,7 @@ export const CartPage: React.FC = () => {
                 </button>
 
                 <p className="mt-3 text-[11px] text-[#736B63] text-center leading-relaxed">
-                  🔒 100% Secure Checkout powered by Razorpay. UPI, Cards & NetBanking accepted.
+                  🔒 100% Secure Checkout via Cashfree Payments. UPI, Cards & Net Banking accepted.
                 </p>
               </div>
 
